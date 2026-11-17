@@ -2664,7 +2664,7 @@ on('onTrackChanged', () => { const v = $('#cvv'); if (v && v.dataset.np === '1' 
     const art = e.target.closest && e.target.closest(ART); if (!art || (e.button || 0) > 0 || $('#cvv') || e.isPrimary === false) return;
     stop();   // BUG-16: a new touch cancels the old long-press timer
     g = { x: e.clientX, y: e.clientY, long: false, moved: false, t: 0, pid: e.pointerId };   // BUG-096: remember the finger
-    if (art.closest('.np') && gestAct('long') !== 'none') g.t = setTimeout(() => { if (!g) return; g.long = true; try { navigator.vibrate && navigator.vibrate(18); } catch {} runGest(gestAct('long'), art); }, 450);
+    if (art.closest('.np') && gestAct('long') !== 'none') g.t = setTimeout(() => { if (!g) return; g.long = true; try { navigator.vibrate && navigator.vibrate(18); } catch {} try { window.getSelection && window.getSelection().removeAllRanges(); } catch {} runGest(gestAct('long'), art); }, 450);
   });
   /* v209: double tap on Now Playing opens the album of the song that is playing. The first tap waits 300 ms; a second tap in that time opens the album instead. Settings > Cover shortcuts > Double tap the cover. */
   let npTap = null;
@@ -2686,6 +2686,13 @@ on('onTrackChanged', () => { const v = $('#cvv'); if (v && v.dataset.np === '1' 
   document.addEventListener('pointerup', e => { if (!g || e.pointerId !== g.pid) return; const k = g; stop(); if (k.long || k.moved) return; const art = e.target.closest && e.target.closest(ART); if (art) tapCover(art); });
   document.addEventListener('pointercancel', stop);
   document.addEventListener('contextmenu', e => { if (e.target.closest && (e.target.closest(ART) || e.target.closest('.acard, .gtile, .grow[data-act="genre"]'))) e.preventDefault(); });   // BUG-278: genre tiles and rows too
+  /* v208-fix2: while a finger is on the cover, selection is switched off on the whole page, only for that press. The phone's Copy / Select All bar can then not start from anything under the cover. Lyrics keep their normal long-press copy because the class is removed when the finger lifts. */
+  const pressOff = () => { document.documentElement.classList.remove('cover-press'); try { const s = window.getSelection && window.getSelection(); if (s && s.rangeCount) s.removeAllRanges(); } catch {} };
+  document.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest(ART)) { document.documentElement.classList.add('cover-press'); pressOff.arm = true; } }, true);
+  document.addEventListener('pointerup', () => { if (pressOff.arm) { pressOff.arm = false; pressOff(); } }, true);
+  document.addEventListener('pointercancel', () => { if (pressOff.arm) { pressOff.arm = false; pressOff(); } }, true);
+  document.addEventListener('touchstart', e => { if (e.target.closest && e.target.closest(ART)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('selectstart', e => { if (e.target.closest && e.target.closest(ART)) e.preventDefault(); }, true);
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.np .art')) { e.preventDefault(); show(e.target); } });
 }
 

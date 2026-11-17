@@ -2,6 +2,14 @@
 > **HISTORICAL FILE REFERENCES:** also not in this ZIP: `native-android/PlayCounter.java` (STALE, see the line that mentions it), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html`. Read those mentions as history. `tests/` holds only java-probe.py, -canvas, -earphones, -scan, -update.
 
 
+## Cover long press no longer shows Copy / Select All (no version change, still 0.208.0)
+- **CAUSE:** a long press on the Now Playing / album cover let the phone's own text selection start (the Copy / Select All bar) while the app's own 450 ms press opened the lyrics.
+- **FIX (2nd try):** `src/main.js` (cover gesture block): while a finger is on the cover, the `html` gets class `cover-press`; the selection is cleared on lift and on the 450 ms press. Plus `touchstart` (not passive) and `selectstart` guards on the cover. `src/styles/app.css`: `html.cover-press` turns selection off page-wide for that press only, so lyric long-press copy still works.
+- **FIX (3rd, owner decision: lyrics copy may go):** `native-android/MainActivity.java` sets `web.setOnLongClickListener(v -> true)` and `setLongClickable(false)`, so the WebView's own long press never starts selection. `src/styles/app.css` ends with `*{user-select:none}`, with text fields (input, textarea, select, contenteditable) left selectable. The JS cover hold still works.
+- **DO NOT REDO:** do not remove the native long-click consume or the global user-select rule without asking the owner.
+- **DO NOT REDO:** do not remove the touchstart preventDefault on the cover; the lyrics press still works because it uses the pointer timer, not the selection.
+- **CHECKED:** see the reply; not run on a phone.
+
 ## Lyrics glide rewrite: smooth like Apple Music / Spotify (no version change, still 0.208.0)
 - **WHAT:** lyric lines no longer pop. Removed the bouncy `--spring` (overshoot) from the lyric line transform; opacity / scale / slide now use one soft no-overshoot curve (`--ly-ease`, from the new Glide softness slider) and longer durations (slide .95s, scale .85s, fade .7s). Slide has a per-line delay `--td` set in `lyCenter` (main.js): the playing line and lines above go first, every line below waits +45 ms x Ripple (max 8 lines) = the Apple Music wave. `syncLyrics` now reads `pos + lead` (Early start). Cover-colour background: drift is 8 s and scaled by `--ly-bg`, background transition 1.2 s.
 - **NEW SETTINGS** (Settings > Lyrics > Lyrics animation, `src/lyanim.js`): `stagger` (Line-by-line ripple), `soft` (Glide softness), `lead` (Early start), `gap` (Space between lines), `bgmove` (Background motion). New preset `spotify`; `smooth`, `snappy`, `still` updated.

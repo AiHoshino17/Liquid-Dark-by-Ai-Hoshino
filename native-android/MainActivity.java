@@ -89,6 +89,9 @@ public class MainActivity extends BridgeActivity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         // BUG-224 (checked, owner decision): kept on purpose so saved pictures / GIFs load at once from cache. Every request to GitHub in src/ already sends { cache: 'no-store' }, so stale GitHub answers cannot happen. Do not change this without asking the owner.
         web.getSettings().setCacheMode(android.webkit.WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        // v208-fix3 (owner decision): no long-press text selection / Copy / Select All menu anywhere in the app. Long press is consumed here; the app's own cover press (JS) still works.
+        web.setLongClickable(false);
+        web.setOnLongClickListener(v -> true);
         if (Build.VERSION.SDK_INT >= 23) web.getSettings().setOffscreenPreRaster(true);
       }
     } catch (Throwable ignored) { }

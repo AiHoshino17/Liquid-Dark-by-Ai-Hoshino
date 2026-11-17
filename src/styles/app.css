@@ -552,6 +552,9 @@ html[data-motion="reduce"] .cvv{animation:none}
 @media (prefers-reduced-motion:reduce){.cvv{animation:none}}
 /* the cover on Now Playing / album page is a press target (tap = view, hold = lyrics): no text-selection or the phone's long-press menu */
 .np .art,.detail-art{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.np .art *,.detail-art *{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* v208-fix2: only while a finger is on the cover (class set in main.js): no text selection anywhere, so the Copy / Select All bar cannot appear */
+html.cover-press,html.cover-press *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 
 /* v91: the whole Profile picture card is the button (the Remove chip stays its own button) */
 .profile .pfmain{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:12px 14px;text-align:left;color:inherit;border-radius:inherit;font:inherit}
@@ -1100,3 +1103,7 @@ html[data-immersive="1"] .np .times{color:rgba(255,255,255,.78)}
 
 /* Lyrics animation v2: the background never reacts to a line change (only to a new song, slowly), and "Background motion" 0 freezes the light (its opacity is multiplied by --ly-bg). */
 html[data-lyrstyle="cover"] .lyr{transition:background 1.2s ease}
+
+/* v208-fix3 (owner decision): no text selection anywhere, so the Copy / Select All bar never appears. Text fields keep normal typing. */
+*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
