@@ -7,6 +7,7 @@ export const LYA_DEFS = [
   { k: 'dim', label: 'Other lines brightness', hint: 'How bright the lines that are not playing are.', min: 10, max: 100, def: 58 },
   { k: 'blur', label: 'Blur on far lines', hint: 'Lines get blurrier the further they are from the playing line. 0 = no blur.', min: 0, max: 200, def: 0 },
   { k: 'anchor', label: 'Playing line height', hint: 'Where the playing line rests on the screen. Low = near the top.', min: 5, max: 50, def: 16 },
+  { k: 'sweep', label: 'Word sweep (Apple Music style)', hint: 'The line that is being sung fills in word by word, left to right, like Apple Music. 0 = off, the plain words as before.', min: 0, max: 100, def: 100 },
   { k: 'stagger', label: 'Line-by-line ripple', hint: 'Lines below the playing one start sliding a tiny bit after each other (the Apple Music wave). 0 = every line moves together.', min: 0, max: 250, def: 100 },
   { k: 'soft', label: 'Glide softness', hint: 'Shape of the slide. Low = fast start and a quick stop, high = soft start and a long, gentle landing. Never overshoots or bounces.', min: 0, max: 100, def: 70 },
   { k: 'lead', label: 'Early start', hint: 'The next line starts to glide this much before its time stamp, so it is already there when the singer starts. 0 = exactly on the time stamp.', min: 0, max: 200, def: 25 },

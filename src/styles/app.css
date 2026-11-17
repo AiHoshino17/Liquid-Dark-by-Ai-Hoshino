@@ -1107,3 +1107,7 @@ html[data-lyrstyle="cover"] .lyr{transition:background 1.2s ease}
 /* v208-fix3 (owner decision): no text selection anywhere, so the Copy / Select All bar never appears. Text fields keep normal typing. */
 *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+
+/* v212: Word sweep (Apple Music style). The sung part of the playing line is bright, the rest dim; the edge moves through each word by --pp (set in main.js). Lyrics animation > Word sweep = 0 turns it off. */
+.ln .w.sw{--sw-on:#fff;--sw-off:rgba(255,255,255,.42);--pp:-6}
+.ln.cur .w.sw{-webkit-text-fill-color:transparent;color:transparent;opacity:1;background-image:linear-gradient(90deg,var(--sw-on) calc(var(--pp) * 1%),var(--sw-off) calc(var(--pp) * 1% + 6%));-webkit-background-clip:text;background-clip:text;background-repeat:no-repeat}

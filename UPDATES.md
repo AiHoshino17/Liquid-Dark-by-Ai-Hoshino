@@ -1,6 +1,9 @@
 
 > **VERSION RULE (owner's order): do NOT change the version number (it is 0.208.0, set by the owner on 2026-11-12) in `package.json`, `package-lock.json`, docs or anywhere else, and do not add a "bump" to any entry. Only the owner decides when to bump it, by telling you. Every AI that edits this project must keep it as it is.**
 
+## Word sweep lyrics (Apple Music style)
+The line being sung now fills in word by word, left to right, like Apple Music. Turn it off with Settings > Lyrics > Lyrics animation > Word sweep = 0.
+
 ## Long press on the cover no longer shows Copy / Select All
 Pressing and holding the album cover to reach the lyrics no longer pops up the phone's Copy / Select All bar. The lyrics shortcut works as before.
 

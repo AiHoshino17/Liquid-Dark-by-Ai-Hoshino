@@ -2596,19 +2596,40 @@ async function lyricsLoad() {
   lyr = parseLrc(text);
   const body = $('#lyrbody'); if (!body) return;
   if (!lyr.lines.length) { body.innerHTML = lyFail ? '<div class="empty">Could not read the lyrics for this song.</div>' : '<div class="empty">No lyrics for this song.</div>'; return; }
+  const sweepOn = (set.lyAnim && set.lyAnim.sweep) > 0;
+  if (lyr.synced && sweepOn) sweepSpans(lyr.lines);
   body.innerHTML = lyr.lines.map((l, i) => {
-    const inner = l.words ? l.words.map(w => `<span class="w">${E(w.w)}</span>`).join('') : E(l.text);
+    const inner = sweepOn && l.sw ? (l.words ? l.sw.map(w => `<span class="w sw">${E(w.w)}</span>`).join('') : l.sw.map(w => `<span class="w sw">${E(w.w)}</span>`).join(' '))
+      : l.words ? l.words.map(w => `<span class="w">${E(w.w)}</span>`).join('') : E(l.text);
     return l.t != null && lyr.synced ? `<p class="ln tap" role="button" tabindex="0" data-li="${i}" data-act="lyr-seek">${inner}</p>` : `<p class="ln" data-li="${i}">${inner}</p>`;
   }).join('');
   syncLyrics(lyNow()); lyStart();
 }
+/* v212: Word sweep (Apple Music style). Every synced line gets a start and end time per word: real word stamps when the file has them, otherwise the line's time is shared between its words by length. The sung part of the current line fills in left to right. */
+function sweepSpans(lines) {
+  const nextT = i => { for (let j = i + 1; j < lines.length; j++) if (lines[j].t != null) return lines[j].t; return null; };
+  lines.forEach((l, i) => {
+    if (l.t == null) return;
+    const end = nextT(i), lineEnd = Math.min(end != null ? end : l.t + 3, l.t + 6);
+    if (l.words && l.words.length) {
+      l.sw = l.words.map((w, k) => { const t0 = w.t; let t1 = k + 1 < l.words.length ? l.words[k + 1].t : lineEnd; if (!(t1 > t0)) t1 = t0 + .2; return { t0, t1, w: w.w }; });
+      return;
+    }
+    const words = String(l.text || '').split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    const total = words.reduce((a, w) => a + w.length, 0), dur = Math.max(.4, lineEnd - l.t);
+    let acc = 0;
+    l.sw = words.map(w => { const t0 = l.t + dur * acc / total; acc += w.length; return { t0, t1: l.t + dur * acc / total, w }; });
+  });
+}
 let lyWords = null, lyWd = -1;
+let lyrSweep = null, lyrSweepIdx = -1;
 function syncLyrics(pos) {
   if (!lyr || !lyr.synced || !$('#lyrbody')) return;
   const i = currentIndex(lyr.lines, pos + (lyr.synced ? lyLeadSec(set.lyAnim) : 0));   // 'Early start': the next line starts gliding a moment before its time stamp
   if (i !== lyrIdx) {
     const body = $('#lyrbody'), ls = body.children;
-    lyrIdx = i; lyWords = null; lyWd = -1;
+    lyrIdx = i; lyWords = null; lyWd = -1; lyrSweep = null;
     for (let k = 0; k < ls.length; k++) { const n = ls[k]; n.classList.toggle('cur', k === i); n.style.setProperty('--d', Math.min(5, Math.abs(k - i))); }   // --d = distance from the playing line (more distance = softer)
     const el = ls[i];
     if (el) { if (!lyBrowsing()) lyCenter(el, lyrIdx >= 1); }   // the user is scrolling to pick a line: only the highlight moves
@@ -2618,6 +2639,10 @@ function syncLyrics(pos) {
     if (!lyWords) lyWords = document.querySelectorAll(`#lyrbody [data-li="${lyrIdx}"] .w`);
     let c = 0; while (c < line.words.length && pos >= line.words[c].t) c++;
     if (c !== lyWd) { lyWd = c; lyWords.forEach((n, k) => n.classList.toggle('wd', k < c)); }
+  }
+  if (line && line.sw && (set.lyAnim && set.lyAnim.sweep) > 0) {   // v212: word sweep, fills each word by its own time, every frame
+    if (!lyrSweep) lyrSweep = document.querySelectorAll(`#lyrbody [data-li="${lyrIdx}"] .w.sw`);
+    lyrSweep.forEach((n, k) => { const sw = line.sw[k]; if (!sw) return; const f = (pos - sw.t0) / (sw.t1 - sw.t0); n.style.setProperty('--pp', Math.max(-6, Math.min(100, -6 + f * 106)).toFixed(1)); });
   }
 }
 // a finger / wheel on the list = the user is browsing: stop following until they ask for it (no timer, nothing pulls the list back)
@@ -2635,6 +2660,7 @@ function lyricsAction(act, d) {
   return true;
 }
 on('onProgress', e => { if ($('#lyr')?.classList.contains('open') && !lyRaf) syncLyrics(e.pos); });
+document.addEventListener('change', e => { if (e.target && e.target.dataset && e.target.dataset.lyk === 'sweep' && $('#lyr')?.classList.contains('open')) lyricsLoad(); });   // v212: sweep on/off needs the lines built again
 on('onTrackChanged', () => { if ($('#lyr')?.classList.contains('open') && Native.current()?.id !== lyrTid) lyricsLoad(); });
 
 /* v210: cover shortcuts. Three gestures on Now Playing (tap, press and hold, double tap), each with its own action. Defaults: tap = full-screen cover, hold = lyrics, double tap = album. Settings > Shortcuts. */

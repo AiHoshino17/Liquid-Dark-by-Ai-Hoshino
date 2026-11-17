@@ -2,6 +2,13 @@
 > **HISTORICAL FILE REFERENCES:** also not in this ZIP: `native-android/PlayCounter.java` (STALE, see the line that mentions it), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html`. Read those mentions as history. `tests/` holds only java-probe.py, -canvas, -earphones, -scan, -update.
 
 
+## Word sweep: Apple Music style lyric fill (no version change, still 0.208.0)
+- **WHAT:** the lyric line being sung fills in word by word, left to right, with a soft edge (owner's video 1000314936.mp4). New slider in Settings > Lyrics > Lyrics animation: "Word sweep (Apple Music style)", 100 = on (default), 0 = off (old plain look).
+- **HOW:** `sweepSpans()` in `src/main.js` gives each word a start/end: real word stamps when the lyrics have them, otherwise the line's time is shared by word length (max 6 s). `syncLyrics` sets `--pp` on each word every frame; CSS `.ln.cur .w.sw` draws the gradient edge (`src/styles/app.css`, end of file). Releasing the slider re-builds the lines.
+- **FILES:** `src/lyanim.js` (new def), `src/main.js`, `src/styles/app.css`.
+- **DO NOT REDO:** do not change the sweep back to whole-word opacity; keep the per-frame `--pp` update.
+- **NOT TESTED** on a phone. Word timing for lines without word stamps is an estimate.
+
 ## Cover long press no longer shows Copy / Select All (no version change, still 0.208.0)
 - **CAUSE:** a long press on the Now Playing / album cover let the phone's own text selection start (the Copy / Select All bar) while the app's own 450 ms press opened the lyrics.
 - **FIX (2nd try):** `src/main.js` (cover gesture block): while a finger is on the cover, the `html` gets class `cover-press`; the selection is cleared on lift and on the 450 ms press. Plus `touchstart` (not passive) and `selectstart` guards on the cover. `src/styles/app.css`: `html.cover-press` turns selection off page-wide for that press only, so lyric long-press copy still works.
