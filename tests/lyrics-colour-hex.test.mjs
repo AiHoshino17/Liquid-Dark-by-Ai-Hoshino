@@ -48,7 +48,7 @@ test('exact colours: a picked hex is used as it is, Auto uses the cover\'s own a
   assert.match(pal, /o\?\.hex[^\n]*exactPal\(o\.hex\)/, 'a stored hex goes straight to exactPal');
   assert.match(main, /const exactPal = \(a, b\) =>/);
   const tint = main.slice(main.indexOf('function tintFromPixels('), main.indexOf('/* v148+: the person can pick'));
-  assert.match(tint, /const p = exactPal\(hexes\[0\]/, 'Auto: average colour of the cover\'s strongest colour family');
+  assert.match(tint, /const p = exactPal\(avgOf\(k1\)/, 'Auto: average colour of the cover\'s main hue');
   assert.ok(!/p\.b = vivid\(/.test(tint), 'the second colour is no longer boosted');
   const mix = (x, y, t) => { const a = parseInt(x.slice(1), 16), b = parseInt(y.slice(1), 16); const h = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'); return '#' + h((a >> 16) + ((b >> 16) - (a >> 16)) * t) + h((a >> 8 & 255) + ((b >> 8 & 255) - (a >> 8 & 255)) * t) + h((a & 255) + ((b & 255) - (a & 255)) * t); };
   assert.equal(mix('#202830', '#000000', 0), '#202830', 'a dark colour stays as dark as chosen');

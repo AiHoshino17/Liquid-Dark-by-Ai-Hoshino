@@ -19,8 +19,6 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
   /** Status bar / camera cut-out height and navigation bar height in CSS px. Read by LiquidNative.insets(). */
   static volatile float insetTop = 0f, insetBottom = 0f;
-  /** v209: landscape: the camera cut-out / navigation bar can sit on the left or right edge (CSS px). */
-  static volatile float insetLeft = 0f, insetRight = 0f;
 
   /** v107: the tab a home screen widget asked for (read once by LiquidNative.getLaunch()). */
   static volatile String pendTab = "";
@@ -54,8 +52,6 @@ public class MainActivity extends BridgeActivity {
       boolean keyboard = ime.bottom > bars.bottom;
       insetTop = bars.top / d;
       insetBottom = keyboard ? 0f : bars.bottom / d;
-      insetLeft = bars.left / d;
-      insetRight = bars.right / d;
       // edge-to-edge windows are not resized by the keyboard any more: lift the web view by the keyboard height ourselves
       v.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
       pushInsets();
@@ -89,9 +85,6 @@ public class MainActivity extends BridgeActivity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         // BUG-224 (checked, owner decision): kept on purpose so saved pictures / GIFs load at once from cache. Every request to GitHub in src/ already sends { cache: 'no-store' }, so stale GitHub answers cannot happen. Do not change this without asking the owner.
         web.getSettings().setCacheMode(android.webkit.WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        // v208-fix3 (owner decision): no long-press text selection / Copy / Select All menu anywhere in the app. Long press is consumed here; the app's own cover press (JS) still works.
-        web.setLongClickable(false);
-        web.setOnLongClickListener(v -> true);
         if (Build.VERSION.SDK_INT >= 23) web.getSettings().setOffscreenPreRaster(true);
       }
     } catch (Throwable ignored) { }
@@ -119,7 +112,7 @@ public class MainActivity extends BridgeActivity {
     try {
       final WebView web = getBridge() != null ? getBridge().getWebView() : null;
       if (web == null) return;
-      final String js = "window.dispatchEvent(new CustomEvent('lf-insets',{detail:{top:" + insetTop + ",bottom:" + insetBottom + ",left:" + insetLeft + ",right:" + insetRight + "}}))";
+      final String js = "window.dispatchEvent(new CustomEvent('lf-insets',{detail:{top:" + insetTop + ",bottom:" + insetBottom + "}}))";
       web.post(new Runnable() { @Override public void run() { web.evaluateJavascript(js, null); } });
     } catch (Throwable ignored) { }
   }

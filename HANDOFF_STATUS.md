@@ -1,52 +1,10 @@
 > **NEXT SESSION: `BUGS.txt` and `OPEN_BUGS.txt` are NOT in this ZIP (historical names, do not look for them). Read `docs/HANDOFF.md` and the current bug report instead. Work ONE bug at a time. Always deliver changes inside the project zip (same name, liquid-dark-v208.zip).**
 > **HISTORICAL FILE REFERENCES:** also not in this ZIP: `native-android/PlayCounter.java` (STALE, see the line that mentions it), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html`. Read those mentions as history. `tests/` holds only java-probe.py, -canvas, -earphones, -scan, -update.
 
-
-## Word sweep: Apple Music style lyric fill (no version change, still 0.208.0)
-- **WHAT:** the lyric line being sung fills in word by word, left to right, with a soft edge (owner's video 1000314936.mp4). New slider in Settings > Lyrics > Lyrics animation: "Word sweep (Apple Music style)", 100 = on (default), 0 = off (old plain look).
-- **HOW:** `sweepSpans()` in `src/main.js` gives each word a start/end: real word stamps when the lyrics have them, otherwise the line's time is shared by word length (max 6 s). `syncLyrics` sets `--pp` on each word every frame; CSS `.ln.cur .w.sw` draws the gradient edge (`src/styles/app.css`, end of file). Releasing the slider re-builds the lines.
-- **FILES:** `src/lyanim.js` (new def), `src/main.js`, `src/styles/app.css`.
-- **DO NOT REDO:** do not change the sweep back to whole-word opacity; keep the per-frame `--pp` update.
-- **NOT TESTED** on a phone. Word timing for lines without word stamps is an estimate.
-
-## Cover long press no longer shows Copy / Select All (no version change, still 0.208.0)
-- **CAUSE:** a long press on the Now Playing / album cover let the phone's own text selection start (the Copy / Select All bar) while the app's own 450 ms press opened the lyrics.
-- **FIX (2nd try):** `src/main.js` (cover gesture block): while a finger is on the cover, the `html` gets class `cover-press`; the selection is cleared on lift and on the 450 ms press. Plus `touchstart` (not passive) and `selectstart` guards on the cover. `src/styles/app.css`: `html.cover-press` turns selection off page-wide for that press only, so lyric long-press copy still works.
-- **FIX (3rd, owner decision: lyrics copy may go):** `native-android/MainActivity.java` sets `web.setOnLongClickListener(v -> true)` and `setLongClickable(false)`, so the WebView's own long press never starts selection. `src/styles/app.css` ends with `*{user-select:none}`, with text fields (input, textarea, select, contenteditable) left selectable. The JS cover hold still works.
-- **DO NOT REDO:** do not remove the native long-click consume or the global user-select rule without asking the owner.
-- **DO NOT REDO:** do not remove the touchstart preventDefault on the cover; the lyrics press still works because it uses the pointer timer, not the selection.
-- **CHECKED:** see the reply; not run on a phone.
-
-## Lyrics glide rewrite: smooth like Apple Music / Spotify (no version change, still 0.208.0)
-- **WHAT:** lyric lines no longer pop. Removed the bouncy `--spring` (overshoot) from the lyric line transform; opacity / scale / slide now use one soft no-overshoot curve (`--ly-ease`, from the new Glide softness slider) and longer durations (slide .95s, scale .85s, fade .7s). Slide has a per-line delay `--td` set in `lyCenter` (main.js): the playing line and lines above go first, every line below waits +45 ms x Ripple (max 8 lines) = the Apple Music wave. `syncLyrics` now reads `pos + lead` (Early start). Cover-colour background: drift is 8 s and scaled by `--ly-bg`, background transition 1.2 s.
-- **NEW SETTINGS** (Settings > Lyrics > Lyrics animation, `src/lyanim.js`): `stagger` (Line-by-line ripple), `soft` (Glide softness), `lead` (Early start), `gap` (Space between lines), `bgmove` (Background motion). New preset `spotify`; `smooth`, `snappy`, `still` updated.
-- **FILES:** `src/lyanim.js`, `src/main.js`, `src/styles/app.css` (lyric block + a small block at the end), `tests/lyanim.test.mjs`, `UPDATES.md`, `docs/FEATURES.md`.
-- **DO NOT REDO:** do not put `var(--spring)` back on `.ln.tap` (it overshoots = the "popping"); keep `--td` stagger inside `lyCenter` (it is cleared by `lyStop`). Not tested on a real phone.
-
-## v217 landscape review fixes
-WHAT: popups (popcard, notifcard, #lf-bgallow, #lf-assist) now scroll and use --sat/--sab/--sal/--sar instead of env(); landscape popup sizing; Now Playing right column made by padding-left (badge / sleep pill centred again); close strip min-height 32px; narrow (<=720px) and short (<=340px) Now Playing rules; sheet side gaps use --sal/--sar; inner lists (picklist, qlist, infobox, logbox) do not nest-scroll in landscape; bars a bit shorter at height <=420px.
-FILES: src/styles/app.css, src/assist.js, tests/landscape.test.mjs.
-DO NOT REDO: do not go back to margin-left on .np children; do not use env(safe-area-*) in popups. NOT done: a side tab rail for landscape (B5), tablets (C3).
-
 # Liquid Dark v208: HANDOFF_STATUS (read this first, then `docs/HANDOFF.md`). Version 0.208.0 (build number 208).
 
 > **VERSION RULE (owner's order): do NOT change the version number (it is 0.208.0, set by the owner on 2026-11-12) in `package.json`, `package-lock.json`, docs or anywhere else, and do not add a "bump" to any entry. Only the owner decides when to bump it, by telling you. Every AI that edits this project must keep it as it is.**
 
-
-## Auto cover colour: several colour families (no version change, still 0.208.0)
-- **WHAT:** `tintFromPixels` in `src/main.js` was rewritten. Pixels go into a 16x16x16 RGB histogram weighted by pixel count x chroma^1.6; the strongest bin takes every bin within RGB distance 48 into one family; up to 4 families are kept (>=5% of the top weight). Role order: `a` = strongest, `b`/`d` = the families that look most different from `a`, `c` = the cover's own dark tone (pixels with lightness < .16) else a darkened 3rd colour. New `p.d` (3rd colour) is set as `--lyr-bg4` / `--np-bg4` and used as one extra radial glow. `p.sw` is built from the families (+ black entry).
-- **WHY:** a dark red / skin / black cover (The Weeknd - Echoes of Silence) gave one dull colour.
-- **FILES:** `src/main.js` (`tintFromPixels`, `setTintVars`, `clearTintVars`), `src/styles/app.css` (2 gradients), `tests/cover-colour-families.test.mjs` (new), `tests/lyrics-colour-hex.test.mjs` and `tests/tint-follows-canvas-v208.test.mjs` (updated), `UPDATES.md`.
-- **DO NOT REDO:** do not go back to a single hue bucket; keep the white-text lightness cap (luma 150) and the grey-cover fallback to `exactPal(average)`.
-- **CHECKED:** `node --test` 795 pass, 0 fail (npm ci was not possible offline). Not run on a phone.
-
-## Landscape mode: the app now turns sideways (no version change, still 0.208.0)
-- **WHAT:** the phone can be rotated. Before, `scripts/install-native.sh` locked the activity to portrait (BUG-223). Now it writes `android:screenOrientation="fullUser"` (follows the phone's Auto-rotate switch) and makes sure `android:configChanges` contains `orientation|screenSize|smallestScreenSize|screenLayout`, so the activity is NOT restarted on rotation (playback, open screen and scroll positions stay). An older "portrait" value is replaced.
-- **INSETS:** `MainActivity` also reports the LEFT / RIGHT system-bar and cut-out insets (`insetLeft`, `insetRight`); `LiquidNative.insets()` and the `lf-insets` event carry `left` / `right`; `src/main.js` sets `--sal` / `--sar`; `tokens.css` defines both (default `env(safe-area-inset-left/right)`).
-- **CSS:** one block at the END of `src/styles/app.css`, "v209: LANDSCAPE", inside `@media (orientation:landscape) and (max-height:560px)` (phones only; portrait and tablets are unchanged). The tab bar sits at the bottom with the mini player right above it (stacked like portrait, both shorter), Now Playing is two columns (cover left via `--npc`, controls right), grids have 5 columns (3 with big covers), lyrics / sheets / pages keep clear of the side insets.
-- **FILES:** `scripts/install-native.sh`, `scripts/verify-native-patches.py` (now checks `fullUser` + `configChanges`), `native-android/MainActivity.java`, `native-android/LiquidNative.java`, `src/main.js`, `src/styles/tokens.css`, `src/styles/app.css`, `tests/landscape.test.mjs`.
-- **DO NOT REDO:** do not put the portrait lock back; do not drop `configChanges` (without it every rotation restarts the activity). Do not add landscape rules outside that one media block. Lists (Albums, Library, ...) stay one column on purpose: their rows are siblings of section headers and letter bars, so a 2-column grid would break them.
-- **CHECKED:** see the final answer for the `npm test` result. Screenshots in Chromium at 844 x 390 (landscape) and 390 x 844 (portrait). NOT run on a phone: the real insets, the notch side and the 3-button navigation bar on the right edge are untested on a device.
 
 ## Credits star is the owner's picture (no version change, still 0.208.0)
 - **UPDATE:** the credits star body is darkened (#181818) with a light grey edge (#969696) so it stands out on black, 96 x 96 PNG. Highlights kept.
@@ -54,6 +12,21 @@ DO NOT REDO: do not go back to margin-left on .np children; do not use env(safe-
 - **FILES:** `src/main.js` (credits row `<img class="credstar">`), `src/styles/app.css` (`.credstar` sized 1.1em), `tests/credits-symbols.test.mjs`, this file.
 - **DO NOT REDO:** do not change the star back to the text glyph or add a white outline.
 - **CHECKED:** `npm test` 784 pass, 0 fail; app built and the Credits row captured in Chromium at 390 px.
+
+## Playlists: Spotify / Exportify CSV import and export (no version change, still 0.208.0)
+- **IMPORT:** already worked. Exportify CSV (Track Name, Album Name, Artist Name(s) ...) becomes a playlist named after the file. Checked with the owner's `Ai_Hoshino_.csv` and `Ai_Hoshino__1.csv` (one song each).
+- **EXPORT (new):** Export playlists > "Spotify / Exportify CSV (.csv)". Writes the same 25-column header as Exportify (`EXPORTIFY_COLS`, UTF-8 BOM). Fields the app knows (title, album, artist, duration) are filled; the rest stay empty. One .csv per playlist; several = one .zip.
+- **FILES:** `src/plforeign.js` (FORMATS entry, `EXPORTIFY_COLS`, `toExportify`, `buildFiles` branch), `tests/exportify-csv.test.mjs` (new), `tests/fixtures-ai-hoshino-exportify.csv` (sample), `tests/plforeign.test.mjs` (format count 4 -> 5).
+- **DO NOT REDO:** the header must stay identical to Exportify's; the test checks it against the sample file.
+- **CHECKED:** `npm test` 791 pass, 0 fail; `vite build` ok. Not run on a phone.
+
+## Refresh art: sucking-in animation on every picture (no version change, still 0.208.0)
+- **WHAT:** Settings > Refresh art now plays a short "sucked in and back out" animation on the pictures while they reload (`pulsePics()` adds `html.pics-refreshing` for 900 ms; CSS `lf-suck` on `.cover`, `.avatar`, `.thumb`, `.pfmain img`, `.np .art .cover`). Off with reduced-motion.
+- **COVERAGE (already in `refreshAllPics`):** album, song, artist photo and artist GIF (`agUrls`), genre, playlist, profile picture and GIF/video, background picture. Artist photos are stored as `gif:` entries, so they are included.
+- **NOT COVERED:** Canvas clips (video loops, not picture or GIF).
+- **FILES:** `src/main.js` (`pulsePics`, `case 'refresh-art'` one line), `src/styles/app.css` (`lf-suck`), `tests/bug15-refresh-art.test.mjs` (stub added).
+- **DO NOT REDO:** keep the `refresh-art` case on ONE line: the test reads that line.
+- **CHECKED:** `npm test` 787 pass, 0 fail; `vite build` ok; the class turns the animation on and off in Chromium. Not run with real pictures on a phone.
 
 ## Shuffle: Repeat All gives a new order each pass (no version change, still 0.208.0)
 - **CHECKED FIRST:** `shuffle.js` spreads artists and albums (simulation: same album back-to-back 2.2 times per 39 gaps, random would be about 9; two artists: about 14 of 59 gaps, random about 30). The Android `replaceTail` reorders the real playlist and ExoPlayer's own shuffle stays off, so the player and the Up Next list match.
@@ -1131,6 +1104,3 @@ Not tested on a phone / in a browser: 6, 7, 12, 13, 15 and all Java changes (onl
 WHAT: Animation slider maximums x3 (200->600, 150->450, 250->750); GLASS_LIMITS/EDGE_WOBBLE_MAX/MAGNIFY_MAX/lq-amp loosened moderately so extra range works without breaking; pressed tab pill now grows and extends past the bar edges (glidebar.js); toggle knob grow cap 6->9 (liquidui.js).
 FILES: src/animcfg.js, src/glidebar.js, src/liquidui.js, tests/glass-settings-v208.test.mjs.
 DO NOT REDO: keep the limits in GLASS_LIMITS, they stop shaking/zoom at extreme slider values.
-
-## v214 black-cover background
-WHAT: tintFromPixels adds p.k/p.kf (true dark tone + share) when >25% of the cover is dark; setTintVars writes --lyr-bg5/--lyr-bgk; app.css `.lyr[style*="--lyr-bg5"]` uses black as the base with colours as glows. Picked colours set k:null. FILES: src/main.js, src/styles/app.css, tests/lyrics-black-base.test.mjs. DO NOT REDO: do not drop the k reset in coverPal.

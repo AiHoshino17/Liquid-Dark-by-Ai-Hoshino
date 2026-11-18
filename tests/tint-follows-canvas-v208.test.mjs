@@ -10,7 +10,7 @@ const rgbHex = extract('src/main.js', 'rgbHex', {});
 const mixHex = extract('src/main.js', 'mixHex', { rgbHex });
 const exactPal = extract('src/main.js', 'exactPal', { mixHex });
 const palFrom = () => ({ a: '#000000' });
-const tintFromPixels = extract('src/main.js', 'tintFromPixels', { rgb2hsl, rgbHex, mixHex, exactPal, palFrom });
+const tintFromPixels = extract('src/main.js', 'tintFromPixels', { rgb2hsl, rgbHex, exactPal, palFrom });
 const frame = (r, g, b) => { const d = new Uint8ClampedArray(4096); for (let i = 0; i < 4096; i += 4) { d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = 255; } return d; };
 const join = list => { const o = new Uint8ClampedArray(list.length * 4096); list.forEach((d, i) => o.set(d, i * 4096)); return o; };
 

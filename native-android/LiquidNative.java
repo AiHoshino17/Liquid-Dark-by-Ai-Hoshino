@@ -3005,7 +3005,7 @@ public class LiquidNative extends Plugin {
 
   /** v53: status bar / navigation bar heights in CSS px (the app is drawn edge-to-edge, see MainActivity). */
   @PluginMethod
-  public void insets(PluginCall call) { JSObject o = new JSObject(); o.put("top", (double) MainActivity.insetTop); o.put("bottom", (double) MainActivity.insetBottom); o.put("left", (double) MainActivity.insetLeft); o.put("right", (double) MainActivity.insetRight); call.resolve(o); }
+  public void insets(PluginCall call) { JSObject o = new JSObject(); o.put("top", (double) MainActivity.insetTop); o.put("bottom", (double) MainActivity.insetBottom); call.resolve(o); }
 
   @PluginMethod
   public void notificationStatus(PluginCall call) { JSObject o = new JSObject(); o.put("granted", notifOn()); call.resolve(o); }

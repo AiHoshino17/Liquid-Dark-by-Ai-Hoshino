@@ -7,7 +7,7 @@ const line = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8').sp
 const run = scanning => {
   const log = [];
   const body = line.slice(line.indexOf("case 'refresh-art':") + "case 'refresh-art':".length).split('//')[0];
-  new Function('scanning', 'refreshAllPics', 'toast', 'loadLib', `switch ('x') { default: ${body} }`)(scanning, () => log.push('refreshAllPics'), m => log.push('toast:' + m), () => log.push('loadLib'));
+  new Function('scanning', 'pulsePics', 'refreshAllPics', 'toast', 'loadLib', `switch ('x') { default: ${body} }`)(scanning, () => {}, () => log.push('refreshAllPics'), m => log.push('toast:' + m), () => log.push('loadLib'));
   return log;
 };
 

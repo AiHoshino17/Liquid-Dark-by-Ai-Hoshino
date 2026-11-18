@@ -36,7 +36,7 @@ test('buildFiles: one playlist = one file, several = zip, csv = single file', ()
   const one = buildFiles('m3u8', [ex[0]], new Date(2026, 10, 7)); assert.equal(one.name, 'Road trip.m3u8'); assert.ok(one.text);
   const many = buildFiles('xspf', ex, new Date(2026, 10, 7)); assert.equal(many.mime, 'application/zip'); assert.deepEqual(many.files.map(f => f.name), ['Road trip.xspf', 'Road trip (2).xspf']);
   assert.equal(buildFiles('csv', ex, new Date(2026, 10, 7)).name, 'liquid-dark-playlists-20261107.csv');
-  assert.throws(() => buildFiles('nope', ex), /format/); assert.equal(FORMATS.length, 4);
+  assert.throws(() => buildFiles('nope', ex), /format/); assert.equal(FORMATS.length, 5);   // v213: + Exportify CSV
 });
 test('M3U from another device: absolute paths, EXTINF without album, file:// urls', () => {
   const t = '#EXTM3U\n#EXTINF:183,The Beatles - Something\n/storage/emulated/0/Music/Rock/Abbey Road/02 Something.flac\n#EXTINF:10,Nobody - Nothing\nC:\\Music\\x\\y.mp3\nfile:///sdcard/Music/Jazz/Kind%20of%20Blue/01%20So%20What.flac\nhttps://stream.example/radio\n';

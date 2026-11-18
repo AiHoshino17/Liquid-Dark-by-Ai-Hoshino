@@ -106,7 +106,7 @@ function build(n) {
   const c = CARDS[n];
   const o = document.createElement('div');
   o.id = 'lf-assist'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
-  o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:max(24px,var(--sat)) max(24px,var(--sar)) max(24px,var(--sab)) max(24px,var(--sal));box-sizing:border-box;';
+  o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
   o.innerHTML = '<div style="max-width:420px;max-height:100%;overflow-y:auto;color:#fff;font-family:system-ui,sans-serif;text-align:center;">'
     + '<h2 style="margin:0 0 12px;font-size:22px;">' + c.title + '</h2>' + c.body
     + '<button data-as="go" style="width:100%;padding:14px;font-size:17px;border:0;border-radius:12px;background:#ff3b5c;color:#fff;margin-bottom:10px;">' + c.go + '</button>'

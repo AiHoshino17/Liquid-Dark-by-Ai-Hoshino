@@ -552,27 +552,23 @@ html[data-motion="reduce"] .cvv{animation:none}
 @media (prefers-reduced-motion:reduce){.cvv{animation:none}}
 /* the cover on Now Playing / album page is a press target (tap = view, hold = lyrics): no text-selection or the phone's long-press menu */
 .np .art,.detail-art{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.np .art *,.detail-art *{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-/* v208-fix2: only while a finger is on the cover (class set in main.js): no text selection anywhere, so the Copy / Select All bar cannot appear */
-html.cover-press,html.cover-press *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
 
 /* v91: the whole Profile picture card is the button (the Remove chip stays its own button) */
 .profile .pfmain{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:12px 14px;text-align:left;color:inherit;border-radius:inherit;font:inherit}
 .profile>.chip{margin-right:14px;flex:0 0 auto}
 
 /* v92: Settings > Lyrics style > white lyrics on the album cover colour (--lyr-bg is set from the cover in main.js) */
-html[data-lyrstyle="cover"] .lyr{background:linear-gradient(180deg,var(--lyr-bg,#c8102e) 0%,#000 100%);background:radial-gradient(120% 65% at 90% 8%,var(--lyr-bg2,var(--lyr-bg,#c8102e)) 0%,transparent 62%),radial-gradient(110% 70% at 5% 95%,var(--lyr-bg3,#3a0a12) 0%,transparent 66%),radial-gradient(90% 45% at 8% 42%,color-mix(in srgb,var(--lyr-bg4,transparent) 70%,transparent) 0%,transparent 70%),linear-gradient(180deg,var(--lyr-bg,#c8102e) 0%,color-mix(in srgb,var(--lyr-bg,#c8102e) 70%,#000) 100%);transition:background .5s}
-html[data-lyrstyle="cover"] .lyr[style*="--lyr-bg5"]{background:radial-gradient(120% 60% at 88% 6%,var(--lyr-bg) 0%,transparent 66%),radial-gradient(90% 40% at 100% 46%,color-mix(in srgb,var(--lyr-bg) 75%,transparent) 0%,transparent 70%),radial-gradient(100% 45% at 6% 36%,color-mix(in srgb,var(--lyr-bg4,var(--lyr-bg)) 50%,transparent) 0%,transparent 70%),radial-gradient(110% 40% at 40% 100%,color-mix(in srgb,var(--lyr-bg2) 45%,transparent) 0%,transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--lyr-bg) 80%,var(--lyr-bg5)) 0%,color-mix(in srgb,var(--lyr-bg) 40%,var(--lyr-bg5)) 38%,var(--lyr-bg5) 78%,#000 100%)}
+html[data-lyrstyle="cover"] .lyr{background:linear-gradient(180deg,var(--lyr-bg,#c8102e) 0%,#000 100%);background:radial-gradient(120% 65% at 90% 8%,var(--lyr-bg2,var(--lyr-bg,#c8102e)) 0%,transparent 62%),radial-gradient(110% 70% at 5% 95%,var(--lyr-bg3,#3a0a12) 0%,transparent 66%),linear-gradient(180deg,var(--lyr-bg,#c8102e) 0%,color-mix(in srgb,var(--lyr-bg,#c8102e) 70%,#000) 100%);transition:background .5s}
 html[data-lyrstyle="cover"] .lyr .ln{color:#fff}
 html[data-lyrstyle="cover"] .lyr .ln.cur{color:#fff}
 /* v119: slow drifting light of the cover colour behind the words (Apple Music look). Only transform moves, so it costs almost nothing. */
 html[data-lyrstyle="cover"] .lyr::before{content:"";position:absolute;z-index:0;left:-30%;top:-15%;width:160%;height:75%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(255,255,255,.22) 0%,transparent 100%);background:radial-gradient(closest-side,color-mix(in srgb,var(--lyr-bg,#2a0c12) 55%,#fff) 0%,transparent 100%);opacity:calc(.42 * var(--ly-bg,1));animation:lf-lyr-drift 8s cubic-bezier(.4,0,.2,1) 1 forwards;will-change:transform}
+  background:radial-gradient(closest-side,rgba(255,255,255,.22) 0%,transparent 100%);background:radial-gradient(closest-side,color-mix(in srgb,var(--lyr-bg,#2a0c12) 55%,#fff) 0%,transparent 100%);opacity:.42;animation:lf-lyr-drift 4s ease-in-out 1 forwards;will-change:transform}
 @keyframes lf-lyr-drift{from{transform:translate3d(-8%,-4%,0) scale(1)}to{transform:translate3d(10%,16%,0) scale(1.25)}}
 html[data-lyrstyle="cover"] .lyr .lyr-t span{color:rgba(255,255,255,.78)}
 
 /* v93: credit popup (notifications). No glass rim / bars, transparent box: just the picture, the text and two plain buttons on the dark scrim */
-#sheet .sheetbox.notifcard{background:none;box-shadow:none;border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;left:calc(var(--sal) + 20px);right:calc(var(--sar) + 20px);bottom:auto;top:50%;transform:translateY(-50%);text-align:center;overflow-x:hidden;overflow-y:auto;max-height:calc(100% - var(--sat) - var(--sab) - 16px);overscroll-behavior:contain;animation:lf-fade calc(.35s * var(--dur-k,1)) ease-out}
+#sheet .sheetbox.notifcard{background:none;box-shadow:none;border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;left:20px;right:20px;bottom:auto;top:50%;transform:translateY(-50%);text-align:center;overflow:visible;animation:lf-fade calc(.35s * var(--dur-k,1)) ease-out}
 #sheet .sheetbox.notifcard .popimg{display:block;margin:0 auto 16px;max-width:100%;max-height:42vh;object-fit:contain;border-radius:24px}
 #sheet .sheetbox.notifcard .actions button{background:rgba(255,255,255,.07);box-shadow:none;border:0}
 /* v93: the popup box itself took the focus and Android draws its default gold / orange focus frame around it: no frame on dialogs (buttons keep their red keyboard ring) */
@@ -580,7 +576,7 @@ html[data-lyrstyle="cover"] .lyr .lyr-t span{color:rgba(255,255,255,.78)}
 #sheet button,.actions button{-webkit-tap-highlight-color:transparent}
 
 /* v95 (now ONLY with Settings > Immersive album cover; owner's order): Now Playing gets the cover's colour (top) fading darker (bottom); buttons turn clear, the red accent turns white so it stays visible */
-html[data-immersive="1"] #np.np{background:linear-gradient(180deg,var(--np-bg,#c8102e) 0%,#000 100%);background:radial-gradient(120% 55% at 92% 6%,var(--np-bg2,var(--np-bg,#c8102e)) 0%,transparent 62%),radial-gradient(110% 60% at 4% 96%,var(--np-bg3,#3a0a12) 0%,transparent 66%),radial-gradient(90% 40% at 6% 40%,color-mix(in srgb,var(--np-bg4,transparent) 70%,transparent) 0%,transparent 70%),linear-gradient(180deg,var(--np-bg,#c8102e) 0%,color-mix(in srgb,var(--np-bg,#c8102e) 62%,#000) 100%);backdrop-filter:none;-webkit-backdrop-filter:none;transition:background .6s,transform calc(.5s * var(--dur-k,1)) var(--spring),visibility 0s linear calc(.5s * var(--dur-k,1));--accent:#fff;--accent-soft:rgba(255,255,255,.2);--accent-glow:rgba(255,255,255,.3)}
+html[data-immersive="1"] #np.np{background:linear-gradient(180deg,var(--np-bg,#c8102e) 0%,#000 100%);background:radial-gradient(120% 55% at 92% 6%,var(--np-bg2,var(--np-bg,#c8102e)) 0%,transparent 62%),radial-gradient(110% 60% at 4% 96%,var(--np-bg3,#3a0a12) 0%,transparent 66%),linear-gradient(180deg,var(--np-bg,#c8102e) 0%,color-mix(in srgb,var(--np-bg,#c8102e) 62%,#000) 100%);backdrop-filter:none;-webkit-backdrop-filter:none;transition:background .6s,transform calc(.5s * var(--dur-k,1)) var(--spring),visibility 0s linear calc(.5s * var(--dur-k,1));--accent:#fff;--accent-soft:rgba(255,255,255,.2);--accent-glow:rgba(255,255,255,.3)}
 html[data-immersive="1"] #np.np.open{transition:background .6s,transform calc(.5s * var(--dur-k,1)) var(--spring)}
 html[data-immersive="1"] .np .glow{display:none}
 html[data-immersive="1"] .np .cluster,html[data-immersive="1"] .np .sbtn,html[data-immersive="1"] .np .bottom button{background:rgba(255,255,255,.14)}
@@ -734,9 +730,8 @@ select.hsren{flex:1;min-width:0;margin-top:0;appearance:auto}
 /* ===== v119: Apple Music style lyrics (both backgrounds). The --ly-* values come from Settings > Lyrics > Lyrics animation (src/lyanim.js). ===== */
 /* A synced line: the playing one is full colour and slightly bigger; the others are softer and a little smaller (--d = distance from the playing line, set in main.js). */
 .ln.tap{opacity:calc(var(--ly-op,.58) - var(--d,5) * .03);transform:scale(var(--ly-small,.94));transform-origin:left center;-webkit-tap-highlight-color:transparent;
-  translate:0 var(--ty,0px);margin-bottom:calc(.6em * var(--ly-gap,1));will-change:translate,transform,opacity;
-  /* smooth glide, no spring: nothing overshoots or pops. The slide waits --td (the line-by-line ripple) and uses the Glide softness curve. */
-  transition:opacity calc(.7s * var(--ly-fade,1)) var(--ly-ease,cubic-bezier(.31,.27,.2,1)),transform calc(.85s * var(--ly-fade,1)) var(--ly-ease,cubic-bezier(.31,.27,.2,1)),filter calc(.7s * var(--ly-fade,1)) ease,color calc(.4s * var(--ly-fade,1)) ease,translate calc(.95s * var(--ly-glide,1)) var(--ly-ease,cubic-bezier(.31,.27,.2,1)) var(--td,0ms)}
+  translate:0 var(--ty,0px);
+  transition:opacity calc(.4s * var(--ly-fade,1)) ease,transform calc(.5s * var(--ly-fade,1)) var(--spring),filter calc(.45s * var(--ly-fade,1)) ease,color calc(.25s * var(--ly-fade,1)),translate calc(.7s * var(--ly-glide,1)) cubic-bezier(.22,.8,.25,1)}
 .ln.tap.cur{opacity:1;transform:scale(var(--ly-zoom,1.02))}
 html[data-lyblur="1"] .ln.tap:not(.cur){filter:blur(calc(var(--d,5) * var(--ly-blur,0px)))}
 .ln:not(.tap){opacity:.92;color:var(--accent)}
@@ -770,8 +765,8 @@ html[data-motion="reduce"] .lyr::before{animation:none}
 #main .quick{margin-bottom:0}
 
 /* v130: popup = full black screen, picture centred, buttons pinned at the bottom (liquid glass, red accent) */
-#sheet .sheetbox.notifcard.popcard{inset:0;left:0;right:0;top:0;bottom:0;transform:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(28px,var(--sat)) calc(var(--sar) + 22px) max(26px,var(--sab)) calc(var(--sal) + 22px);background:#000;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
-#sheet .popcard .pbody{flex:1 0 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+#sheet .sheetbox.notifcard.popcard{inset:0;left:0;right:0;top:0;bottom:0;transform:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(28px,env(safe-area-inset-top)) 22px max(26px,env(safe-area-inset-bottom));background:#000;overflow:hidden}
+#sheet .popcard .pbody{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 #sheet .popcard .pbody b{font-size:1.375rem;color:#fff;margin-top:6px}
 #sheet .popcard .pbody p{margin:4px auto 0;max-width:320px;color:var(--text-2);font-size:0.875rem;line-height:1.4}
 #sheet .sheetbox.notifcard.popcard .popimg{--maxh:max(120px,min(56vh,460px,calc(100vh - 300px)));margin:0 auto 10px}
@@ -881,8 +876,8 @@ html[data-bg="1"] #app::before{background:linear-gradient(to bottom,rgba(0,0,0,.
 .actions.lsmenu{flex-direction:column;align-items:stretch;gap:10px}.actions.lsmenu button{flex:0 0 auto;width:100%;min-height:48px}
 
 /* v146: background-allow popup (own layer, never touches #sheet, so no blink / no clash with the update screen) */
-#lf-bgallow{position:fixed;inset:0;overflow-y:auto;box-sizing:border-box;z-index:99990;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:max(28px,var(--sat)) calc(var(--sar) + 22px) max(26px,var(--sab)) calc(var(--sal) + 22px);animation:lf-fade calc(.3s * var(--dur-k,1)) ease-out}
-#lf-bgallow .bgbody{flex:1 0 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#lf-bgallow{position:fixed;inset:0;z-index:99990;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:max(28px,env(safe-area-inset-top)) 22px max(26px,env(safe-area-inset-bottom));animation:lf-fade calc(.3s * var(--dur-k,1)) ease-out}
+#lf-bgallow .bgbody{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 #lf-bgallow .bgimg{display:block;max-width:min(100%,360px);max-height:min(52vh,460px);object-fit:contain;border-radius:24px;margin-bottom:10px}
 #lf-bgallow b{font-size:1.375rem}#lf-bgallow p{margin:4px auto 0;max-width:320px;color:var(--text-2);font-size:0.875rem;line-height:1.4}#lf-bgallow p b{font-size:inherit;color:#fff}
 /* v215: no red focus ring on the two permission cards (the card still takes focus for TalkBack; the ring was the only visible focus mark) */
@@ -1012,102 +1007,7 @@ html[data-immersive="1"] .np .times{color:rgba(255,255,255,.78)}
 /* v211: a disabled row in a sheet: dimmed from the first frame (the entrance animation must not undo it) */
 #sheet .sheetbox .row.off{animation:none;opacity:.5}
 
-/* ===== v209: LANDSCAPE =====
-   The phone can now be turned sideways (AndroidManifest: screenOrientation fullUser + configChanges, scripts/install-native.sh). In landscape the screen is short and wide, so:
-   - the 520px column goes away and every page keeps clear of the camera cut-out / navigation bar on the left and right (--sal / --sar, set by MainActivity)
-   - the glass tab bar and the mini player stay stacked (mini above the tab bar) like portrait, but both are made shorter
-   - Now Playing becomes two columns: the cover on the left, title / progress / buttons on the right
-   - grids get more columns, bottom sheets get a sane width
-   Only phones: the rule needs a short screen (max-height 560px), so a tablet keeps the normal layout. Portrait is untouched. */
-@media (orientation:landscape) and (max-height:560px){
-  html{--tbh:calc(var(--tabbar-h) * .74)}
-  #app{max-width:none}
-  .screen{padding:calc(var(--sat) + 8px) calc(var(--sar) + 18px) calc(var(--tbh) * 2 + 36px) calc(var(--sal) + 18px)}
-  h1.large{font-size:1.75rem;margin:2px 0 10px}
-
-  /* tab bar at the bottom, mini player right above it (same order as portrait), both made shorter; centred and not wider than 540px */
-  html .tabbar{left:calc(var(--sal) + 14px);right:calc(var(--sar) + 14px);width:min(540px,calc(100% - 28px - var(--sal) - var(--sar)));margin:0 auto;bottom:max(10px,var(--sab));height:var(--tbh);padding:4px 10px}
-  html .lens-mag{padding:4px 10px}
-  html .tabbar .tab{gap:1px;font-size:.6875rem}
-  html .tabbar .tab svg{width:calc(1.375rem * var(--tabk,1));height:calc(1.375rem * var(--tabk,1))}
-  .mini{left:calc(var(--sal) + 14px);right:calc(var(--sar) + 14px);width:min(540px,calc(100% - 28px - var(--sal) - var(--sar)));margin:0 auto;bottom:calc(max(10px,var(--sab)) + var(--tbh) + 6px);height:calc(var(--tbh) - 6px);padding:3px 8px 3px 4px}
-  .mini .cover{width:calc(var(--tbh) - 16px)}
-  #app::after{height:calc(var(--sab) + var(--tbh) + 30px)}
-  #app.has-mini::after,#app:has(#mini .mini)::after{height:calc(var(--sab) + var(--tbh) * 2 + 40px)}
-  #app::before{height:calc(var(--sat) + 4px)}
-
-  /* grids */
-  .grid{grid-template-columns:repeat(5,minmax(0,1fr))}
-  html[data-bigcovers="1"] .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-
-  /* Now Playing: cover left, everything else right */
-  .np{--npc:min(calc(100dvh - var(--sat) - var(--sab) - 64px),40vw);justify-content:center;padding:calc(var(--sat) + 4px) calc(var(--sar) + 22px) calc(max(10px,var(--sab)) + 4px) calc(var(--sal) + 22px + var(--npc) + 24px)}   /* v217: the right column is made by padding (not margin-left on every child) so the quality badge and sleep pill keep their auto centring */
-  .np .grabbtn{position:absolute!important;top:calc(var(--sat) + 0px);left:0;right:0;width:auto!important;padding:4px 0!important;margin:0!important;min-height:32px}
-  .np .art{position:absolute;left:calc(var(--sal) + 22px);top:calc(50% + (var(--sat) - var(--sab))/2);transform:translateY(-50%);width:var(--npc);height:var(--npc);flex:none;padding:0}
-  .np .art .cover{height:100%;width:100%;max-height:none}
-  .np .titles b{font-size:1.25rem}
-  .np .titles span{font-size:.9375rem}
-  .np .badge{margin:6px auto 2px}
-  .scrub{margin-top:2px}
-  .transport{margin:6px 0 8px}
-  .cluster{height:60px}.cluster button{width:54px;height:54px}.cluster svg{width:26px;height:26px}.cluster .pp svg{width:34px;height:34px}
-  .sbtn{width:46px;height:46px}
-  .np .bottom button{height:38px}
-
-  /* lyrics */
-  .lyr{padding-left:calc(var(--sal) + 22px);padding-right:calc(var(--sar) + 22px);overflow:clip}   /* clip, not hidden: a tapped lyric line used to scroll the whole page sideways / up by a few px (hidden can still be scrolled by scrollIntoView) */
-  .lyr-body{margin:0 calc(-22px - var(--sar)) 0 calc(-22px - var(--sal));padding-left:calc(var(--sal) + 22px);padding-right:calc(var(--sar) + 22px);padding-bottom:60dvh}
-  .lyr-now{right:calc(var(--sar) + 18px);bottom:calc(var(--sab) + 12px)}
-
-  /* sheets and popups */
-  #sheet .sheetbox{left:max(calc(var(--sal) + 12px),calc(50% - 300px));right:max(calc(var(--sar) + 12px),calc(50% - 300px));bottom:calc(8px + var(--sab));max-height:calc(100% - var(--sat) - 16px);padding:16px 20px}
-  .toast{top:calc(var(--sat) + 6px)}
-  .pp-bar{padding-left:calc(var(--sal) + 14px);padding-right:calc(var(--sar) + 14px)}
-
-  /* v217 (A1-A4): popups in landscape. The scrim is full screen, the card scrolls if it is still too tall, the picture shrinks to the short screen */
-  #sheet .sheetbox.notifcard .popimg{--maxh:max(80px,calc(100dvh - var(--sat) - var(--sab) - 210px));margin-bottom:10px}
-  #sheet .sheetbox.notifcard.popcard{padding-top:max(14px,var(--sat));padding-bottom:max(12px,var(--sab))}
-  #sheet .sheetbox.notifcard.popcard .popimg{--maxh:max(80px,calc(100dvh - var(--sat) - var(--sab) - 250px))}
-  #sheet .sheetbox.notifcard.popcard .actions{margin-top:8px}
-  #sheet .sheetbox.notifcard.popcard .actions button{height:46px}
-  #sheet .popcard .pbody b{font-size:1.125rem;margin-top:2px}
-  #sheet .popcard .pbody p{max-width:560px;margin-top:2px}
-  #lf-bgallow{padding-top:max(14px,var(--sat));padding-bottom:max(12px,var(--sab))}
-  #lf-bgallow .bgimg{max-height:max(80px,calc(100dvh - var(--sat) - var(--sab) - 250px))}
-  #lf-bgallow button{height:46px}
-  #lf-bgallow b{font-size:1.125rem}#lf-bgallow p{max-width:560px}
-
-  /* v217 (B7): the sheet itself scrolls in landscape, so the inner lists do not get their own (nested) scroll */
-  .picklist,.qlist,.infobox{max-height:none;overflow:visible}
-  #sheet .sheetbox textarea.logbox{height:46dvh}
-}
-
-/* v217 (B2 / B4 / B5): narrow and very short landscape screens */
-@media (orientation:landscape) and (max-height:560px) and (max-width:720px){
-  .np{--npc:min(calc(100dvh - var(--sat) - var(--sab) - 64px),32vw)}
-  .cluster{gap:0}.cluster button{width:48px;height:48px}.cluster .pp svg{width:30px;height:30px}
-  .sbtn{width:40px;height:40px}
-  .np .titles b{font-size:1.125rem}
-}
-@media (orientation:landscape) and (max-height:420px){
-  html{--tbh:calc(var(--tabbar-h) * .66)}   /* bars a bit shorter = more list rows visible */
-}
-@media (orientation:landscape) and (max-height:340px){
-  .np .badge,.np .sleeppill{display:none}
-  .np .times{font-size:.75rem}
-  .cluster{height:50px}.cluster button{width:46px;height:46px}.cluster svg{width:22px;height:22px}.cluster .pp svg{width:28px;height:28px}
-  .np .bottom button{height:34px}
-  .np .titles b{font-size:1.0625rem}.np .titles span{font-size:.8125rem}
-}
-
-
-/* Lyrics animation v2: the background never reacts to a line change (only to a new song, slowly), and "Background motion" 0 freezes the light (its opacity is multiplied by --ly-bg). */
-html[data-lyrstyle="cover"] .lyr{transition:background 1.2s ease}
-
-/* v208-fix3 (owner decision): no text selection anywhere, so the Copy / Select All bar never appears. Text fields keep normal typing. */
-*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
-
-/* v212: Word sweep (Apple Music style). The sung part of the playing line is bright, the rest dim; the edge moves through each word by --pp (set in main.js). Lyrics animation > Word sweep = 0 turns it off. */
-.ln .w.sw{--sw-on:#fff;--sw-off:rgba(255,255,255,.42);--pp:-6}
-.ln.cur .w.sw{-webkit-text-fill-color:transparent;color:transparent;opacity:1;background-image:linear-gradient(90deg,var(--sw-on) calc(var(--pp) * 1%),var(--sw-off) calc(var(--pp) * 1% + 6%));-webkit-background-clip:text;background-clip:text;background-repeat:no-repeat}
+/* v213: Refresh art: every picture and GIF is sucked into its centre and pops back (only while the refresh runs) */
+@keyframes lf-suck{0%{transform:scale(1);opacity:1}40%{transform:scale(.25);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
+html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .thumb,html.pics-refreshing .pfmain img,html.pics-refreshing .np .art .cover{animation:lf-suck .8s cubic-bezier(.5,0,.3,1) both}
+@media (prefers-reduced-motion: reduce){html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .thumb,html.pics-refreshing .np .art .cover{animation:none}}

@@ -34,7 +34,7 @@ import { initLens } from './lens.js';
 import { initJelly } from './jelly.js';
 import { initLiquidUI } from './liquidui.js';
 import { ANIM_DEFS, PRESETS, setAnim, glassVars } from './animcfg.js';
-import { LYA_DEFS, LYA_PRESETS, cleanLya, lyaVars, lyStaggerMs, lyLeadSec } from './lyanim.js';
+import { LYA_DEFS, LYA_PRESETS, cleanLya, lyaVars } from './lyanim.js';
 import { LY_MIN, LY_MAX, LY_DEF, cleanLyPx, lyName } from './lysize.js';   // v148: free lyrics size   // v119: Lyrics animation settings
 import { initLiquidGroups } from './liquidgroups.js';
 import { moveIn, edgeSpeed } from './reorder.js';
@@ -714,7 +714,7 @@ const sub = {
     return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Lyrics animation</b><span style="width:44px"></span></div>
     <div class="animdock"><div class="lyr lyprev"><div class="lyprevbody" aria-hidden="true">${sample.map((t, i) => `<p class="ln tap${i === 0 ? ' cur' : ''}" data-li="${i}" style="--d:${Math.min(5, i)}">${t}</p>`).join('')}</div></div>
       <div class="animdock-r"><span>Live preview: it uses your Background style and moves like the real lyrics.</span></div>
-      <div class="animchips"><button class="chip" data-act="lya-preset" data-p="default">Default</button><button class="chip" data-act="lya-preset" data-p="smooth">Smooth</button><button class="chip" data-act="lya-preset" data-p="spotify">Spotify</button><button class="chip" data-act="lya-preset" data-p="snappy">Snappy</button><button class="chip" data-act="lya-preset" data-p="blurry">Blurry</button><button class="chip" data-act="lya-preset" data-p="still">Minimal</button></div></div>
+      <div class="animchips"><button class="chip" data-act="lya-preset" data-p="default">Default</button><button class="chip" data-act="lya-preset" data-p="smooth">Smooth</button><button class="chip" data-act="lya-preset" data-p="snappy">Snappy</button><button class="chip" data-act="lya-preset" data-p="blurry">Blurry</button><button class="chip" data-act="lya-preset" data-p="still">Minimal</button></div></div>
     <div class="setcard">${LYA_DEFS.map(d => `<div class="animrow"><b>${d.label}<em data-lyv="${d.k}">${Math.round(set.lyAnim[d.k])}%</em></b><input type="range" data-lyk="${d.k}" min="${d.min}" max="${d.max}" step="1" value="${set.lyAnim[d.k]}" aria-label="${d.label}"><span style="display:block;color:var(--text-2);font-size:0.8125rem;margin-top:2px">${d.hint}</span></div>`).join('')}</div>`;
   },
   settings: () => {
@@ -952,6 +952,8 @@ function refreshProfileBg() {
   if (bgSaved()) { bgQuick = false; restoreBg(); }
   if (pfSaved()) { pfQuick = false; restorePf().then(() => repaintAll()); }
 }
+/* v213: Refresh art shows the sucking-in animation (CSS class on <html>, removed after the reload has had time to paint) */
+function pulsePics() { const hr = document.documentElement; hr.classList.remove('pics-refreshing'); void hr.offsetWidth; hr.classList.add('pics-refreshing'); clearTimeout(pulsePics.t); pulsePics.t = setTimeout(() => hr.classList.remove('pics-refreshing'), 900); }
 function refreshAllPics() {
   for (const m of [alpUrls, spUrls, ppUrl]) { for (const u of m.values()) { try { URL.revokeObjectURL(u); } catch {} unwarm(u); } m.clear(); }
   for (const o of [agUrls, gpUrls]) for (const k of Object.keys(o)) { try { URL.revokeObjectURL(o[k]); } catch {} unwarm(o[k]); delete o[k]; }
@@ -2353,8 +2355,7 @@ function lyCenter(el, smooth, body = $('#lyrbody')) {   // scrolls ONLY the lyri
   const moved = body.scrollTop - prev; if (!moved) return;
   win.forEach(([n], j) => { n.style.transition = 'none'; n.style.setProperty('--td', '0ms'); n.style.setProperty('--ty', (moved + inflight[j]).toFixed(1) + 'px'); });
   void body.offsetHeight;   // the start position must be drawn once before the glide is released
-  const gap = lyStaggerMs(set.lyAnim);   // line-by-line ripple: the playing line and the ones above go first, every line below it waits a little longer than the one before (max 8 lines)
-  win.forEach(([n, k]) => { n.style.transition = ''; n.style.setProperty('--td', (gap * Math.max(0, Math.min(8, k - i))).toFixed(0) + 'ms'); n.style.setProperty('--ty', '0px'); });
+  win.forEach(([n, k]) => { n.style.transition = ''; n.style.setProperty('--td', '0ms'); n.style.setProperty('--ty', '0px'); });
   lyMoved = win.map(([n]) => n);
 }
 /* v148+: VIVID cover colours (Apple Music look). The old code averaged the whole picture and darkened it until it went dull. Now: the strongest hue of the cover is found (grey / near-black / near-white pixels are ignored), kept at high saturation and only darkened as far as white lyrics still read.
@@ -2428,42 +2429,25 @@ async function tintPixels(S) {
   return tintImagePx(S.src, S.custom);
 }
 function tintFromPixels(d) {
-  // v213: a real colour reading of the cover: up to 4 different colour families (main, second, third, plus the deep dark tone), not one hue
-  const n = d.length / 4, cnt = new Float64Array(4096), sR = new Float64Array(4096), sG = new Float64Array(4096), sB = new Float64Array(4096);
-  let sr = 0, sg = 0, sb = 0, ch = 0, dkN = 0, dr = 0, dg = 0, db = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2]; sr += r; sg += g; sb += b;
-    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 510, c = (mx - mn) / 255;
-    if (l < .16) { dkN++; dr += r; dg += g; db += b; }   // the dark / black part of the picture (its own tone, e.g. a red-black)
-    if (l > .93 || c < .1) continue;   // white, grey and near black carry no colour family
-    if (c >= .12) ch++;
-    const q = (r >> 4) << 8 | (g >> 4) << 4 | (b >> 4); cnt[q]++; sR[q] += r; sG[q] += g; sB[q] += b;
-  }
-  if (ch < .04 * n) return exactPal(rgbHex(sr / n, sg / n, sb / n));   // a grey / black cover: keeps the cover's own hue (deep green stays green); a truly colourless cover still gets the neutral graphite
-  const bins = [];
-  for (let q = 0; q < 4096; q++) { if (!cnt[q]) continue; const r = sR[q] / cnt[q], g = sG[q] / cnt[q], b = sB[q] / cnt[q], mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 510, c = (mx - mn) / 255;
-    bins.push({ r, g, b, n: cnt[q], w: cnt[q] * Math.pow(c, 1.6) * (l < .2 ? .5 : l > .8 ? .4 : 1), used: false }); }   // weight = how many pixels x how colourful (a brown skin counts, a dull grey does not)
-  const cl = [], dist = (a, b) => Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
-  while (cl.length < 5) {
-    let top = null; for (const x of bins) if (!x.used && (!top || x.w > top.w)) top = x;
-    if (!top) break;
-    let w = 0, n2 = 0, r = 0, g = 0, b = 0;
-    for (const x of bins) if (!x.used && dist(x, top) < 48) { x.used = true; w += x.w; n2 += x.n; r += x.r * x.w; g += x.g * x.w; b += x.b * x.w; }   // every shade near it joins this family
-    cl.push({ w, n: n2, r: r / w, g: g / w, b: b / w });
-  }
-  let keep = cl.filter(x => x.w >= .05 * cl[0].w && x.n >= .008 * n).slice(0, 4);
-  if (keep.length > 2) keep = [keep[0], ...keep.slice(1).sort((x, y) => y.w * Math.min(1, dist(y, keep[0]) / 110) - x.w * Math.min(1, dist(x, keep[0]) / 110))];   // the 2nd / 3rd colours are the ones that look most different from the main one (red, then skin, then a deep maroon), not 3 shades of red
-  const lim = x => { const lum = .299 * x.r + .587 * x.g + .114 * x.b, mx = Math.max(x.r, x.g, x.b), f = lum > 150 ? 150 / lum : mx < 140 ? Math.min(1.5, 140 / mx) : 1; return rgbHex(x.r * f, x.g * f, x.b * f); };   // white text stays readable: a very light colour (skin, cream) is only lowered, a murky one lifted a little, never changed in hue
-  const hexes = keep.map(lim);
-  const dark = dkN > .08 * n ? rgbHex(Math.max(8, dr / dkN), Math.max(6, dg / dkN), Math.max(6, db / dkN)) : null;   // black part of the cover (a red-black stays red-black)
-  const p = exactPal(hexes[0], hexes[1] || mixHex(hexes[0], '#ffffff', .08));
-  p.c = dark ? mixHex(dark, hexes[0], .12) : hexes[2] ? mixHex(hexes[2], '#000000', .45) : mixHex(hexes[0], '#000000', .55);
-  p.d = hexes[2] || hexes[1] || mixHex(hexes[0], '#000000', .3);   // the third colour (a fourth glow in the background)
-  p.e = hexes[3] || hexes[2] || hexes[1] || hexes[0];
-  if (dkN / n > .25) { p.k = mixHex(dark || '#050505', hexes[0], .06); p.kf = +Math.min(.85, dkN / n).toFixed(2); }   // v214: a mostly black cover keeps its black: the background base is that black, the colours glow over it
-  p.sw = [];   // the colours of this cover the person can pick for the lyrics (strongest first, each a different family; black when much of the picture is black)
-  keep.forEach((x, i) => { const [h, s] = rgb2hsl(x.r, x.g, x.b); p.sw.push({ k: i, h: Math.round(h), s: +s.toFixed(2), hex: hexes[i] }); });
-  if (dkN / n > .1) p.sw.push({ n: 1, hex: p.c });
+  const BN = 24, bw = new Array(BN).fill(0), bs = new Array(BN).fill(0), bx = new Array(BN).fill(0), by = new Array(BN).fill(0); let tot = 0, aL = 0, cnt = 0, dk = 0, sr = 0, sg = 0, sb = 0; const er = new Array(BN).fill(0), eg = new Array(BN).fill(0), eb = new Array(BN).fill(0), en = new Array(BN).fill(0); const SB = 30, qw = new Array(SB).fill(0), qs = new Array(SB).fill(0), qx = new Array(SB).fill(0), qy = new Array(SB).fill(0);
+  for (let i = 0; i < d.length; i += 4) { const [h, sa, l] = rgb2hsl(d[i], d[i + 1], d[i + 2]); aL += l; cnt++; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; if (l < .12) dk++;
+    if (sa >= .15 && l >= .1 && l <= .93) { const w2 = (.35 + sa) * (1 - Math.abs(l - .5)), q = Math.floor(h / 12) % SB; qw[q] += w2; qs[q] += w2 * sa; qx[q] += w2 * Math.cos(h * Math.PI / 180); qy[q] += w2 * Math.sin(h * Math.PI / 180); }   // the picker sees quieter colours too (brown skin, a dull green)
+    if (sa < .2 || l < .1 || l > .93) continue;   // grey, near black and near white say nothing about the colour
+    const w = sa * sa * (1 - Math.abs(l - .5)), k = Math.floor(h / 15) % BN; er[k] += d[i]; eg[k] += d[i + 1]; eb[k] += d[i + 2]; en[k]++; bw[k] += w; bs[k] += w * sa; bx[k] += w * Math.cos(h * Math.PI / 180); by[k] += w * Math.sin(h * Math.PI / 180); tot += w; }
+  const hueOf = k => (Math.atan2(by[k], bx[k]) * 180 / Math.PI + 360) % 360;
+  const sm = k => bw[k] + .6 * (bw[(k + 1) % BN] + bw[(k + BN - 1) % BN]);   // a hue and its neighbours count together
+  let k1 = 0; for (let k = 1; k < BN; k++) if (sm(k) > sm(k1)) k1 = k;
+  if (!tot || sm(k1) < 1.2 * (d.length / 4096) || tot / cnt < .03) { return exactPal(rgbHex(sr / cnt, sg / cnt, sb / cnt)); }   // a grey / black cover: keeps the cover's own hue (Kiss Land = deep green, not a cold blue-grey); a truly colourless cover still gets the neutral graphite
+  const h1 = hueOf(k1), s1 = bs[k1] / (bw[k1] || 1);
+  let k2 = -1; for (let k = 0; k < BN; k++) { const dist = Math.min((k - k1 + BN) % BN, (k1 - k + BN) % BN); if (dist >= 3 && bw[k] > .22 * bw[k1] && (k2 < 0 || bw[k] > bw[k2])) k2 = k; }
+  const avgOf = k => { let r = 0, g = 0, b = 0, n = 0; for (const j of [k, (k + 1) % BN, (k + BN - 1) % BN]) { r += er[j]; g += eg[j]; b += eb[j]; n += en[j]; } return n ? rgbHex(r / n, g / n, b / n) : null; };
+  const p = exactPal(avgOf(k1) || palFrom(h1, s1, false, 0).a);
+  if (k2 >= 0) { const x2 = avgOf(k2); if (x2) p.b = x2; }   // the cover's own second colour
+  p.sw = [];   // the colours of this cover the person can pick for the lyrics (strongest first, each a different hue; black when much of the picture is black)
+  const qsm = k => qw[k], qorder = qw.map((_, k) => k).sort((x, y) => qsm(y) - qsm(x)), qtop = qsm(qorder[0]) || 1;
+  for (const k of qorder) { if (p.sw.length >= 6 || qsm(k) < .1 * qtop || !qw[k]) break; if (p.sw.some(w => Math.min(Math.abs(w.k - k), SB - Math.abs(w.k - k)) < 2)) continue; p.sw.push({ k, h: Math.round((Math.atan2(qy[k], qx[k]) * 180 / Math.PI + 360) % 360), s: +(qs[k] / qw[k]).toFixed(2) }); }
+  if (dk / cnt > .1) p.sw.push({ n: 1 });
+  p.sw.forEach(w => { w.hex = w.n ? palFrom(225, 0, true, .2).a : palFrom(w.h, w.s, false, 0, .45, 1.15).a; });
   return p;
 }
 function coverTint(a, t) {
@@ -2482,9 +2466,9 @@ const lycMap = () => { try { return JSON.parse(localStorage.getItem('lf.lycol'))
 const lycSave = (ck, o) => { try { const m = lycMap(); if (o) m[ck] = o; else delete m[ck]; localStorage.setItem('lf.lycol', JSON.stringify(m)); } catch {} };
 async function coverPal(t) {
   const p = await coverTint(trackAlbum(t), t), o = lycMap()[p.ck];
-  if (o?.hex && /^#[0-9a-f]{6}$/i.test(o.hex)) return { ...p, ...exactPal(o.hex), k: null };   // the picked colour is used exactly
+  if (o?.hex && /^#[0-9a-f]{6}$/i.test(o.hex)) return { ...p, ...exactPal(o.hex) };   // the picked colour is used exactly
   if (!o || !(o.n || Number.isFinite(o.h))) return p;
-  return { ...p, k: null, ...(o.n ? palFrom(225, 0, true, o.n === 2 ? .5 : .2) : palFrom(+o.h, Number.isFinite(+o.s) ? +o.s : .9, false, 0, .45, 1.15)) };
+  return { ...p, ...(o.n ? palFrom(225, 0, true, o.n === 2 ? .5 : .2) : palFrom(+o.h, Number.isFinite(+o.s) ? +o.s : .9, false, 0, .45, 1.15)) };
 }
 // v208: hex colour picker (a circle). Auto = the app's own cover colour. No preset palette and no "no strong colours" text.
 function hexHS(hex) {
@@ -2565,8 +2549,8 @@ document.addEventListener('input', e => {
     if (ok) lycSetHex(e.target.value);
   }
 });
-function setTintVars(el, p, k) { if (!el || !p) return; el.style.setProperty(k, p.a); el.style.setProperty(k + '2', p.b); el.style.setProperty(k + '3', p.c); if (p.d) el.style.setProperty(k + '4', p.d); else el.style.removeProperty(k + '4'); if (p.k) { el.style.setProperty(k + '5', p.k); el.style.setProperty(k + 'k', p.kf); } else { el.style.removeProperty(k + '5'); el.style.removeProperty(k + 'k'); } }
-function clearTintVars(el, k) { if (!el) return; for (const n of [k, k + '2', k + '3', k + '4', k + '5', k + 'k']) el.style.removeProperty(n); }
+function setTintVars(el, p, k) { if (!el || !p) return; el.style.setProperty(k, p.a); el.style.setProperty(k + '2', p.b); el.style.setProperty(k + '3', p.c); }
+function clearTintVars(el, k) { if (!el) return; for (const n of [k, k + '2', k + '3']) el.style.removeProperty(n); }
 function lyStyleSheet() {
   $('#sheet').innerHTML = sheetHtml(`<b>Background style</b><p>Changes the lyrics page. (Now Playing takes the cover colour only with Immersive album cover.)</p>${Object.entries(LYSTYLE).map(([v, t]) => `<button class="row" data-act="lystyleset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === set.lyricStyle ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<div class="actions"><button data-act="sheet-close">Close</button></div>`);
 }
@@ -2596,40 +2580,19 @@ async function lyricsLoad() {
   lyr = parseLrc(text);
   const body = $('#lyrbody'); if (!body) return;
   if (!lyr.lines.length) { body.innerHTML = lyFail ? '<div class="empty">Could not read the lyrics for this song.</div>' : '<div class="empty">No lyrics for this song.</div>'; return; }
-  const sweepOn = (set.lyAnim && set.lyAnim.sweep) > 0;
-  if (lyr.synced && sweepOn) sweepSpans(lyr.lines);
   body.innerHTML = lyr.lines.map((l, i) => {
-    const inner = sweepOn && l.sw ? (l.words ? l.sw.map(w => `<span class="w sw">${E(w.w)}</span>`).join('') : l.sw.map(w => `<span class="w sw">${E(w.w)}</span>`).join(' '))
-      : l.words ? l.words.map(w => `<span class="w">${E(w.w)}</span>`).join('') : E(l.text);
+    const inner = l.words ? l.words.map(w => `<span class="w">${E(w.w)}</span>`).join('') : E(l.text);
     return l.t != null && lyr.synced ? `<p class="ln tap" role="button" tabindex="0" data-li="${i}" data-act="lyr-seek">${inner}</p>` : `<p class="ln" data-li="${i}">${inner}</p>`;
   }).join('');
   syncLyrics(lyNow()); lyStart();
 }
-/* v212: Word sweep (Apple Music style). Every synced line gets a start and end time per word: real word stamps when the file has them, otherwise the line's time is shared between its words by length. The sung part of the current line fills in left to right. */
-function sweepSpans(lines) {
-  const nextT = i => { for (let j = i + 1; j < lines.length; j++) if (lines[j].t != null) return lines[j].t; return null; };
-  lines.forEach((l, i) => {
-    if (l.t == null) return;
-    const end = nextT(i), lineEnd = Math.min(end != null ? end : l.t + 3, l.t + 6);
-    if (l.words && l.words.length) {
-      l.sw = l.words.map((w, k) => { const t0 = w.t; let t1 = k + 1 < l.words.length ? l.words[k + 1].t : lineEnd; if (!(t1 > t0)) t1 = t0 + .2; return { t0, t1, w: w.w }; });
-      return;
-    }
-    const words = String(l.text || '').split(/\s+/).filter(Boolean);
-    if (!words.length) return;
-    const total = words.reduce((a, w) => a + w.length, 0), dur = Math.max(.4, lineEnd - l.t);
-    let acc = 0;
-    l.sw = words.map(w => { const t0 = l.t + dur * acc / total; acc += w.length; return { t0, t1: l.t + dur * acc / total, w }; });
-  });
-}
 let lyWords = null, lyWd = -1;
-let lyrSweep = null, lyrSweepIdx = -1;
 function syncLyrics(pos) {
   if (!lyr || !lyr.synced || !$('#lyrbody')) return;
-  const i = currentIndex(lyr.lines, pos + (lyr.synced ? lyLeadSec(set.lyAnim) : 0));   // 'Early start': the next line starts gliding a moment before its time stamp
+  const i = currentIndex(lyr.lines, pos);
   if (i !== lyrIdx) {
     const body = $('#lyrbody'), ls = body.children;
-    lyrIdx = i; lyWords = null; lyWd = -1; lyrSweep = null;
+    lyrIdx = i; lyWords = null; lyWd = -1;
     for (let k = 0; k < ls.length; k++) { const n = ls[k]; n.classList.toggle('cur', k === i); n.style.setProperty('--d', Math.min(5, Math.abs(k - i))); }   // --d = distance from the playing line (more distance = softer)
     const el = ls[i];
     if (el) { if (!lyBrowsing()) lyCenter(el, lyrIdx >= 1); }   // the user is scrolling to pick a line: only the highlight moves
@@ -2639,10 +2602,6 @@ function syncLyrics(pos) {
     if (!lyWords) lyWords = document.querySelectorAll(`#lyrbody [data-li="${lyrIdx}"] .w`);
     let c = 0; while (c < line.words.length && pos >= line.words[c].t) c++;
     if (c !== lyWd) { lyWd = c; lyWords.forEach((n, k) => n.classList.toggle('wd', k < c)); }
-  }
-  if (line && line.sw && (set.lyAnim && set.lyAnim.sweep) > 0) {   // v212: word sweep, fills each word by its own time, every frame
-    if (!lyrSweep) lyrSweep = document.querySelectorAll(`#lyrbody [data-li="${lyrIdx}"] .w.sw`);
-    lyrSweep.forEach((n, k) => { const sw = line.sw[k]; if (!sw) return; const f = (pos - sw.t0) / (sw.t1 - sw.t0); n.style.setProperty('--pp', Math.max(-6, Math.min(100, -6 + f * 106)).toFixed(1)); });
   }
 }
 // a finger / wheel on the list = the user is browsing: stop following until they ask for it (no timer, nothing pulls the list back)
@@ -2660,7 +2619,6 @@ function lyricsAction(act, d) {
   return true;
 }
 on('onProgress', e => { if ($('#lyr')?.classList.contains('open') && !lyRaf) syncLyrics(e.pos); });
-document.addEventListener('change', e => { if (e.target && e.target.dataset && e.target.dataset.lyk === 'sweep' && $('#lyr')?.classList.contains('open')) lyricsLoad(); });   // v212: sweep on/off needs the lines built again
 on('onTrackChanged', () => { if ($('#lyr')?.classList.contains('open') && Native.current()?.id !== lyrTid) lyricsLoad(); });
 
 /* v210: cover shortcuts. Three gestures on Now Playing (tap, press and hold, double tap), each with its own action. Defaults: tap = full-screen cover, hold = lyrics, double tap = album. Settings > Shortcuts. */
@@ -2690,7 +2648,7 @@ on('onTrackChanged', () => { const v = $('#cvv'); if (v && v.dataset.np === '1' 
     const art = e.target.closest && e.target.closest(ART); if (!art || (e.button || 0) > 0 || $('#cvv') || e.isPrimary === false) return;
     stop();   // BUG-16: a new touch cancels the old long-press timer
     g = { x: e.clientX, y: e.clientY, long: false, moved: false, t: 0, pid: e.pointerId };   // BUG-096: remember the finger
-    if (art.closest('.np') && gestAct('long') !== 'none') g.t = setTimeout(() => { if (!g) return; g.long = true; try { navigator.vibrate && navigator.vibrate(18); } catch {} try { window.getSelection && window.getSelection().removeAllRanges(); } catch {} runGest(gestAct('long'), art); }, 450);
+    if (art.closest('.np') && gestAct('long') !== 'none') g.t = setTimeout(() => { if (!g) return; g.long = true; try { navigator.vibrate && navigator.vibrate(18); } catch {} runGest(gestAct('long'), art); }, 450);
   });
   /* v209: double tap on Now Playing opens the album of the song that is playing. The first tap waits 300 ms; a second tap in that time opens the album instead. Settings > Cover shortcuts > Double tap the cover. */
   let npTap = null;
@@ -2712,13 +2670,6 @@ on('onTrackChanged', () => { const v = $('#cvv'); if (v && v.dataset.np === '1' 
   document.addEventListener('pointerup', e => { if (!g || e.pointerId !== g.pid) return; const k = g; stop(); if (k.long || k.moved) return; const art = e.target.closest && e.target.closest(ART); if (art) tapCover(art); });
   document.addEventListener('pointercancel', stop);
   document.addEventListener('contextmenu', e => { if (e.target.closest && (e.target.closest(ART) || e.target.closest('.acard, .gtile, .grow[data-act="genre"]'))) e.preventDefault(); });   // BUG-278: genre tiles and rows too
-  /* v208-fix2: while a finger is on the cover, selection is switched off on the whole page, only for that press. The phone's Copy / Select All bar can then not start from anything under the cover. Lyrics keep their normal long-press copy because the class is removed when the finger lifts. */
-  const pressOff = () => { document.documentElement.classList.remove('cover-press'); try { const s = window.getSelection && window.getSelection(); if (s && s.rangeCount) s.removeAllRanges(); } catch {} };
-  document.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest(ART)) { document.documentElement.classList.add('cover-press'); pressOff.arm = true; } }, true);
-  document.addEventListener('pointerup', () => { if (pressOff.arm) { pressOff.arm = false; pressOff(); } }, true);
-  document.addEventListener('pointercancel', () => { if (pressOff.arm) { pressOff.arm = false; pressOff(); } }, true);
-  document.addEventListener('touchstart', e => { if (e.target.closest && e.target.closest(ART)) e.preventDefault(); }, { passive: false });
-  document.addEventListener('selectstart', e => { if (e.target.closest && e.target.closest(ART)) e.preventDefault(); }, true);
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.np .art')) { e.preventDefault(); show(e.target); } });
 }
 
@@ -3105,7 +3056,7 @@ document.addEventListener('click', e => {
     case 'pickfolder': if (scanning) { toast('A scan is running. Try again in a moment.'); break; }   // T18: a running scan would write the OLD folder back into the cache
       Native.pickFolder().then(() => loadLib(true)).catch(() => {}); break;
     case 'rescan': loadLib(true); break;
-    case 'refresh-art': if (scanning) { toast('A scan is running. Try again in a moment.'); break; } refreshAllPics(); loadLib(true, true); break;   // BUG-332: pictures and GIFs reloaded, folder art re-checked
+    case 'refresh-art': if (scanning) { toast('A scan is running. Try again in a moment.'); break; } pulsePics(); refreshAllPics(); loadLib(true, true); break;   // v213: sucking-in animation while the pictures reload   // BUG-332: pictures and GIFs reloaded, folder art re-checked
     case 'copylog': copyLog(); break;
     case 'log-close': closeSheet(); break;
     case 'stub': toast(d.msg || 'Not built yet'); break;
@@ -3153,7 +3104,7 @@ document.addEventListener('keydown', e => {   // keyboard / TalkBack control of 
 
 /* edge-to-edge (v53): MainActivity draws the app under the status + navigation bar and tells us how tall they are */
 if (Native.isNative) {
-  const put = o => { if (!o) return; const st = document.documentElement.style; st.setProperty('--sat', (+o.top || 0) + 'px'); st.setProperty('--sab', (+o.bottom || 0) + 'px'); st.setProperty('--sal', (+o.left || 0) + 'px'); st.setProperty('--sar', (+o.right || 0) + 'px'); };
+  const put = o => { if (!o) return; const st = document.documentElement.style; st.setProperty('--sat', (+o.top || 0) + 'px'); st.setProperty('--sab', (+o.bottom || 0) + 'px'); };
   const ask = () => Native.insets().then(put).catch(() => {});
   ask(); [400, 1500, 4000].forEach(ms => setTimeout(ask, ms)); { let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(ask, 120); }); }   /* BUG-17: one native insets call after the resize burst */ window.addEventListener('lf-insets', e => put(e.detail));
 }

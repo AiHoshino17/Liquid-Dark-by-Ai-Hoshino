@@ -1,34 +1,11 @@
 
 > **VERSION RULE (owner's order): do NOT change the version number (it is 0.208.0, set by the owner on 2026-11-12) in `package.json`, `package-lock.json`, docs or anywhere else, and do not add a "bump" to any entry. Only the owner decides when to bump it, by telling you. Every AI that edits this project must keep it as it is.**
 
-## Word sweep lyrics (Apple Music style)
-The line being sung now fills in word by word, left to right, like Apple Music. Turn it off with Settings > Lyrics > Lyrics animation > Word sweep = 0.
-
-## Long press on the cover no longer shows Copy / Select All
-Pressing and holding the album cover to reach the lyrics no longer pops up the phone's Copy / Select All bar. The lyrics shortcut works as before.
-
-## Smoother lyrics glide, plus new lyric animation options
-- Lyrics now glide like Apple Music and Spotify: no popping or forceful push, lines slide and fade softly and never overshoot. Lines below the playing one follow with a small ripple.
-- New sliders in Settings > Lyrics > Lyrics animation: Line-by-line ripple, Glide softness, Early start, Space between lines, Background motion. New Spotify preset; Smooth, Snappy and Minimal presets updated.
-- The soft light behind lyrics (Album cover colour style) moves more slowly and can be switched off with Background motion = 0.
-
-## Landscape popups and Now Playing fixes
-Popups no longer get cut off in landscape, Now Playing fits narrow and short screens, and the close strip is easier to tap.
-
 
 **How to read this file:** the newest entries are at the TOP (everything down to the v131 entry is newest first). The older entries lower down are only roughly ordered, and the v149-v156 entries at the very bottom were appended later, so they are NOT in date order: use the version number in each heading, not the position. No entry is marked "(this version)"; the current version is 0.208.0.
 
 > **HISTORICAL FILE REFERENCES:** these files are named in the entries but are NOT in this ZIP (removed or never shipped): `native-android/PlayCounter.java` (STALE, plays are counted by `ListenTracker.java`), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `BUGS.txt`, `OPEN_BUGS.txt`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html` (also written `Liquid_Dark_full_setup_guide.html` in the v134 entry: same guide) and `.github/workflows/android.yml` (copied by hand). Read those mentions as history; do not look for the files.
 
-
-## Auto lyrics / Now Playing colour uses the cover's several colours
-- Auto used to find ONE colour family and then fall back to a dull average, so a dark red, skin and black cover looked generic. It now reads up to 4 colour families of the cover (e.g. red, skin tone, deep maroon) plus the cover's own dark/black tone, and spreads them over the background: main colour, a 2nd and 3rd glow, and the deep bottom. Very light colours are only lowered a little so white text stays readable; murky colours are lifted a little.
-- Your own picked colour (hex / wheel) and Back to Auto work as before.
-
-## Turn your phone sideways: landscape mode
-- The app no longer stays locked to portrait. When Auto-rotate is on, turning the phone sideways re-fits every screen: Now Playing shows the cover on the left and the controls on the right, the glass tab bar and the playing bar sit side by side in one short row, and every page keeps clear of the camera cut-out and the navigation bar on the left and right.
-- Turning the phone does not restart anything: the music, the open screen and your scroll position stay as they are.
-- Portrait looks exactly as before.
 
 ## Accessibility card screenshots show the new phone screenshots
 
@@ -1027,6 +1004,3 @@ Edge-to-edge layout, solid black sheets, liquid-glass tab bar lens. See `docs/HA
 - Pictures + grouping, second pass: the logic now lives in one small module `src/artistpics.js` (`picNames`, `picKey`, `picDrop`) used by main.js (`apicNames`, `apicKey`, `apicGone`, `apicDropOthers`). Setting / replacing / removing an artist photo or GIF deletes the stored picture of every other merged spelling by key (marker AND stored bytes in IndexedDB + the file copy, even if the list had lost the marker, so the start-up file restore cannot bring it back). Home pins show the artist under its current name; an artist added to a Home custom section under two spellings shows once. Checked and unchanged: album / playlist / genre / profile / background pictures (keyed by id or genre name, not by artist), the stats and recap (original covers only), start-up picture restore. Tests: `tests/smartartists.test.mjs` (363 / 363).
 
 - Red "Scroll down ↓" hint on every scrolling card, sheet, list and page (new src/scrollhint.js, src/assist.js, src/main.js; no version change).
-
-## Lyrics background keeps the black of dark covers
-Covers that are mostly black (e.g. Echoes of Silence) now give a black-based lyrics background with the red and skin tones glowing strongly over it.

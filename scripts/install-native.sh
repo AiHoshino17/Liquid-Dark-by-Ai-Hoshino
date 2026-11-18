@@ -62,22 +62,10 @@ missing = [n for n in ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK'
 if missing:
     s = s.replace('</manifest>', ''.join('<uses-permission android:name="android.permission.%s"/>\n    ' % n for n in missing) + '</manifest>', 1); open(m, 'w').write(s)
 
-# v209: the app now rotates. screenOrientation="fullUser" follows the phone's Auto-rotate switch (portrait <-> landscape, either way up).
-# configChanges keeps the activity alive while it turns (no restart, so playback, the open screen and scroll positions stay as they are);
-# the web view just resizes and the CSS landscape rules + the left/right insets (MainActivity) re-fit everything. Idempotent: an older "portrait" lock is replaced.
+# BUG-223: the app is portrait-only (its layout and the system-bar insets are made for portrait)
 m = 'android/app/src/main/AndroidManifest.xml'; s = open(m).read()
-if 'android:name=".MainActivity"' in s:
-    if 'screenOrientation' in s:
-        s = re.sub(r'android:screenOrientation="[^"]*"', 'android:screenOrientation="fullUser"', s, count=1)
-    else:
-        s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:screenOrientation="fullUser"', 1)
-    if 'android:configChanges' not in s:
-        s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode|density|locale"', 1)
-    else:
-        need = ['orientation', 'screenSize', 'smallestScreenSize', 'screenLayout']
-        cc = re.search(r'android:configChanges="([^"]*)"', s).group(1).split('|')
-        s = re.sub(r'android:configChanges="[^"]*"', 'android:configChanges="%s"' % '|'.join(cc + [n for n in need if n not in cc]), s, count=1)
-    open(m, 'w').write(s)
+if 'screenOrientation' not in s and 'android:name=".MainActivity"' in s:
+    s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:screenOrientation="portrait"', 1); open(m, 'w').write(s)
 
 # v119 part 2: an earphone button pressed while the app is closed. The system hands the key to this receiver, which starts PlaybackService (which then
 # puts the last queue back from resume.json). Idempotent.

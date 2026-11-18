@@ -10,6 +10,7 @@ export const FORMATS = [
   { id: 'm3u8', label: 'M3U8 playlist (.m3u8)', note: 'Works in VLC, Poweramp, foobar2000, Apple Music (Mac), most players. Several playlists = one .zip.', ext: 'm3u8', mime: 'audio/x-mpegurl' },
   { id: 'xspf', label: 'XSPF playlist (.xspf)', note: 'Open standard (VLC, Strawberry, Clementine). Several playlists = one .zip.', ext: 'xspf', mime: 'application/xspf+xml' },
   { id: 'csv', label: 'CSV spreadsheet (.csv)', note: 'Title, artist, album per row. For Soundiiz, TuneMyMusic-style converters and Spotify / Apple Music / YouTube Music transfers.', ext: 'csv', mime: 'text/csv' },
+  { id: 'exportify', label: 'Spotify / Exportify CSV (.csv)', note: 'The same column layout Exportify writes (Track URI, Track Name, Album Name, Artist Name(s), Duration (ms) ...), one .csv per playlist. Several playlists = one .zip. Imports back into this app.', ext: 'csv', mime: 'text/csv' },
 ];
 
 /* ---------- export ---------- */
@@ -49,9 +50,20 @@ export function toCsv(pls) {
   return csvText(rows);
 }
 /** -> { name, mime, text } for one file, or { name, mime:'application/zip', files:[{name,text}] } when m3u8 / xspf has several playlists. */
+/* v213: the exact header Exportify writes (the Spotify playlist CSV). Columns the app does not know stay empty. */
+export const EXPORTIFY_COLS = ['Track URI', 'ISRC', 'Track Name', 'Album Name', 'Artist Name(s)', 'Release Date', 'Duration (ms)', 'Popularity', 'Explicit', 'Added By', 'Added At', 'Genres', 'Record Label', 'Danceability', 'Energy', 'Key', 'Loudness', 'Mode', 'Speechiness', 'Acousticness', 'Instrumentalness', 'Liveness', 'Valence', 'Tempo', 'Time Signature'];
+export function toExportify(p) {
+  const val = (c, s) => c === 'Track Name' ? s.title : c === 'Album Name' ? s.album : c === 'Artist Name(s)' ? s.artist : c === 'Duration (ms)' ? (s.dur ? s.dur * 1000 : '') : '';
+  return '\uFEFF' + csvText([EXPORTIFY_COLS].concat(p.songs.map(s => EXPORTIFY_COLS.map(c => val(c, s)))));
+}
 export function buildFiles(fmt, pls, now = new Date()) {
   const f = FORMATS.find(x => x.id === fmt); if (!f) throw new Error('Unknown format');
   const d = stamp(now);
+  if (fmt === 'exportify') {
+    if (pls.length === 1) return { name: safeName(pls[0].name, 'playlist') + '.csv', mime: f.mime, text: toExportify(pls[0]) };
+    const names = uniqueNames(pls.map(p => safeName(p.name, 'playlist') + '.csv'));
+    return { name: `liquid-dark-playlists-exportify-${d}.zip`, mime: 'application/zip', files: pls.map((p, i) => ({ name: names[i], text: toExportify(p) })) };
+  }
   if (fmt === 'csv') return { name: `liquid-dark-playlists-${d}.csv`, mime: f.mime, text: toCsv(pls) };
   const conv = fmt === 'm3u8' ? toM3u8 : toXspf;
   if (pls.length === 1) return { name: safeName(pls[0].name, 'playlist') + '.' + f.ext, mime: f.mime, text: conv(pls[0]) };
