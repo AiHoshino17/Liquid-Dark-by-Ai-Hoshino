@@ -22,8 +22,12 @@ for n in ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'FOREGROUND
 for k, label in [('.PlaybackService', 'PlaybackService service'), ('MediaButtonReceiver', 'MediaButtonReceiver'), ('<queries>', 'queries block'),
                  ('.LiquidWidget', 'LiquidWidget receiver'), ('.NowPlayingWidget', 'NowPlayingWidget receiver'), ('.UpdateDownloadService', 'UpdateDownloadService'),
                  ('.UpdateInstallActivity', 'UpdateInstallActivity'), ('androidx.core.content.FileProvider', 'FileProvider'), ('@xml/file_paths', 'FileProvider paths'),
-                 ('android:screenOrientation="fullUser"', 'rotation allowed (fullUser)'), ('orientation|screenSize', 'configChanges for a turn'), ('android:largeHeap', 'largeHeap'), ('android:hardwareAccelerated', 'hardwareAccelerated')]:
+                 ('android:screenOrientation="fullUser"', 'rotation allowed (fullUser)'), ('android:largeHeap', 'largeHeap'), ('android:hardwareAccelerated', 'hardwareAccelerated')]:
     if k not in man: bad.append('manifest: %s' % label)
+# BUG-281: check the MainActivity configChanges by its tokens (any order), not by one literal text: Capacitor's template writes its own list
+_am = re.search(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>', man)
+_cc = re.search(r'android:configChanges="([^"]*)"', _am.group(0)) if _am else None
+if not _cc or not {'orientation', 'screenSize'} <= set(_cc.group(1).split('|')): bad.append('manifest: configChanges for a turn')
 for n in ['Albums', 'Artists', 'Shuffle', 'Search', 'Favorites', 'Recent', 'Playlists', 'Genres']:
     if '.LiquidTiles$%s"' % n not in man: bad.append('manifest: LiquidTiles$%s receiver' % n)
 for n in ['Day', 'Week', 'Month', 'All', 'Daily']:

@@ -71,6 +71,13 @@ if 'android:name=".MainActivity"' in s:
     mm = re.search(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>', s)
     if mm and 'configChanges' not in mm.group(0):
         s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|locale|layoutDirection"', 1)
+    elif mm:
+        # BUG-281: Capacitor's own template already carries a configChanges list (in its own order). Merge in what we need instead of skipping.
+        cm = re.search(r'android:configChanges="([^"]*)"', mm.group(0))
+        have = cm.group(1).split('|') if cm else []
+        add = [t for t in ['orientation', 'screenSize', 'smallestScreenSize', 'screenLayout', 'keyboard', 'keyboardHidden', 'uiMode', 'locale', 'layoutDirection'] if t not in have]
+        if cm and add:
+            s = s.replace(mm.group(0), mm.group(0).replace(cm.group(0), 'android:configChanges="%s"' % '|'.join(have + add), 1), 1)
 open(m, 'w').write(s)
 
 # v119 part 2: an earphone button pressed while the app is closed. The system hands the key to this receiver, which starts PlaybackService (which then

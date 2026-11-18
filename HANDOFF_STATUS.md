@@ -1205,3 +1205,5 @@ Not tested on a phone / in a browser: 6, 7, 12, 13, 15 and all Java changes (onl
 WHAT: Animation slider maximums x3 (200->600, 150->450, 250->750); GLASS_LIMITS/EDGE_WOBBLE_MAX/MAGNIFY_MAX/lq-amp loosened moderately so extra range works without breaking; pressed tab pill now grows and extends past the bar edges (glidebar.js); toggle knob grow cap 6->9 (liquidui.js).
 FILES: src/animcfg.js, src/glidebar.js, src/liquidui.js, tests/glass-settings-v208.test.mjs.
 DO NOT REDO: keep the limits in GLASS_LIMITS, they stop shaking/zoom at extreme slider values.
+
+- **BUG-281 (build fix, version unchanged):** "Install native plugin" failed with `BUG-280 ... - manifest: configChanges for a turn`. Cause: Capacitor's own template already writes `android:configChanges` (different order), so `install-native.sh` skipped adding ours and `verify-native-patches.py` looked for one literal text. Fix: `install-native.sh` now merges the needed tokens into an existing list; the verifier checks the tokens (any order). Test added in `tests/native-patches-bug280.test.mjs`. FILES: `scripts/install-native.sh`, `scripts/verify-native-patches.py`, `tests/native-patches-bug280.test.mjs`.

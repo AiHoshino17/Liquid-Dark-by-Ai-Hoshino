@@ -43,3 +43,12 @@ test('a project with no manifest at all stops install-native.sh', () => {
   const d = project(); fs.rmSync(path.join(d, 'android/app/src/main/AndroidManifest.xml'));
   assert.notEqual(run(d, 'bash scripts/install-native.sh').status, 0);
 });
+
+// BUG-281: Capacitor's own template already has a configChanges list in its own order (and MainActivity written over several lines): the build must still pass and keep the list
+test('Capacitor template with its own configChanges still passes (BUG-281)', () => {
+  const d = project(), mf = path.join(d, 'android/app/src/main/AndroidManifest.xml');
+  fs.writeFileSync(mf, '<?xml version="1.0"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n<application android:label="x"><activity\n  android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"\n  android:name=".MainActivity"\n  android:exported="true"/></application>\n</manifest>\n');
+  const r = run(d, 'bash scripts/install-native.sh'); assert.equal(r.status, 0, r.stderr); assert.match(r.stdout, /patches verified/);
+  const out = fs.readFileSync(mf, 'utf8'); assert.match(out, /configChanges="[^"]*layoutDirection[^"]*"/); assert.match(out, /navigation\|density/);
+  assert.equal((out.match(/android:configChanges=/g) || []).length, 1);
+});
