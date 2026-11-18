@@ -214,7 +214,7 @@ export function planForeign(imported, tracks, artistAlbumOf, existingNames, exis
   let matched = 0, total = 0; const missing = [], already = [], lists = [];
   for (const p of imported) {
     const ids = [], taken = new Set(), miss = [];
-    for (const s of p.songs) { total++; const t = matchForeign(s, idx, taken); if (t) { matched++; ids.push(t.id); taken.add(t.id); } else miss.push({ list: p.name, title: s.title, artist: s.artist }); }
+    for (const s of p.songs) { total++; const t = matchForeign(s, idx, taken); if (t) { matched++; ids.push(t.id); taken.add(t.id); } else miss.push({ list: p.name, title: String(s.title ?? '').trim() || '(no title)', artist: String(s.artist ?? '').trim() }); }
     missing.push(...miss);
     if (!ids.length) continue;   // BUG-303: a list with no matched song is not created as an empty playlist
     if ((sameName.get(norm(p.name)) || []).some(x => sameIds(x, ids))) { already.push({ name: p.name, count: ids.length }); continue; }

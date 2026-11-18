@@ -7,6 +7,18 @@
 > **HISTORICAL FILE REFERENCES:** these files are named in the entries but are NOT in this ZIP (removed or never shipped): `native-android/PlayCounter.java` (STALE, plays are counted by `ListenTracker.java`), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `BUGS.txt`, `OPEN_BUGS.txt`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html` (also written `Liquid_Dark_full_setup_guide.html` in the v134 entry: same guide) and `.github/workflows/android.yml` (copied by hand). Read those mentions as history; do not look for the files.
 
 
+## Refresh art works with thousands of pictures
+
+Refresh art now loads your saved pictures in small batches and keeps waiting while they are still coming back (it shows how many are loaded), so very large collections (10,000 and more) reload fully. The fly-in animation still takes only a few seconds and its counter shows the real total.
+
+## Refresh art shows every picture and GIF flying in, with a count
+
+While Refresh art runs, it first reloads all your pictures and GIFs, then shows them (the new ones, never the old) being sucked into the glowing core in waves (up to 600 tiles; with more, the counter still counts the real total), with a counter such as "515 of 515 pictures and GIFs". Every place counts: each song (the same album GIF counts again for each song), albums, artists, genres, playlists, your profile picture, your background and Canvas.
+
+## Refresh art reloads Canvas and waits until your pictures are back
+
+Settings > Refresh art now also reloads your Canvas videos and GIFs, and only says "Refresh finished" once your saved pictures and GIFs are really back (it shows how many were reloaded). It still covers songs, albums, artists, genres, playlists, your profile picture and your background. The library scan and the owner's pictures (logo, splash, banner, popups) are not changed.
+
 ## Accessibility card screenshots show the new phone screenshots
 
 The Accessibility instruction cards now use the owner's new phone screenshots, with the red boxes, circles, arrows and labels drawn again. The app logo in them is the current one.

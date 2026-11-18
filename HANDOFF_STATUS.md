@@ -6,12 +6,63 @@
 > **VERSION RULE (owner's order): do NOT change the version number (it is 0.208.0, set by the owner on 2026-11-12) in `package.json`, `package-lock.json`, docs or anywhere else, and do not add a "bump" to any entry. Only the owner decides when to bump it, by telling you. Every AI that edits this project must keep it as it is.**
 
 
+## Refresh art for 10,000+ pictures (no version change, still 0.208.0)
+- **WHAT:** `restorePics` reads the saved pictures 64 at a time (was: all keys at once). `refreshExtraArt` keeps waiting while pictures keep arriving (gives up after 6 s with no new picture, 120 s at most) and shows "N pictures and GIFs loaded…". The animation is capped at 600 flown tiles (about 6 s) and the counter runs to the real total (tested with 20,000 stand-in songs).
+- **FILES:** `src/main.js` (`restorePics`, `refreshExtraArt`), `tests/refresh-art-canvas-v217.test.mjs`.
+- **DO NOT REDO:** do not go back to loading every picture in one `Promise.all`; do not shorten the 120 s limit without asking. The folder-picture check speed (native scan) was not changed and not measured on a phone.
+- **CHECKED:** `npm test` 802 pass, 0 fail, 0 skipped.
+
+## Refresh art animation: fresh pictures, one tile per place, waves of 40, counter (no version change, still 0.208.0)
+- **WHAT:** Refresh art first reloads everything (`mirrorSync`, `refreshAllPics`, `refreshExtraArt`), and ONLY THEN builds the tiles from the fresh pictures (`refreshItems()`), so an old picture is never shown. One tile per place that shows a custom picture / GIF / Canvas: each song (own picture, else its album's: the same GIF counts again for every song), each album, artist (GIF or photo), genre, playlist, the profile picture, the background and each song that plays a Canvas. Video sources (profile video, MP4 Canvas) are plain tiles. `rfWaves()` flies them in waves of 40 (`RF_WAVE`), about 5 s in total (at most `RF_MAX` = 600 tiles are flown: above that the tiles are an even sample while the counter still runs to the real total) and reads "N of TOTAL pictures and GIFs". The quiet folder check (`loadLib(true, true, true)`) runs at the same time. Refresh finished shows the real total and says so when a few pictures are still loading.
+- **FILES:** `src/main.js` (`refreshShow`, `refreshItems`, `rfWaves`, `refreshArtRun`), `src/styles/app.css` (`.rfw`, `rfwsuck`), `tests/refresh-art-canvas-v217.test.mjs`.
+- **REMOVED:** `sampleCustomPics`, `rfCopies`, `revokeRfCopies`, `picCount` (the overlay no longer copies old pictures).
+- **DO NOT REDO:** never build the tiles before `refreshAllPics()`; do not fly all tiles at once (hundreds of GIFs freeze a phone); do not touch the scan screen or the 7 owner-upload folders.
+- **CHECKED:** `npm test` all pass; wave and count logic run in Node with stand-ins (557 tiles, 5.6 s). Not run on a phone.
+
+## Refresh art reloads Canvas too and waits for the pictures (no version change, still 0.208.0)
+- **WHAT:** Settings > Refresh art now also (1) re-reads the list of saved picture files first (`mirrorSync()`), (2) clears the failed-Canvas list and re-reads the Canvas list (`cvBad.clear()`, `loadCanvasList(1)`) and reloads the Canvas video / GIF elements, (3) clears the cached picture colours (`covTint`), (4) WAITS up to 6 s until the saved pictures are really back (`picsMissing()`) before "Refresh finished", which now says how many pictures and GIFs were reloaded (`picCount()`).
+- **ALREADY COVERED (unchanged):** song, album, artist, genre and playlist pictures and GIFs, profile picture, background (and so Home, which only shows those).
+- **FILES:** `src/main.js` (`refreshExtraArt`, `picCount`, `refreshArtRun`), `tests/refresh-art-canvas-v217.test.mjs` (new).
+- **NOT TOUCHED (owner's order):** the library scan and its screen (`scanView`, `runScan`, native scan code); the 7 owner-upload folders (app logo, splash, listening banner, update popup, notification popup, background-allow popup, credits). Refresh art never reads or changes them. The scan screen shows covers read from the music files only (embedded art, or cover.jpg / folder.jpg when a song has none), never a picture the user set inside the app.
+- **DO NOT REDO:** do not call `refreshAllPics()` without `refreshExtraArt()` in `refreshArtRun`; do not make Refresh art use the scan screen.
+- **CHECKED:** `npm test` 796 pass, 0 fail, 0 skipped. Not run on a phone.
+
 ## Credits star is the owner's picture (no version change, still 0.208.0)
 - **UPDATE:** the credits star body is darkened (#181818) with a light grey edge (#969696) so it stands out on black, 96 x 96 PNG. Highlights kept.
 - **WHAT:** the trailing star in Settings > About > Credits is the owner's dark grey star picture (`1000314793.png`, white background made transparent, 64 x 64 PNG as a data URI). It replaces the black text star glyph `★` with a white edge. Text heart and star in front are unchanged.
 - **FILES:** `src/main.js` (credits row `<img class="credstar">`), `src/styles/app.css` (`.credstar` sized 1.1em), `tests/credits-symbols.test.mjs`, this file.
 - **DO NOT REDO:** do not change the star back to the text glyph or add a white outline.
 - **CHECKED:** `npm test` 784 pass, 0 fail; app built and the Credits row captured in Chromium at 390 px.
+
+## Refresh art overlay shows the user's own pictures and GIFs (no version change, still 0.208.0)
+- **WHAT:** the spiral now flies up to 10 of the user's own pictures and GIFs (song, album, artist, genre and playlist pictures) into the glowing core. Without any custom picture it falls back to plain tiles.
+- **HOW:** `sampleCustomPics()` copies each chosen picture with `fetch` + `URL.createObjectURL` BEFORE `refreshAllPics()` runs, because that function revokes the originals. The copies are kept in `rfCopies` and revoked when the overlay closes (`revokeRfCopies()`).
+- **FILES:** `src/main.js` (`refreshShow` with pictures, `sampleCustomPics`, `revokeRfCopies`, `refreshArtRun`), `src/styles/app.css` (`.rfstage img.rfpic`).
+- **DO NOT REDO:** do not take the picture URLs after `refreshAllPics()`; they are already revoked by then.
+- **CHECKED:** `npm test` 792 pass, 0 fail; `vite build` ok; frames rendered in Chromium with stand-in pictures. Not run with real custom pictures on a phone.
+
+## Refresh art has its own animation, not the library scan (no version change, still 0.208.0)
+- **CAUSE:** Refresh art called `loadLib(true, true)`, which runs the full library scan with the "Finding your music" screen (`scanView`).
+- **FIX:** Refresh art calls `refreshArtRun()` (`src/main.js`). The folder picture re-check runs as a quiet scan (`loadLib(rescan, forceArt, quiet)`; `quiet` skips the scan screen and the "N songs" toast). The library scan screen is unchanged.
+- **NEW ANIMATION:** `refreshShow()` shows ten picture tiles spiralling into a glowing core (`.rfstage`, `rfsuck`, `rfpulse`), then a check mark (`.rfcheck`, `rfpop`) for "Refresh finished" (closes after 1.8 s). Titles: "Reloading pictures and GIFs", "Checking folder pictures", "Refresh finished" / "Refresh stopped".
+- **KEPT:** the pictures on screen still get the sucking-in effect (`pulsePics`, `html.pics-refreshing`).
+- **FILES:** `src/main.js` (`loadLib`, `refreshShow`, `refreshArtRun`, the one-line `case 'refresh-art'`), `src/styles/app.css` (`.rfstage`, `.rfcore`, `.rfcheck`), `tests/bug15-refresh-art.test.mjs` (expects `refreshArtRun`).
+- **DO NOT REDO:** keep the `case 'refresh-art'` on one line (the test reads it). Do not change the library scan screen for Refresh art.
+- **CHECKED:** `npm test` 792 pass, 0 fail; `vite build` ok; the animation frames rendered in Chromium. Not run on a phone.
+
+## Import: progress, summary, missing-song titles, save-to-file keeps the import (no version change, still 0.208.0)
+- **"undefined" in Not in your library:** the planner gave a missing song no title. Now `(no title)` (`src/plforeign.js`, `planForeign`).
+- **Save missing songs lost the import:** the save picker closes, `visibilitychange` runs `startPopup()`, and the popup card replaced the import preview. Now the popup handler is skipped while `plPending` or `plBusy` is set, and `saveMissing` reopens the preview in `finally`.
+- **Progress:** `plBusySheet()` shows a bar and spinner while matching and while importing (`plBusy`).
+- **Summary:** `plSummarySheet()` after the import: new playlists, merged, songs matched, not in your library, not imported, favorites, saved yes/no.
+- **FILES:** `src/plforeign.js`, `src/main.js` (`plBusy`, `plBusySheet`, `plSummarySheet`, `importPl`, `plImportOk`, `saveMissing`, the visibilitychange popup guard), `src/styles/app.css` (`.plbar`, `.plspin`, `.plstats`).
+- **CHECKED:** `npm test` 792 pass, 0 fail; `vite build` ok; progress and summary sheets rendered in Chromium. Not run on a phone.
+
+## Import preview: Import button could be hidden (no version change, still 0.208.0)
+- **CAUSE (most likely):** the import preview put Cancel / Import at the very bottom, under the "not in your library" list. The sheet scrolls and the scrollbar is hidden, so the buttons were off-screen. Closing the sheet then imported nothing, and the Playlists screen stayed empty. The owner's `Nas.csv` (232 songs, 211 matched) parses correctly.
+- **FIX:** Cancel / Import sit directly under the playlist rows. The missing-songs list is a `<details class="plmiss">` section, closed by default.
+- **FILES:** `src/main.js` (`plImportSheet`), `src/styles/app.css` (`.plmiss`).
+- **CHECKED:** `npm test` 792 pass, 0 fail; `vite build` ok. Not run on a phone.
 
 ## Playlists: Spotify / Exportify CSV import and export (no version change, still 0.208.0)
 - **IMPORT:** already worked. Exportify CSV (Track Name, Album Name, Artist Name(s) ...) becomes a playlist named after the file. Checked with the owner's `Ai_Hoshino_.csv` and `Ai_Hoshino__1.csv` (one song each).

@@ -912,8 +912,12 @@ async function restorePics(keys, db, apply, tries = 12, prefix = '', mark = null
   if (prefix) { try { (await mirrorKeys(prefix + ':')).map(k => k.slice(prefix.length + 1)).forEach(k => { if (!all.includes(k) && !quickKeys.has(prefix + ':' + k) && !(shown && shown(k))) all.push(k); }); } catch {} }   // pictures found as files even if the list in localStorage was lost
   all = all.filter(k => !picBusy.has(bkey(db, k))); all.forEach(k => picBusy.add(bkey(db, k)));
   const left = [];
-  const r = await Promise.all(all.map(k => db.get(k).then(b => { if (b) { apply(k, b); if (mark && !keys.includes(k)) mark(k); return 1; } left.push(k); return 0; }).catch(() => { left.push(k); return 0; }).finally(() => picBusy.delete(bkey(db, k)))));
-  if (r.some(Boolean)) repaintPics();
+  let got = false;
+  for (let i = 0; i < all.length; i += 64) {   // v219: 64 at a time (thousands of pictures are never all read from the database at once)
+    const r = await Promise.all(all.slice(i, i + 64).map(k => db.get(k).then(b => { if (b) { apply(k, b); if (mark && !keys.includes(k)) mark(k); return 1; } left.push(k); return 0; }).catch(() => { left.push(k); return 0; }).finally(() => picBusy.delete(bkey(db, k)))));
+    if (r.some(Boolean)) got = true;
+  }
+  if (got) repaintPics();
   if (left.length && tries > 1) setTimeout(() => restorePics(left, db, apply, tries - 1, '', mark, shown), Math.min(10000, 2000 * (13 - tries)));
 }
 const bgSaved = () => hasFlag('lf.hasbg') || mirrorSyncKeys('lf-background:').length > 0, pfSaved = () => hasFlag('lf.haspf') || mirrorSyncKeys('lf-profile:').length > 0;
@@ -1286,14 +1290,14 @@ async function askAllFiles() {   // v106: opens Android's "All files access" scr
 }
 let libLoading = !!Native.isNative;   // v149: (BUG start-up flash: true from the very first draw on Android, because renderMain() runs before loadLib() and used to show "No music yet" for ~2 s) true while the saved library is being read at start (the Home screen shows a quiet placeholder, not "No music yet")
 var libTimerA = 0, libTimerB = 0;   // BUG-333: one pending start-up timer of each kind
-async function loadLib(rescan, forceArt = false) {
+async function loadLib(rescan, forceArt = false, quiet = false) {
   if (!Native.isNative) return;
   if (scanning) { if (rescan) toast('A scan is already running'); return; }
   try {
     let r, applied = false;   // applied = the saved library is already on screen (do not build it a second time)
     if (rescan) {
       await Promise.all([loadFavs(), loadStats()]); await mergeNativePlays();
-      r = await runScan(false, forceArt);
+      r = await runScan(quiet, forceArt);
     } else {
       // v149: read the saved library at the SAME time as favourites / stats / playlists (they used to run one after another BEFORE the library was even asked for)
       libLoading = true;
@@ -1307,7 +1311,7 @@ async function loadLib(rescan, forceArt = false) {
       if (!r.tracks.length && r.hasFolder) r = await runScan(r.cached !== false ? true : false);
     }
     libLoading = false; ppEnsureAll().catch(() => {});
-    if (r.tracks.length) { if (!applied) { infoCache.clear(); setLibrary(r.tracks); } if (rescan) await loadPlaylists(); await relinkSaved(); if (rescan && !scanView.shown) toast(`${tracks.length} songs`); } else { infoCache.clear(); setLibrary([]); if (rescan) await loadPlaylists(); if (rescan) toast('No music files found'); }
+    if (r.tracks.length) { if (!applied) { infoCache.clear(); setLibrary(r.tracks); } if (rescan) await loadPlaylists(); await relinkSaved(); if (rescan && !quiet && !scanView.shown) toast(`${tracks.length} songs`); } else { infoCache.clear(); setLibrary([]); if (rescan) await loadPlaylists(); if (rescan) toast('No music files found'); }
     renderMain(); renderSub(); pushWidgetCovers(); warmCovers();
   } catch (e) { libLoading = false; renderMain(); if (!isBusy(e)) toast('Library: ' + (e.message || e)); }
   if (!sessionTried) { sessionTried = true; await Promise.resolve(restoreSession()).catch(() => {}); sleepResume(); picsSynced.then(() => Native.updateArtwork()).catch(() => {}); }   // T8-rest: put the last queue back (paused) once the songs are known
@@ -1808,7 +1812,7 @@ async function checkLatestPopup({ force = false } = {}) {
 // Check immediately at startup/resume and every second while visible.
 setInterval(() => { checkLatestPopup().catch(() => {}); }, POPUP_POLL_MS);
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { popTries = 0; popTriedStamp = ''; startPopup().catch(() => {}); checkLatestPopup().catch(() => {}); }
+  if (!document.hidden && !plPending && !plBusy) { popTries = 0; popTriedStamp = ''; startPopup().catch(() => {}); checkLatestPopup().catch(() => {}); }
 });
 window.addEventListener('online', () => { if (!document.hidden) { popTries = 0; popTriedStamp = ''; checkLatestPopup().catch(() => {}); startUpdateCheck().catch(() => {}); } });
 /** v208: Allow on the notification card. Android's own prompt first; when it cannot appear (Android 12 and older, or refused twice) it returns at once, so the app's Notifications page in Android settings is opened instead. */
@@ -1869,6 +1873,97 @@ async function exportPl(fmt = 'json', pid = '', ids = null) {   // ids (v159): a
   } catch (e) { if (!isCancel(e)) { logLine('W', 'export playlists failed:', failMsg(e)); toast('Export failed: ' + failMsg(e)); } }
 }
 let plPending = null;   // v159: the playlists waiting for the person's OK in the import preview
+let plBusy = false;   // v214: a progress sheet is open (matching or importing): nothing may replace it
+/* v215: Refresh art has its own animation (not the library scan screen): pictures and GIFs spiral into a glowing core, then a check mark.
+   v218: the tiles are the FRESH pictures (built after the reload, never copies of the old ones): one tile for every place a custom picture, GIF or Canvas is used
+   (the same file counts again for each song / place that shows it), flown in waves of 40 while a counter runs up to the real total. */
+function refreshShow(title, sub, done = false, pics = [], coreOnly = false) {
+  plBusy = !done;
+  const tiles = coreOnly ? '' : pics.length
+    ? pics.map((u, k) => `<img class="rfpic" alt="" src="${u}" style="--k:${k}">`).join('')
+    : Array.from({ length: 10 }, (_, k) => `<i style="--k:${k}"></i>`).join('');
+  $('#sheet').innerHTML = sheetHtml(`<div class="rfstage${done ? ' done' : ''}" aria-hidden="true">${done ? '<span class="rfcheck"></span>' : `<span class="rfcore"></span>${tiles}`}</div><b id="rfttl">${title}</b><p id="rfsub">${sub}</p>`);
+}
+/* v218: every place that shows a custom picture / GIF / Canvas right now (after the reload): [{ u: picture address, v: true when it is a video (drawn as a plain tile) }] */
+function refreshItems() {
+  const out = [], add = (u, v = false) => { if (u) out.push({ u, v }); };
+  try {
+    for (const t of tracks) {   // every song: its own picture, else its album's picture (the same GIF counts again for each song)
+      if (soHas(t)) continue;
+      add(spUrls.get(t.id) || alpUrls.get(t.albumId));
+    }
+    for (const k of alpUrls.keys()) if (byAlbum(k)) add(alpUrls.get(k));   // the albums themselves
+    const am = apicMap(); for (const n of Object.keys(am)) { const v = String(am[n]); add(v.startsWith('gif:') ? agUrls[n] : v.startsWith('data:') ? v : ''); }   // artists (GIF or photo)
+    for (const k of Object.keys(gpUrls)) add(gpUrls[k]);   // genres
+    for (const pl_ of playlists) { const c = picsOf(pl_)[0]; add(c && ppUrl.get(c.id)); }   // playlists
+    if (pfMedia) add(pfMedia.type === 'video' ? 'video' : pfMedia.url, pfMedia.type === 'video');   // profile picture
+    if (bgUrl) add(bgUrl);   // background (Home and every screen)
+    for (const t of tracks) { const cp = cvPath(t); if (cp) { const vid = isVideo(cp); add(vid ? 'video' : Native.fileUrl(cp), vid); } }   // Canvas: one for each song that plays one
+  } catch {}
+  return out;
+}
+const RF_WAVE = 40, RF_MAX = 600;   // v218: waves of 40; at most 600 tiles are flown (about 5 s). Beyond that the tiles are an even sample and the counter still runs to the real total.
+function rfWaves(items) {
+  return new Promise(res => {
+    const total = items.length, still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (!total) return res();
+    const fly = total > RF_MAX ? Array.from({ length: RF_MAX }, (_, i) => items[Math.floor(i * total / RF_MAX)]) : items;
+    const waves = Math.ceil(fly.length / RF_WAVE), gap = Math.max(260, Math.min(900, Math.round(5000 / waves)));
+    let w = 0;
+    const step = () => {
+      const stage = document.querySelector('#sheet .rfstage'), sub = document.getElementById('rfsub');
+      if (!stage || !sub) return res();   // the overlay was closed
+      const batch = fly.slice(w * RF_WAVE, (w + 1) * RF_WAVE);
+      if (!still) batch.forEach((it, j) => {
+        const e = document.createElement(it.v ? 'i' : 'img');
+        if (!it.v) { e.alt = ''; e.decoding = 'async'; e.src = it.u; }
+        e.className = 'rfw'; e.style.setProperty('--a', Math.round((j / batch.length) * 360 + (w % 2) * 9) + 'deg'); e.style.setProperty('--d', Math.round((j / batch.length) * gap * 0.8) + 'ms');
+        e.addEventListener('animationend', () => e.remove()); stage.appendChild(e);
+      });
+      w++; sub.textContent = `${w >= waves ? total : Math.round(total * w / waves)} of ${total} pictures and GIFs`;
+      if (w < waves) setTimeout(step, gap); else setTimeout(res, still ? 0 : 950);
+    };
+    step();
+  });
+}
+/* v217: Refresh art also reloads what refreshAllPics() alone did not: Canvas clips / GIFs (list read again from the phone, files that failed get another chance),
+   the colours taken from pictures, and it WAITS until the saved pictures are really back (see v219 below) before the pictures fly in. */
+async function refreshExtraArt() {
+  try { cvBad.clear(); await loadCanvasList(1); } catch {}
+  try {
+    document.querySelectorAll('video.cvmedia').forEach(v => { try { v.load(); v.play().catch(() => {}); } catch {} });
+    document.querySelectorAll('img.cvmedia').forEach(i => { const u = i.getAttribute('src'); if (u) { i.src = ''; i.src = u; } });
+  } catch {}
+  try { covTint.clear(); } catch {}
+  // v219: waits while pictures are still coming back: gives up after 6 s with no new picture, or 120 s in all (10,000+ pictures take a while); the overlay shows the progress
+  const have = () => alpUrls.size + spUrls.size + Object.keys(agUrls).length + Object.keys(gpUrls).length + ppUrl.size;
+  const t0 = Date.now(); let last = have(), lastAt = t0;
+  while (picsMissing() && Date.now() - lastAt < 6000 && Date.now() - t0 < 120000) {
+    await new Promise(r => setTimeout(r, 150));
+    const n = have(); if (n !== last) { last = n; lastAt = Date.now(); const sub = document.getElementById('rfsub'); if (sub) sub.textContent = `${n} pictures and GIFs loaded…`; }
+  }
+  repaintPics();
+}
+async function refreshArtRun() {
+  if (plBusy || scanning) return;
+  refreshShow('Reloading pictures and GIFs', 'Reading your saved pictures…', false, [], true);
+  pulsePics();   // the pictures on screen are sucked in and pop back out (CSS)
+  try {
+    try { await mirrorSync(); } catch {}   // the list of saved picture files is read again first (a file that is gone is dropped, one that only exists as a file is found)
+    refreshAllPics();
+    await refreshExtraArt();   // waits until the saved pictures are really back
+    const items = refreshItems();   // built AFTER the reload: only the fresh pictures are shown
+    refreshShow('Reloading pictures and GIFs', `0 of ${items.length} pictures and GIFs`, false, [], true);
+    const lib = loadLib(true, true, true);   // quiet: no library scan screen; runs while the pictures fly in
+    await Promise.all([rfWaves(items).then(() => { const t = document.getElementById('rfttl'); if (t && $('#sheet .rfstage:not(.done)')) t.textContent = 'Checking folder pictures'; }), lib]);
+    refreshShow('Refresh finished', `${tracks.length} songs · ${items.length} pictures and GIFs reloaded${picsMissing() ? ' · a few are still loading and will appear shortly' : ''}`, true);
+    setTimeout(() => { if ($('#sheet .rfstage.done')) closeSheet(); }, 1800);
+  } catch (e) {
+    refreshShow('Refresh stopped', failMsg(e), true);
+  }
+}
+const plBusySheet = (title, sub, pct) => { plBusy = true; $('#sheet').innerHTML = sheetHtml(`<b>${title}</b><p>${sub}</p><div class="plbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div><div class="plspin" aria-hidden="true"></div>`); };
+const plSummarySheet = rows => { plBusy = false; $('#sheet').innerHTML = sheetHtml(`<b>Import finished</b><p>What changed in your app:</p><div class="plstats">${rows.map(([k, v]) => `<div class="row"><span class="meta blk"><b>${v}</b><span>${k}</span></span></div>`).join('')}</div><div class="actions"><button data-act="sheet-close">Done</button></div>`); };
 async function importPl() {
   if (!tracks.length) return toast('Choose your music folder first, then import');
   try {
@@ -1881,7 +1976,11 @@ async function importPl() {
     if (!imported.length && favIds.length) { toast(`Favorites: ${addFavs(favIds)} added`, 3000); return; }
     if (!imported.length) throw new Error('No playlists found. Use .json, .m3u8, .xspf, .pls or .csv (or a .zip of them)');
     const have = savablePlaylists();
+    const songCount = imported.reduce((n, p) => n + p.songs.length, 0);
+    plBusySheet('Matching songs', `${imported.length} playlist${imported.length === 1 ? '' : 's'}, ${songCount} songs. Please wait.`, 35);
+    await new Promise(res => setTimeout(res, 60));   // let the progress sheet paint before the matching runs
     const plan = PX.planForeign(imported, tracks, aaOf, have.map(p => p.name), have.map(p => ({ name: p.name, ids: p.ids })));
+    plBusy = false;
     if (!plan.lists.length && favIds.length) { toast(`Favorites: ${addFavs(favIds)} added`, 3000); return; }
     if (!plan.lists.length) { toast(plan.already.length ? 'Nothing new: those playlists are already in the app' : 'Nothing to import', 3200); return; }
     plPending = { plan, skipped, favIds, targets: plan.lists.map(() => null) };   // targets[i]: id of the playlist this list is merged into, null = a new playlist
@@ -1897,8 +1996,8 @@ function plImportSheet() {
     return `<button class="row" data-act="plimport-pick" data-i="${i}"><span class="meta blk"><b>${escH(l.raw)}</b><span>${l.ids.length} of ${l.total} songs${l.missing ? ` · ${l.missing} not in your library` : ''} · ${where}</span></span></button>`;
   }).join('');
   const already = plan.already.length ? `<p>${plan.already.length} already in the app (same name and songs), left out: ${plan.already.map(a => escH(a.name)).join(', ')}.</p>` : '';
-  const miss = plan.missing.length ? `<p>Not in your library (left out):</p><div class="picklist">${plan.missing.slice(0, 8).map(m => `<div class="row"><span class="meta blk"><b>${escH(m.title)}</b><span>${escH(m.artist)}</span></span></div>`).join('')}${plan.missing.length > 8 ? `<div class="empty">and ${plan.missing.length - 8} more</div>` : ''}</div><div class="actions"><button data-act="plimport-missing">Save missing songs to a file</button></div>` : '';
-  $('#sheet').innerHTML = sheetHtml(`<b>Import ${pl(plan.lists.length, 'playlist')}?</b><p>${plan.matched} of ${plan.total} songs matched in your library. Tap a playlist to choose where it goes. Nothing you have is changed except the playlists you merge into.</p><div class="picklist">${rows}</div>${already}${miss}${skipped ? `<p>${pl(skipped, 'file')} skipped (not playlists).</p>` : ''}<div class="actions"><button data-act="sheet-close">Cancel</button><button data-act="plimport-ok">Import</button></div>`);
+  const miss = plan.missing.length ? `<details class="plmiss"><summary>${plan.missing.length} not in your library (left out): tap to see</summary><div class="picklist">${plan.missing.slice(0, 8).map(m => `<div class="row"><span class="meta blk"><b>${escH(m.title)}</b><span>${escH(m.artist)}</span></span></div>`).join('')}${plan.missing.length > 8 ? `<div class="empty">and ${plan.missing.length - 8} more</div>` : ''}</div><div class="actions"><button data-act="plimport-missing">Save missing songs to a file</button></div></details>` : '';   // v214: collapsed, so the Import button is not pushed below the fold
+  $('#sheet').innerHTML = sheetHtml(`<b>Import ${pl(plan.lists.length, 'playlist')}?</b><p>${plan.matched} of ${plan.total} songs matched in your library. Tap a playlist to choose where it goes. Nothing you have is changed except the playlists you merge into.</p><div class="picklist">${rows}</div><div class="actions"><button data-act="sheet-close">Cancel</button><button data-act="plimport-ok">Import</button></div>${already}${miss}${skipped ? `<p>${pl(skipped, 'file')} skipped (not playlists).</p>` : ''}`);   // v214: Cancel / Import right under the list
 }
 /** v159: where one imported list goes: a new playlist, or merged into one that already exists. */
 function plTargetSheet(i) {
@@ -1910,6 +2009,7 @@ function plTargetSheet(i) {
 async function plImportOk() {
   if (!plPending) return;
   const { plan, targets, favIds } = plPending; plPending = null;
+  plBusySheet('Importing playlists', `${plan.lists.length} playlist${plan.lists.length === 1 ? '' : 's'} · ${plan.matched} songs. Please wait.`, 50);
   const fAdded = favIds && favIds.length ? addFavs(favIds) : 0;
   const names = new Set(savablePlaylists().map(p => nameKey(p.name))), tag = Date.now().toString(36), used = new Set(playlists.map(p => p.id));
   let added = 0, merged = 0, mergedSongs = 0, left = 0;
@@ -1922,14 +2022,16 @@ async function plImportOk() {
     playlists.push({ id, name: E(freeName(l.raw, names)), ids: l.ids }); added++;   // the final name is chosen now, so a list merged elsewhere does not take a number
   });
   const saved = await savePl();   // v208: the playlists are written into the app's own storage (playlists.json) BEFORE we say "Imported"; the import file is not needed afterwards
-  renderMain(); renderSub(); closeSheet();
+  renderMain(); renderSub();
   const parts = []; if (added) parts.push(pl(added, 'new playlist')); if (merged) parts.push(`${merged} merged (${mergedSongs} songs added)`); if (left) parts.push(`${left} not imported`);
   if (fAdded) parts.push(`${fAdded} favorites`);
   toast(saved ? `Imported ${parts.join(', ') || 'nothing'}` : `Imported ${parts.join(', ') || 'nothing'}, but they could not be saved yet. Please import again`, saved ? 3400 : 6000);
+  plSummarySheet([['new playlists', added], ['merged into your playlists', merged ? `${merged} (${mergedSongs} songs added)` : 0], ['songs matched in your library', `${plan.matched} of ${plan.total}`], ['not in your library (left out)', plan.missing.length], ['not imported', left], ['favorites added', fAdded], ['saved to the app', saved ? 'yes' : 'NO: import again']]);   // v214: the numbers, after the save
 }
 async function saveMissing(missing) {
   try { await saveOut(PX.missingCsv(missing)); toast(`Saved ${pl(missing.length, 'song')} not in your library`); }
   catch (e) { if (!isCancel(e)) { logLine('W', 'save missing songs failed:', failMsg(e)); toast('Save failed: ' + failMsg(e), 3200); } }
+  finally { if (plPending && !plBusy) plImportSheet(); }   // the preview comes back after the save picker
 }
 
 /* ---------- listening data: export / import (formats in listenio.js, tested) ---------- */
@@ -3056,7 +3158,7 @@ document.addEventListener('click', e => {
     case 'pickfolder': if (scanning) { toast('A scan is running. Try again in a moment.'); break; }   // T18: a running scan would write the OLD folder back into the cache
       Native.pickFolder().then(() => loadLib(true)).catch(() => {}); break;
     case 'rescan': loadLib(true); break;
-    case 'refresh-art': if (scanning) { toast('A scan is running. Try again in a moment.'); break; } pulsePics(); refreshAllPics(); loadLib(true, true); break;   // v213: sucking-in animation while the pictures reload   // BUG-332: pictures and GIFs reloaded, folder art re-checked
+    case 'refresh-art': if (scanning) { toast('A scan is running. Try again in a moment.'); break; } refreshArtRun(); break;   // v213: sucking-in animation while the pictures reload   // BUG-332: pictures and GIFs reloaded, folder art re-checked
     case 'copylog': copyLog(); break;
     case 'log-close': closeSheet(); break;
     case 'stub': toast(d.msg || 'Not built yet'); break;

@@ -1011,3 +1011,32 @@ html[data-immersive="1"] .np .times{color:rgba(255,255,255,.78)}
 @keyframes lf-suck{0%{transform:scale(1);opacity:1}40%{transform:scale(.25);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
 html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .thumb,html.pics-refreshing .pfmain img,html.pics-refreshing .np .art .cover{animation:lf-suck .8s cubic-bezier(.5,0,.3,1) both}
 @media (prefers-reduced-motion: reduce){html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .thumb,html.pics-refreshing .np .art .cover{animation:none}}
+
+/* v214: the import preview: the Cancel / Import buttons come right under the playlists; the missing-songs list folds away */
+.plmiss{margin-top:10px}.plmiss summary{cursor:pointer;color:var(--text-2);font-size:.875rem;padding:6px 0}
+
+/* v214: import progress (matching / importing) and the summary */
+.plbar{height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:16px 0 12px}
+.plbar i{display:block;height:100%;border-radius:6px;background:var(--accent,#ff2d55);transition:width .35s ease}
+.plspin{width:34px;height:34px;margin:4px auto 0;border-radius:50%;border:3px solid rgba(255,255,255,.18);border-top-color:var(--accent,#ff2d55);animation:plspin .9s linear infinite}
+@keyframes plspin{to{transform:rotate(360deg)}}
+.plstats .row{margin-top:8px}
+
+/* v215: Refresh art animation: pictures and GIFs spiral into a glowing core, then a check mark */
+.rfstage{position:relative;width:200px;height:200px;margin:6px auto 0}
+.rfstage i{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:7px;background:linear-gradient(135deg,#ff5a78,#7a0f24);box-shadow:0 0 14px rgba(255,45,85,.5);transform:rotate(calc(var(--k) * 36deg)) translateY(-92px);animation:rfsuck 1.8s cubic-bezier(.5,0,.6,1) infinite;animation-delay:calc(var(--k) * -.18s)}
+@keyframes rfsuck{0%{transform:rotate(calc(var(--k) * 36deg)) translateY(-92px) scale(1);opacity:1}70%{opacity:.85}100%{transform:rotate(calc(var(--k) * 36deg + 150deg)) translateY(-4px) scale(.15);opacity:0}}
+.rfcore{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:radial-gradient(circle,#ff2d55 0%,rgba(255,45,85,.25) 55%,transparent 70%);animation:rfpulse 1.8s ease-in-out infinite}
+@keyframes rfpulse{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+.rfcheck{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;border:4px solid var(--accent,#ff2d55);box-shadow:0 0 22px rgba(255,45,85,.5);animation:rfpop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes rfpop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion: reduce){.rfstage i,.rfcore{animation:none}}
+
+/* v216: the user's own pictures and GIFs fly into the core */
+.rfstage img.rfpic{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:11px;object-fit:cover;border:1px solid rgba(255,255,255,.28);box-shadow:0 4px 14px rgba(0,0,0,.5);transform:rotate(calc(var(--k) * 36deg)) translateY(-92px);animation:rfsuck 1.8s cubic-bezier(.5,0,.6,1) infinite;animation-delay:calc(var(--k) * -.18s)}
+
+/* v218: Refresh art waves: one mini tile per place a custom picture / GIF / Canvas is used, 40 at a time, each sucked into the core once */
+.rfstage .rfw{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:9px;object-fit:cover;border:1px solid rgba(255,255,255,.28);box-shadow:0 3px 10px rgba(0,0,0,.45);animation:rfwsuck .9s cubic-bezier(.5,0,.6,1) both;animation-delay:var(--d,0ms)}
+.rfstage i.rfw{background:linear-gradient(135deg,#ff5a78,#7a0f24)}
+@keyframes rfwsuck{0%{transform:rotate(var(--a)) translateY(-92px) scale(1);opacity:0}15%{opacity:1}100%{transform:rotate(calc(var(--a) + 150deg)) translateY(-4px) scale(.15);opacity:0}}
+@media (prefers-reduced-motion: reduce){.rfstage .rfw{display:none}}
