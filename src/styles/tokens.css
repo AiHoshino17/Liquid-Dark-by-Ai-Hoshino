@@ -1,6 +1,8 @@
 /* ===== TOKENS. Every colour in the app comes from here. Never hard-code a hex elsewhere. ===== */
 :root{
   --sat:env(safe-area-inset-top,0px);   /* status bar / camera cut-out height. On Android MainActivity overwrites these two with exact numbers (edge-to-edge) */
+  --sal:env(safe-area-inset-left,0px);   /* v221: landscape: camera cut-out / side navigation bar (MainActivity overwrites these on Android) */
+  --sar:env(safe-area-inset-right,0px);
   --sab:env(safe-area-inset-bottom,0px);   /* gesture / navigation bar height */
   --bg:#000;
   --ink:#000;

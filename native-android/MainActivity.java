@@ -18,7 +18,7 @@ import com.getcapacitor.BridgeActivity;
 // how tall the two bars are (CSS px) through LiquidNative.insets() + the "lf-insets" event, so it can keep content clear of them.
 public class MainActivity extends BridgeActivity {
   /** Status bar / camera cut-out height and navigation bar height in CSS px. Read by LiquidNative.insets(). */
-  static volatile float insetTop = 0f, insetBottom = 0f;
+  static volatile float insetTop = 0f, insetBottom = 0f, insetLeft = 0f, insetRight = 0f;   // v221: left / right too (landscape: camera cut-out and a side navigation bar)
 
   /** v107: the tab a home screen widget asked for (read once by LiquidNative.getLaunch()). */
   static volatile String pendTab = "";
@@ -52,6 +52,7 @@ public class MainActivity extends BridgeActivity {
       boolean keyboard = ime.bottom > bars.bottom;
       insetTop = bars.top / d;
       insetBottom = keyboard ? 0f : bars.bottom / d;
+      insetLeft = bars.left / d; insetRight = bars.right / d;
       // edge-to-edge windows are not resized by the keyboard any more: lift the web view by the keyboard height ourselves
       v.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
       pushInsets();
@@ -112,7 +113,7 @@ public class MainActivity extends BridgeActivity {
     try {
       final WebView web = getBridge() != null ? getBridge().getWebView() : null;
       if (web == null) return;
-      final String js = "window.dispatchEvent(new CustomEvent('lf-insets',{detail:{top:" + insetTop + ",bottom:" + insetBottom + "}}))";
+      final String js = "window.dispatchEvent(new CustomEvent('lf-insets',{detail:{top:" + insetTop + ",bottom:" + insetBottom + ",left:" + insetLeft + ",right:" + insetRight + "}}))";
       web.post(new Runnable() { @Override public void run() { web.evaluateJavascript(js, null); } });
     } catch (Throwable ignored) { }
   }

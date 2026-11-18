@@ -464,9 +464,11 @@ html[data-redhover="0"] .tabbar .tab.hov:not(.on),html[data-redhover="0"] .tabba
 /* v77: Bigger album covers (Settings > Display options) */
 html[data-bigcovers="1"] .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 14px}
 html[data-bigcovers="1"] .hscroll .card{flex:0 0 164px;width:164px}
-html[data-bigcovers="1"] .np .art .cover{max-height:none;max-width:100%;height:auto;width:min(100%,96vw)}
+html[data-bigcovers="1"] .np .art .cover{max-height:none;max-width:none;height:auto;aspect-ratio:1/1;width:min(100cqw,100cqh)}   /* v209: .art is a size container, so the cover is the biggest square that FITS it (it used to be as wide as the screen and ran over the lyrics / controls, and in landscape it was far too big) */
 html[data-bigcovers="1"] .detail-art{width:90%;max-width:440px}
 html[data-bigcovers="1"] .row.arow .thumb{width:92px;height:92px;border-radius:10px}
+/* v209: lyrics can not be selected: a long press no longer opens Android's Copy / Select all bubble */
+.lyr,.lyr *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 
 /* v79: see-through glass pill. The tab bar and the pill let the picture behind show; the real tab under the pill hides while its magnified copy is shown */
 html .tabbar{background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.008) 55%,rgba(255,255,255,.05));backdrop-filter:saturate(1.5) brightness(1.06);-webkit-backdrop-filter:saturate(1.5) brightness(1.06)}
@@ -1022,21 +1024,190 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
 @keyframes plspin{to{transform:rotate(360deg)}}
 .plstats .row{margin-top:8px}
 
-/* v215: Refresh art animation: pictures and GIFs spiral into a glowing core, then a check mark */
-.rfstage{position:relative;width:200px;height:200px;margin:6px auto 0}
-.rfstage i{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:7px;background:linear-gradient(135deg,#ff5a78,#7a0f24);box-shadow:0 0 14px rgba(255,45,85,.5);transform:rotate(calc(var(--k) * 36deg)) translateY(-92px);animation:rfsuck 1.8s cubic-bezier(.5,0,.6,1) infinite;animation-delay:calc(var(--k) * -.18s)}
-@keyframes rfsuck{0%{transform:rotate(calc(var(--k) * 36deg)) translateY(-92px) scale(1);opacity:1}70%{opacity:.85}100%{transform:rotate(calc(var(--k) * 36deg + 150deg)) translateY(-4px) scale(.15);opacity:0}}
-.rfcore{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:radial-gradient(circle,#ff2d55 0%,rgba(255,45,85,.25) 55%,transparent 70%);animation:rfpulse 1.8s ease-in-out infinite}
-@keyframes rfpulse{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.15);opacity:1}}
-.rfcheck{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;border:4px solid var(--accent,#ff2d55);box-shadow:0 0 22px rgba(255,45,85,.5);animation:rfpop .5s cubic-bezier(.2,1.6,.4,1) both}
-@keyframes rfpop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
-@media (prefers-reduced-motion: reduce){.rfstage i,.rfcore{animation:none}}
+/* v221: landscape / short screens: the scan card (library scan, Rescan and Refresh art) lies down: disc on the left, text on the right, so it always fits and never gets cut off */
+@media (orientation:landscape) and (max-height:520px){
+  .scanv{padding:max(8px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));box-sizing:border-box}
+  .scanv-card{display:grid;grid-template-columns:132px minmax(0,1fr);grid-template-rows:auto auto auto auto;column-gap:22px;align-content:center;align-items:center;width:min(560px,100%);max-height:100%;padding:16px 24px 16px 18px;text-align:left;border-radius:30px}
+  .scanv-orb{grid-column:1;grid-row:1 / span 4;margin:0}
+  .scanv-title,.scanv-count,.scanv-bar,.scanv-file{grid-column:2}
+  .scanv-hide{top:10px;right:12px}
+  .scanv-title{padding-right:30px}
+}
 
-/* v216: the user's own pictures and GIFs fly into the core */
-.rfstage img.rfpic{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:11px;object-fit:cover;border:1px solid rgba(255,255,255,.28);box-shadow:0 4px 14px rgba(0,0,0,.5);transform:rotate(calc(var(--k) * 36deg)) translateY(-92px);animation:rfsuck 1.8s cubic-bezier(.5,0,.6,1) infinite;animation-delay:calc(var(--k) * -.18s)}
+/* ===== v221: LANDSCAPE. The whole app turns with the phone (the portrait lock is gone, see scripts/install-native.sh).
+   Phone held sideways = wide and short (height <= 520 px): full width, content in step with the camera cut-out (--sal / --sar), a slimmer tab bar, the mini
+   player and the tab bar side by side, Now Playing as two columns (cover left, controls right), more covers per row. Portrait is not touched. ===== */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--lbar:58px;--gl:calc(var(--sal) + 24px);--gr:calc(var(--sar) + 24px)}
+  #app{max-width:none}
+  .screen{padding:calc(var(--sat) + 8px) var(--gr) calc(var(--lbar) + 84px) var(--gl)}
+  .hscroll{margin:0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));padding:0 var(--gr) 0 var(--gl)}
+  .grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  html[data-bigcovers="1"] .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .detail-art{width:min(26vh,132px)}   /* v221 second pass: the album / playlist picture sits in the left column (see .dwrap below), so it is small */
+  html[data-bigcovers="1"] .detail-art{width:min(34vh,170px)}
+  /* tab bar: slim, centred; with a mini player it takes the right half and the mini player the left half (same line) */
+  .tabbar{left:0;right:0;margin:0 auto;width:min(460px,calc(100% - var(--gl) - var(--gr)));bottom:max(8px,var(--sab));height:var(--lbar)}   /* the Settings "glass bar size" slider is for portrait; sideways the bar has one slim size */
+  html .tabbar,html .lens-mag{padding:3px 10px}
+  html .tabbar .tab{gap:1px;font-size:.6875rem;min-height:40px}
+  html .tabbar .tab svg{width:24px;height:24px}
+  .mini{left:var(--gl);right:auto;width:calc(50% - var(--gl) - 8px);bottom:calc(max(8px,var(--sab)) + (var(--lbar) - 56px) / 2);height:56px}
+  #app:has(#mini .mini) .tabbar{left:auto;right:var(--gr);margin:0;width:calc(50% - var(--gr) - 8px)}
+  #app::after,#app.has-mini::after,#app:has(#mini .mini)::after{height:calc(var(--sab) + var(--lbar) + 30px)}
+  .toast{top:calc(var(--sat) + 8px)}
+  /* sheets: centred, never wider than the screen, scroll when taller */
+  #sheet .sheetbox:not(.notifcard){left:0;right:0;margin:0 auto;width:min(620px,calc(100% - var(--gl) - var(--gr)));bottom:max(10px,var(--sab));max-height:calc(100% - var(--sat) - 18px);padding:16px 20px}
+  /* Now Playing: cover on the left, everything else on the right */
+  .np{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);column-gap:30px;align-content:center;padding:calc(var(--sat) + 4px) var(--gr) max(8px,var(--sab)) var(--gl)}
+  .np>*{grid-column:2}
+  .np>.grabbtn{grid-column:1 / -1;margin:0 0 2px!important;padding:4px 0!important}
+  .np>.art{grid-column:1;grid-row:2 / span 9;align-self:stretch;padding:0}
+  .np .art .cover{height:100%;max-height:none;aspect-ratio:1/1}
+  html[data-immersive="1"] .np .art{position:relative;left:auto;right:auto;top:auto;height:auto;display:grid;z-index:1}
+  html[data-immersive="1"] .np .art .cover{border-radius:20px}
+  .np .titles b{font-size:1.25rem}
+  .np .titles span{font-size:.9375rem}
+  .npmeta{margin:6px 0 2px}
+  .scrub{margin-top:2px}
+  .transport{margin:6px 0 8px}
+  .cluster{height:64px}
+  .cluster button{height:52px}
+  .sbtn{width:48px;height:48px}
+  .np .bottom button{height:38px}
+}
 
-/* v218: Refresh art waves: one mini tile per place a custom picture / GIF / Canvas is used, 40 at a time, each sucked into the core once */
-.rfstage .rfw{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:9px;object-fit:cover;border:1px solid rgba(255,255,255,.28);box-shadow:0 3px 10px rgba(0,0,0,.45);animation:rfwsuck .9s cubic-bezier(.5,0,.6,1) both;animation-delay:var(--d,0ms)}
-.rfstage i.rfw{background:linear-gradient(135deg,#ff5a78,#7a0f24)}
-@keyframes rfwsuck{0%{transform:rotate(var(--a)) translateY(-92px) scale(1);opacity:0}15%{opacity:1}100%{transform:rotate(calc(var(--a) + 150deg)) translateY(-4px) scale(.15);opacity:0}}
-@media (prefers-reduced-motion: reduce){.rfstage .rfw{display:none}}
+/* ===== v221 (second pass): LANDSCAPE polish for the screens that had not been looked at sideways: album / playlist / artist / genre pages, Library, Search and the other big titles,
+   the Up Next and Sleep timer sheets, and the picture cards (notification, update, Keep the music playing). Portrait is not touched:
+   the wrappers below are display:contents / plain blocks in portrait, so the portrait layout is exactly what it was. ===== */
+.dwrap,.dhero,.dbody{display:contents}
+@media (orientation:landscape) and (max-height:520px){
+  h1.large{font-size:1.75rem;margin:0 0 8px}
+  .top{min-height:48px}
+  /* album / playlist / artist / genre: picture, title and the buttons in a left column, the albums and songs on the right */
+  .dwrap{display:grid;grid-template-columns:minmax(180px,30%) minmax(0,1fr);column-gap:28px;align-items:start}
+  .dhero{display:block;min-width:0;text-align:center}
+  .dbody{display:block;min-width:0}
+  .dhero .detail-art,.dhero .apic{margin:0 auto 8px}
+  .dhero .apic{width:min(26vh,124px)}
+  .dhero h1.large{font-size:1.5rem;margin:0 0 2px;text-align:center}
+  .dhero .detail-t{text-align:center!important}
+  .dhero .detail-t b{font-size:1.125rem}
+  .dhero .detail-t .a{font-size:1rem}
+  .dhero .actions{margin:8px 0 0;gap:8px}
+  .dhero .actions button{height:38px;font-size:.9375rem}
+  .dhero .actions button[data-act$="-edit"]{height:32px;font-size:.8125rem;font-weight:600;color:var(--text-2)}
+  .dbody>.sec:first-child,.dbody>.alist:first-child{margin-top:4px}
+  /* Library: the nine rows in two columns */
+  .libgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}
+  /* sheets: Sleep timer buttons in three columns; Up Next header on one line so the songs get the room */
+  .slgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:10px}
+  .slgrid .row{margin-bottom:8px;padding:9px 14px}
+  #qhead{display:flex;flex-wrap:wrap;align-items:center;column-gap:18px;margin-top:2px}
+  #qhead .qnowcard{flex:1 1 260px;padding:2px 0}
+  #qhead .qnowcard .thumb{width:44px;height:44px}
+  #qhead .qfrom{display:none}
+  #qhead .qsec,#qhead .qsum{margin:0}
+  /* picture cards (notification, update, Keep the music playing): picture on the left, text and buttons on the right, nothing can overlap or be cut off */
+  #sheet .sheetbox.notifcard.popcard,#lf-bgallow{display:grid;grid-template-columns:minmax(0,40%) minmax(0,1fr);grid-template-rows:1fr auto auto auto 1fr;column-gap:28px;align-items:center;justify-items:center;justify-content:normal;padding:max(12px,var(--sat)) var(--gr) max(12px,var(--sab)) var(--gl);overflow:hidden}
+  #sheet .popcard .pbody,#lf-bgallow .bgbody{display:contents}
+  #sheet .sheetbox.notifcard.popcard .popimg{grid-column:1;grid-row:1 / -1;--maxh:calc(100vh - 28px);margin:0}
+  #lf-bgallow .bgimg{grid-column:1;grid-row:1 / -1;max-width:100%;max-height:calc(100vh - 28px);margin:0}
+  #sheet .popcard .pbody>b,#lf-bgallow .bgbody>b{grid-column:2;grid-row:2;margin:0}
+  #sheet .popcard .pbody>p,#lf-bgallow .bgbody>p{grid-column:2;grid-row:3;margin:6px auto 0}
+  #sheet .popcard .actions,#lf-bgallow .bgact{grid-column:2;grid-row:4;width:100%;max-width:420px;margin:12px 0 0;flex-direction:row}
+  #sheet .sheetbox.notifcard.popcard .actions button,#lf-bgallow .bgact button{height:46px}
+  #lf-bgallow .bgact button{flex:1}
+  /* no picture: one centred column */
+  #sheet .sheetbox.notifcard.popcard:not(:has(.popimg)),#lf-bgallow:not(:has(.bgimg)){grid-template-columns:minmax(0,1fr)}
+  #sheet .popcard:not(:has(.popimg)) .pbody>b,#sheet .popcard:not(:has(.popimg)) .pbody>p,#sheet .popcard:not(:has(.popimg)) .actions,#lf-bgallow:not(:has(.bgimg)) .bgbody>b,#lf-bgallow:not(:has(.bgimg)) .bgbody>p,#lf-bgallow:not(:has(.bgimg)) .bgact{grid-column:1}
+}
+
+/* v221 (second pass, part 2): artist / genre pages: Play and Shuffle come BEFORE the "photo or GIF" button in the left column (they must be visible without scrolling); Up Next: the list scrolls, the three buttons stay in view */
+@media (orientation:landscape) and (max-height:520px){
+  .dhero{display:flex;flex-direction:column}
+  .dhero .actions:has(button[data-act$="-edit"]){order:2}
+  .dhero .apic{width:min(22vh,100px)}
+  .qlist{max-height:calc(100vh - 215px)}
+}
+
+/* ===== v222 (third pass): LANDSCAPE for Settings and Listening Stats (Stats, View All, song / artist / album details, the Snapshot sheet).
+   Portrait is not touched: .lsw / .lshd / .lsbd / .setcols are display:contents, so in portrait the markup lays out exactly as before. ===== */
+.lsw,.lshd,.lsbd,.setcols{display:contents}
+@media (orientation:landscape) and (max-height:520px){
+  /* Settings: the cards flow in two columns (a card never splits); the profile card spans both */
+  .setcols{display:block;column-count:2;column-gap:28px}
+  .setcols .profile{column-span:all;margin:4px 0 10px}
+  .setcols .sethead{break-after:avoid;break-inside:avoid;margin:10px 6px 6px}
+  .setcols .setcard{break-inside:avoid;margin-bottom:12px}
+  .setcols .setrow{padding:12px 16px}
+  .setcols .setrow .tx b{font-size:1rem}
+  .setcols .setrow .tx span{font-size:.8125rem}
+  /* the name field and its Save / Cancel buttons share one line instead of stacking */
+  .profile span.tx{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+  .profile span.tx>b,.profile span.tx>span:not(.pfbtns){grid-column:1 / -1}
+  .profile span.tx>.pfname{grid-column:1;margin-top:6px}
+  .profile span.tx>.pfbtns{grid-column:2;margin-top:6px;flex-wrap:nowrap}
+  /* Listening Stats and View All: the controls (back, title, period, date arrows, share) are a left column that stays in view; the numbers, charts and lists are on the right */
+  .lsw{display:grid;grid-template-columns:minmax(210px,30%) minmax(0,1fr);column-gap:28px;align-items:start}
+  .lshd{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:center;align-content:start;min-width:0;position:sticky;top:calc(var(--sat) + 4px);max-height:calc(100vh - var(--sat) - var(--lbar) - 30px);overflow-y:auto;scrollbar-width:none}
+  .lshd::-webkit-scrollbar{display:none}
+  .lshd>*{grid-column:1 / -1;min-width:0}
+  .lshd>.top{grid-column:1;grid-row:1;min-height:0;width:44px}
+  .lshd>.top>span{display:none}
+  .lshd>h1.large{grid-column:2;grid-row:1;margin:0;font-size:1.375rem}
+  .lsbd{display:block;min-width:0}
+  .lshd .lsper{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 6px}
+  .lshd .lsper .chip{padding:8px 6px;font-size:.875rem}
+  .lshd .lsper .chip:last-child:nth-child(odd){grid-column:1 / -1}
+  .lshd .lsnav{margin:2px 0 8px;gap:6px}
+  .lshd .lsnav b{font-size:.9375rem;text-align:center;line-height:1.2}
+  .lshd .lstoday{margin:0 0 8px}
+  .lshd .lssnap{margin:0 0 8px;padding:8px 10px;gap:10px;border-radius:18px}
+  .lshd .lssnap .meta span{display:none}
+  .lshd .lssnapic{flex:0 0 36px;height:36px}
+  .lshd .lssnapic svg{width:20px;height:20px}
+  .lshd .detail-t{margin:2px 0 4px;grid-row:2}
+  .lshd .detail-t .m{font-size:.8125rem}
+  .lshd .hsseg{flex-wrap:wrap;gap:6px;margin:0 0 6px}
+  .lshd .hsseg .chip{flex:1 1 auto;padding:7px 8px;font-size:.8125rem}
+  .lshd .lsfilter{margin:0 0 6px}
+  .lsbd .lsbars{height:96px}
+  .lsbd .lsclrwrap{margin:28px 0 20px;padding-top:16px}
+  /* the Snapshot sheet: the picture on the left, title and buttons on the right, so Save / Share / Close are always on screen */
+  #sheet #snapbox:has(.snapimg){display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:24px;align-content:center;align-items:center}
+  #sheet #snapbox .snapimg{grid-column:1;grid-row:1 / span 4;max-height:calc(100vh - 64px);margin:0}
+  #sheet #snapbox:has(.snapimg)>b,#sheet #snapbox:has(.snapimg)>p,#sheet #snapbox:has(.snapimg)>.actions{grid-column:2}
+}
+
+/* v222 (third pass, part 2): LANDSCAPE for the pop-up sheets with long option lists (export, shortcuts, styles ...: two columns, the Cancel / Close button always visible),
+   and for the Animation and Lyrics animation pages (the live preview and presets stay on the left, the sliders scroll on the right; before, the sticky preview took the whole screen height). */
+@media (orientation:landscape) and (max-height:520px){
+  #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6)){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px;align-content:start;width:min(760px,calc(100% - var(--gl) - var(--gr)))}
+  #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>*{grid-column:1 / -1}
+  #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>.row{grid-column:auto;margin-bottom:8px}
+  #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>p{margin:4px 0 10px}
+  .screen.sub:has(>.animdock){display:grid;grid-template-columns:minmax(0,44%) minmax(0,1fr);column-gap:24px;align-content:start;align-items:start}
+  .screen.sub:has(>.animdock)>.top{grid-column:1 / -1}
+  .screen.sub:has(>.animdock)>.animdock{grid-column:1;grid-row:2;position:sticky;top:calc(var(--sat) + 4px);margin:0;padding:0 2px 0 0;border:0;background:transparent;max-height:calc(100vh - var(--sat) - var(--lbar) - 30px);overflow-y:auto;scrollbar-width:none}
+  .screen.sub:has(>.animdock)>.animdock::-webkit-scrollbar{display:none}
+  .screen.sub:has(>.animdock)>.setcard{grid-column:2;grid-row:2;margin:0 0 12px}
+  .animdock .lyr.lyprev{margin:0 0 6px}
+  .animdock .lyprev .lyprevbody{height:120px}
+  .animdock .lyprev .ln{font-size:1.125rem}
+}
+
+/* v222 (third pass, part 3): very short landscape screens (<= 360 px high, e.g. 700x320): the Stats / View All left column is tightened so the date arrows, Share snapshot and the filter box fit without scrolling */
+@media (orientation:landscape) and (max-height:360px){
+  .lshd>h1.large{font-size:1.25rem}
+  .lshd>.top,.lshd .gbtn{width:38px;height:38px}
+  .lshd .lsper{gap:4px;margin:6px 0 4px}
+  .lshd .lsper .chip{padding:5px 6px;font-size:.8125rem}
+  .lshd .lsnav{margin:0 0 4px}
+  .lshd .lsnav .gbtn.sm{width:34px;height:34px}
+  .lshd .lssnap{padding:5px 9px;margin:0 0 4px}
+  .lshd .lssnapic{flex:0 0 30px;height:30px}
+  .lshd .hsseg{gap:4px;margin:0 0 4px}
+  .lshd .hsseg .chip{padding:5px 7px;font-size:.75rem}
+  .lshd .lsfilter{padding:7px 12px;margin:0 0 4px}
+}
+

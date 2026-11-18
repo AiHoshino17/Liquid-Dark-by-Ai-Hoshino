@@ -188,13 +188,13 @@ export function initLStats(D) {
     if (S.follow) S.ref = Date.now();   // showing "now": the day / week / month rolls over by itself (midnight) while the screen is open
     const key = keyOf(); if (S.period !== 'overall' && (!S.data || S.key !== key || S.stale)) load(S.stale); ensureAll();
     const ov = S.period === 'overall', cur = ov || isCurrent(S.period, S.ref), fut = ov || isFuture(S.period, shiftRef(S.period, S.ref, 1));
-    return `${D.header({ back: 1, right: 'none' })}<h1 class="large">Listening Stats</h1>
+    return `<div class="lsw"><div class="lshd">${D.header({ back: 1, right: 'none' })}<h1 class="large">Listening Stats</h1>
     <div class="hsseg lsper">${PERIODS.map(([v, l]) => `<button class="chip ${S.period === v ? 'sel' : ''}" data-act="ls-period" data-v="${v}">${l}</button>`).join('')}</div>
     ${ov ? '' : `<div class="lsnav"><button class="gbtn sm" data-act="ls-prev" aria-label="Previous">${I.back}</button><b>${label(S.period, S.ref)}</b><button class="gbtn sm" data-act="ls-next" aria-label="Next" ${fut ? 'disabled' : ''}>${I.chev}</button></div>`}
     ${cur ? '' : `<button class="chip lstoday" data-act="ls-today">Back to today</button>`}
-    <button class="lssnap" data-act="ls-snap"><span class="lssnapic">${SNAPIC}</span><span class="meta"><b>Share snapshot</b><span>${ov ? 'All time' : label(S.period, S.ref)} · your top albums, songs and artists as a picture</span></span></button>
-    ${ov ? overallBody() : S.data && S.key === key ? body() : '<div class="empty">Loading…</div>'}
-    <div class="lsclrwrap"><button class="chip lsclr" data-act="ls-clear-menu">Clear data…</button></div>`;
+    <button class="lssnap" data-act="ls-snap"><span class="lssnapic">${SNAPIC}</span><span class="meta"><b>Share snapshot</b><span>${ov ? 'All time' : label(S.period, S.ref)} · your top albums, songs and artists as a picture</span></span></button></div>
+    <div class="lsbd">${ov ? overallBody() : S.data && S.key === key ? body() : '<div class="empty">Loading…</div>'}
+    <div class="lsclrwrap"><button class="chip lsclr" data-act="ls-clear-menu">Clear data…</button></div></div></div>`;
   };
 
   /* ---------- View All (songs / artists / albums / genres) ---------- */
@@ -203,11 +203,11 @@ export function initLStats(D) {
     const A = scopeAgg(); if (!A) return `${D.header({ back: 1, right: 'none' })}<div class="empty">Loading…</div>`;
     const sort = S.sort[kind], items = rank(A[MAPS[kind]], sort), name = { songs: 'Songs', artists: 'Artists', albums: 'Albums', genres: 'Genres' }[kind];
     const sub = S.scope === 'all' ? 'All time' : label(S.period, S.ref);
-    return `${D.header({ back: 1, right: 'none' })}<h1 class="large">${name}</h1><div class="detail-t" style="text-align:left"><div class="m">${sub} · ${pl(items.length, kind.slice(0, -1))}</div></div>
+    return `<div class="lsw"><div class="lshd">${D.header({ back: 1, right: 'none' })}<h1 class="large">${name}</h1><div class="detail-t" style="text-align:left"><div class="m">${sub} · ${pl(items.length, kind.slice(0, -1))}</div></div>
     <div class="hsseg">${[['period', label(S.period, S.ref)], ['all', 'All time']].map(([v, l]) => `<button class="chip ${S.scope === v ? 'sel' : ''}" data-act="ls-scope" data-v="${v}">${l}</button>`).join('')}</div>
     <div class="hsseg">${SORTS.map(([v, l]) => `<button class="chip ${sort === v ? 'sel' : ''}" data-act="ls-sort" data-k="${kind}" data-v="${v}">${l}</button>`).join('')}</div>
-    <input id="lsfilter" class="lsfilter" type="search" placeholder="Filter ${name.toLowerCase()}" autocomplete="off">
-    ${items.length ? `<div class="lslist" id="lsitems">${items.map((e, i) => `<div data-n="${escH(fold(unesc(String(e.name))))}">${ROWS[kind](e, i)}</div>`).join('')}</div>` : '<div class="empty">Nothing listened to in this range.</div>'}`;
+    <input id="lsfilter" class="lsfilter" type="search" placeholder="Filter ${name.toLowerCase()}" autocomplete="off"></div>
+    <div class="lsbd">${items.length ? `<div class="lslist" id="lsitems">${items.map((e, i) => `<div data-n="${escH(fold(unesc(String(e.name))))}">${ROWS[kind](e, i)}</div>`).join('')}</div>` : '<div class="empty">Nothing listened to in this range.</div>'}</div></div>`;
   };
 
   /* ---------- details with listening history ---------- */
@@ -223,13 +223,13 @@ export function initLStats(D) {
     const sk = kind === 'song' ? A.songs.get(key) : kind === 'artist' ? A.artists.get(key) : A.albums.get(key);
     const art = kind === 'song' ? cov(songCover(key), 'lsbigart') : kind === 'album' ? cov(albumObj(key, title), 'lsbigart') : origArtistCov(key);
     const t = kind === 'song' ? byId(key) : null;
-    return `${D.header({ back: 1, right: 'none' })}<div class="detail-art">${art}</div><div class="detail-t"><b>${title || key}</b><div class="m">${kind === 'song' ? (A.songs.get(key) ? A.songs.get(key).artists.join(', ') : '') : ''}</div></div>
-    ${t ? `<div class="actions"><button data-act="play" data-list="all" data-i="${D.tracks().indexOf(t)}">${I.play}Play</button></div>` : ''}
-    ${A.totalMs ? stats([big(sk ? sk.plays : 0, 'plays'), big(fmtDur(A.totalMs), 'listening'), big(fmtDur(A.fgMs), 'in the app'), big(fmtDur(A.bgMs), 'background'), big(fdate(sk && sk.first), 'first listened'), big(fdate(sk && sk.last), 'last listened')]) : '<div class="empty">No listening history yet.</div>'}
+    return `${D.header({ back: 1, right: 'none' })}<div class="dwrap"><div class="dhero"><div class="detail-art">${art}</div><div class="detail-t"><b>${title || key}</b><div class="m">${kind === 'song' ? (A.songs.get(key) ? A.songs.get(key).artists.join(', ') : '') : ''}</div></div>
+    ${t ? `<div class="actions"><button data-act="play" data-list="all" data-i="${D.tracks().indexOf(t)}">${I.play}Play</button></div>` : ''}</div>
+    <div class="dbody">${A.totalMs ? stats([big(sk ? sk.plays : 0, 'plays'), big(fmtDur(A.totalMs), 'listening'), big(fmtDur(A.fgMs), 'in the app'), big(fmtDur(A.bgMs), 'background'), big(fdate(sk && sk.first), 'first listened'), big(fdate(sk && sk.last), 'last listened')]) : '<div class="empty">No listening history yet.</div>'}
     ${kind !== 'song' && A.songs.size ? head('Most played') + `<div class="lslist">${rank(A.songs).slice(0, 10).map(rowSong).join('')}</div>` : ''}
     ${kind === 'song' ? '' : `<div class="actions"><button data-act="${kind}" data-id="${escH(key)}">Open in library</button></div>`}
     ${A.totalMs ? `<div class="actions"><button data-act="ls-clear-one" data-kind="${kind}" data-id="${escH(key)}">Clear this ${kind}'s history</button></div>` : ''}
-    ${A.totalMs ? head('Listening history') + `<div class="lslist">${histRows(mine)}</div>` : ''}`;
+    ${A.totalMs ? head('Listening history') + `<div class="lslist">${histRows(mine)}</div>` : ''}</div></div>`;
   };
 
   /* ---------- Home section ---------- */

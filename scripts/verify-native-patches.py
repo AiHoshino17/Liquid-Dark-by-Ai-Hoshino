@@ -22,7 +22,7 @@ for n in ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK', 'FOREGROUND
 for k, label in [('.PlaybackService', 'PlaybackService service'), ('MediaButtonReceiver', 'MediaButtonReceiver'), ('<queries>', 'queries block'),
                  ('.LiquidWidget', 'LiquidWidget receiver'), ('.NowPlayingWidget', 'NowPlayingWidget receiver'), ('.UpdateDownloadService', 'UpdateDownloadService'),
                  ('.UpdateInstallActivity', 'UpdateInstallActivity'), ('androidx.core.content.FileProvider', 'FileProvider'), ('@xml/file_paths', 'FileProvider paths'),
-                 ('android:screenOrientation', 'portrait lock'), ('android:largeHeap', 'largeHeap'), ('android:hardwareAccelerated', 'hardwareAccelerated')]:
+                 ('android:screenOrientation="fullUser"', 'rotation allowed (fullUser)'), ('orientation|screenSize', 'configChanges for a turn'), ('android:largeHeap', 'largeHeap'), ('android:hardwareAccelerated', 'hardwareAccelerated')]:
     if k not in man: bad.append('manifest: %s' % label)
 for n in ['Albums', 'Artists', 'Shuffle', 'Search', 'Favorites', 'Recent', 'Playlists', 'Genres']:
     if '.LiquidTiles$%s"' % n not in man: bad.append('manifest: LiquidTiles$%s receiver' % n)

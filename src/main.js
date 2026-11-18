@@ -535,8 +535,8 @@ const screens = {
     ${hc.order.filter(k => !hiddenFor(hc, new Date().getHours()).includes(k)).map(k => parts[k] || '').join('')}`; },
   albums: () => `${header()}<h1 class="large">Albums</h1>${sortBar('albums')}${albumsBody()}`,
   library: () => `${header()}<h1 class="large">Library</h1>
-    ${[['playlist', 'Playlists', 'playlists'], ['heart', 'Favorites', 'favorites'], ['recent', 'Recently Played', 'recentPlayed'], ['top', 'Most Played', 'topPlayed'], ['artist', 'Artists', 'artists'], ['album', 'Albums', 'albums'], ['song', 'Songs', 'songs'], ['genre', 'Genres', 'genres'], ['folder', 'Folders', 'folders']]
-      .map(([ic, l, k]) => `<button class="row" data-act="lib" data-k="${k}"><span class="ic">${I[ic]}</span><span class="lbl">${l}</span><span class="chev">${I.chev}</span></button>`).join('')}
+    <div class="libgrid">${[['playlist', 'Playlists', 'playlists'], ['heart', 'Favorites', 'favorites'], ['recent', 'Recently Played', 'recentPlayed'], ['top', 'Most Played', 'topPlayed'], ['artist', 'Artists', 'artists'], ['album', 'Albums', 'albums'], ['song', 'Songs', 'songs'], ['genre', 'Genres', 'genres'], ['folder', 'Folders', 'folders']]
+      .map(([ic, l, k]) => `<button class="row" data-act="lib" data-k="${k}"><span class="ic">${I[ic]}</span><span class="lbl">${l}</span><span class="chev">${I.chev}</span></button>`).join('')}</div>
     <h2 class="sec">Recently Added</h2><div class="hscroll">${recentAlbums(10).map(a => albumCard(a)).join('')}</div>`,
   search: () => `${header()}<h1 class="large">Search</h1>
     <label class="searchpill">${I.search}<input id="q" aria-label="Search" placeholder="Artists, Songs, Lyrics and more" autocomplete="off"></label>
@@ -584,17 +584,17 @@ function results() {
 }
 const sub = {
   album: id => { const a = byAlbum(id) || NOALBUM, ts = albumTracks(id);
-    return `${header({ back: 1 })}<div class="detail-art">${cov(a)}</div>
+    return `${header({ back: 1 })}<div class="dwrap"><div class="dhero"><div class="detail-art">${cov(a)}</div>
     <div class="detail-t"><b>${a.title}</b><div class="a">${a.artist}</div><div class="m">${[a.genre, a.year, ts[0] ? quality(ts[0]) : ''].filter(Boolean).join(' · ')}</div></div>
     <div class="actions"><button data-act="playall" data-list="album:${id}">${I.play}Play</button><button data-act="shuffleall" data-list="album:${id}">${I.shuffle}Shuffle</button></div>
-    <div class="actions"><button data-act="alp-edit" data-id="${id}">Album picture or GIF</button></div>
-    ${albumRows(ts, id)}`; },
+    <div class="actions"><button data-act="alp-edit" data-id="${id}">Album picture or GIF</button></div></div>
+    <div class="dbody">${albumRows(ts, id)}</div></div>`; },   // v221: .dwrap / .dhero / .dbody are display:contents in portrait (nothing changes); sideways the picture, title and buttons sit in a left column and the songs scroll on the right
   playlists: () => `${header({ back: 1, right: 'plus' })}<h1 class="large">Playlists</h1>${playlists.length ? `<div class="grid">${playlists.map(p => { const ts = plTracks(p); return `<button class="card" data-act="playlist" data-id="${p.id}">${plArt(p, ts)}<span class="t blk">${p.name}</span><span class="s blk">${pl(ts.length, 'song')}</span></button>`; }).join('')}</div>` : '<div class="empty">No playlists yet. Tap + to create one.</div>'}`,
   playlist: id => { const p = playlists.find(x => x.id === id); if (!p) return `${header({ back: 1 })}<div class="empty">Playlist not found.</div>`;
     const ts = plTracks(p);
-    return `${header({ back: 1, right: 'plmenu' })}<div class="detail-art">${plArt(p, ts)}</div><div class="detail-t"><b>${p.name}</b><div class="m">${pl(ts.length, 'song')}${plEdit ? ' · editing' : ''}</div></div>
-    ${ts.length ? actions('pl:' + id) : ''}
-    ${ts.length ? ts.map((t, i) => `<div class="plrow" data-dkind="pl" data-drow="${i}">${songRow(t, 'pl:' + id, i)}${plEdit ? `<div class="plctl"><button class="gbtn sm dh" data-drag="pl" aria-label="Drag to reorder">${I.grip}</button><button class="gbtn sm sr" aria-label="Move up" data-act="pl-up" data-i="${i}" ${i ? '' : 'disabled'}>↑</button><button class="gbtn sm sr" aria-label="Move down" data-act="pl-down" data-i="${i}" ${i < ts.length - 1 ? '' : 'disabled'}>↓</button><button class="gbtn sm" aria-label="Remove ${t.title} from playlist" data-act="pl-rm" data-i="${i}">✕</button></div>` : ''}</div>`).join('') : '<div class="empty">Empty playlist. Tap ⋯ then Add Songs.</div>'}`; },
+    return `${header({ back: 1, right: 'plmenu' })}<div class="dwrap"><div class="dhero"><div class="detail-art">${plArt(p, ts)}</div><div class="detail-t"><b>${p.name}</b><div class="m">${pl(ts.length, 'song')}${plEdit ? ' · editing' : ''}</div></div>
+    ${ts.length ? actions('pl:' + id) : ''}</div><div class="dbody">
+    ${ts.length ? ts.map((t, i) => `<div class="plrow" data-dkind="pl" data-drow="${i}">${songRow(t, 'pl:' + id, i)}${plEdit ? `<div class="plctl"><button class="gbtn sm dh" data-drag="pl" aria-label="Drag to reorder">${I.grip}</button><button class="gbtn sm sr" aria-label="Move up" data-act="pl-up" data-i="${i}" ${i ? '' : 'disabled'}>↑</button><button class="gbtn sm sr" aria-label="Move down" data-act="pl-down" data-i="${i}" ${i < ts.length - 1 ? '' : 'disabled'}>↓</button><button class="gbtn sm" aria-label="Remove ${t.title} from playlist" data-act="pl-rm" data-i="${i}">✕</button></div>` : ''}</div>`).join('') : '<div class="empty">Empty playlist. Tap ⋯ then Add Songs.</div>'}</div></div>`; },
   favorites: () => { const ts = favSorted();
     return `${header({ back: 1 })}<h1 class="large">Favorites</h1><div class="detail-t" style="text-align:left"><div class="m">${pl(ts.length, 'song')}</div></div>
     ${ts.length ? actions('fav') + '<div class="actions"><button data-act="fav-sort">Sort: ' + ({ new: 'Newest', title: 'Title', artist: 'Artist' }[favSort] || 'Newest') + '</button><button data-act="fav-clear">Unfavorite all</button></div>' + ts.map((t, i) => songRow(t, 'fav', i)).join('') : '<div class="empty">No favorites yet. Tap the heart on Now Playing, or ⋯ on any song.</div>'}`; },
@@ -615,10 +615,10 @@ const sub = {
   artists: () => `${header({ back: 1 })}<h1 class="large">Artists</h1>${sortBar('artists')}${artistsBody()}`,
   genres: () => `${header({ back: 1 })}<h1 class="large">Genres</h1>${genres.length ? genres.map(g => `<button class="row grow" data-act="genre" data-id="${g.n}">${genreCov(g.n, 'thumb')}<span class="lbl" style="font-size:1.125rem">${g.n}</span><span class="cnt">${g.count}</span><span class="chev">${I.chev}</span></button>`).join('') : '<div class="empty">No genres yet.</div>'}`,
   genre: name => { const n = E(name), ts = genreTracks(n), as = genreAlbums(n);
-    return `${header({ back: 1 })}<div class="apic">${genreCov(n)}</div><h1 class="large">${n}</h1><div class="detail-t" style="text-align:left"><div class="m">${pl(as.length, 'album')} · ${pl(ts.length, 'song')}</div></div>
+    return `${header({ back: 1 })}<div class="dwrap"><div class="dhero"><div class="apic">${genreCov(n)}</div><h1 class="large">${n}</h1><div class="detail-t" style="text-align:left"><div class="m">${pl(as.length, 'album')} · ${pl(ts.length, 'song')}</div></div>
     <div class="actions"><button data-act="gp-edit" data-id="${n}">Genre picture or GIF</button></div>
-    ${ts.length ? actions('genre:' + n) : ''}${as.length ? `<h2 class="sec">Albums</h2>${albumList(as)}` : ''}
-    <h2 class="sec">Songs</h2>${ts.map((t, i) => songRow(t, 'genre:' + n, i)).join('')}`; },
+    ${ts.length ? actions('genre:' + n) : ''}</div><div class="dbody">${as.length ? `<h2 class="sec">Albums</h2>${albumList(as)}` : ''}
+    <h2 class="sec">Songs</h2>${ts.map((t, i) => songRow(t, 'genre:' + n, i)).join('')}</div></div>`; },
   folder: path => { const p = E(path), { subs, files } = folderEntries(p);
     return `${header({ back: 1 })}<h1 class="large">${p ? p.split('/').pop() : 'Folders'}</h1>${p ? `<div class="detail-t" style="text-align:left"><div class="m">${p}</div></div>` : ''}
     ${subs.map(f => navRow('folder', f.path, 'folder', f.name, f.count)).join('')}
@@ -626,10 +626,10 @@ const sub = {
     ${!subs.length && !files.length ? '<div class="empty">No folders yet. Choose your music folder in Settings.</div>' : ''}`; },
   albumsAll: () => `${header({ back: 1 })}<h1 class="large">Albums</h1>${sortBar('albums')}${albumsBody()}`,
   artist: name => { const n = artistName(E(name)) || E(name), ts = artistTracks(n), ids = new Set(ts.map(t => t.albumId)), as = albums.filter(a => a.artist === n || ids.has(a.id)).sort((x, y) => (y.year || 0) - (x.year || 0));   // C3: albums they only feature on count too
-    return `${header({ back: 1 })}<div class="apic">${artistCov(n)}</div><h1 class="large">${n}</h1><div class="detail-t" style="text-align:left"><div class="m">${pl(as.length, 'album')} · ${pl(ts.length, 'song')}</div></div>
+    return `${header({ back: 1 })}<div class="dwrap"><div class="dhero"><div class="apic">${artistCov(n)}</div><h1 class="large">${n}</h1><div class="detail-t" style="text-align:left"><div class="m">${pl(as.length, 'album')} · ${pl(ts.length, 'song')}</div></div>
     <div class="actions"><button data-act="apic-edit" data-id="${n}">Artist photo or GIF</button></div>
-    ${ts.length ? actions('artist:' + n) : ''}${as.length ? `<h2 class="sec">Albums</h2>${albumList(as)}` : ''}
-    ${ts.length ? `<h2 class="sec">Songs</h2>${ts.map((t, i) => songRow(t, 'artist:' + n, i)).join('')}` : ''}`; },
+    ${ts.length ? actions('artist:' + n) : ''}</div><div class="dbody">${as.length ? `<h2 class="sec">Albums</h2>${albumList(as)}` : ''}
+    ${ts.length ? `<h2 class="sec">Songs</h2>${ts.map((t, i) => songRow(t, 'artist:' + n, i)).join('')}` : ''}</div></div>`; },
   homecustom: id => {   // v119: edit one of your own Home sections: name, items (order, remove) and a search to add albums, artists and songs
     const pn = set.home.pins.find(x => x.id === id && x.type === 'custom'), top = t => `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">${t}</b><span style="width:44px"></span></div>`;
     if (!pn) return top('Your section') + '<div class="empty">This section was removed.</div>';
@@ -721,7 +721,7 @@ const sub = {
     const row = (t, d, right = '') => `<div class="setrow"><div class="tx"><b>${t}</b>${d ? `<span>${d}</span>` : ''}</div>${right}</div>`;
     const tg = (k, on) => `<button class="toggle ${on ? 'on' : ''}" data-act="tg" data-k="${k}"></button>`;
     return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Settings</b><span style="width:44px"></span></div>
-    <div class="profile"><button class="pfmain" data-act="pfpick" aria-label="Choose profile picture, GIF or video"><span class="avatar">${pfHtml() || '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c.9-4 4-6 7.5-6s6.6 2 7.5 6"/></svg>'}</span></button>
+    <div class="setcols"><div class="profile"><button class="pfmain" data-act="pfpick" aria-label="Choose profile picture, GIF or video"><span class="avatar">${pfHtml() || '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c.9-4 4-6 7.5-6s6.6 2 7.5 6"/></svg>'}</span></button>
       ${set.userName && !nameEdit ? `<button class="tx pfnamebtn" data-act="nameedit" aria-label="Your name is ${escH(set.userName)}. Tap to change it"><b>${escH(set.userName)}</b><span>Tap your name to change it</span></button>`
         : `<span class="tx"><b>${set.userName ? 'Change your name' : 'Your name'}</b><span>Shown in the Home greeting. Tap the circle for a photo, GIF or video.</span><input class="pfname" id="pfname" type="text" maxlength="24" value="${escH(set.userName || '')}" placeholder="Type your name" autocomplete="given-name" autocapitalize="words" aria-label="Your name, shown in the Home greeting"><span class="pfbtns"><button class="chip sel" data-act="name-save">Save</button>${set.userName ? '<button class="chip" data-act="name-cancel">Cancel</button><button class="chip" data-act="name-rm">Remove name</button>' : ''}</span></span>`}${pfHtml() ? '<button class="chip" data-act="pfrm">Remove</button>' : ''}</div>
     <div class="sethead">Display</div><div class="setcard">
@@ -790,7 +790,7 @@ const sub = {
     <div class="sethead">Diagnostics</div><div class="setcard">
       <button class="setrow" data-act="notiftest" style="width:100%;text-align:left"><span class="tx"><b>Notification test</b><span>Sends a sample media notification</span></span></button>
       <button class="setrow" data-act="copylog" style="width:100%;text-align:left"><span class="tx"><b>Copy log</b><span>Copies recent errors so you can paste them to an AI</span></span></button></div>
-    <div class="sethead">About</div><div class="setcard"><div class="setrow" style="display:flex;align-items:center;gap:14px"><img id="lf-about-logo" alt="Liquid Dark app logo"${appLogoSrc() ? ` src="${appLogoSrc()}"` : ''} style="display:${appLogoSrc() ? 'block' : 'none'};width:48px;height:48px;object-fit:contain;border-radius:12px"><span class="tx"><b>Liquid Dark</b><span>Version ${APP_BUILD} (${APP_VERSION}) · code ${MY_CODE_ID || 'n/a'}</span></span></div><button class="setrow" data-act="updcheck" style="width:100%;text-align:left"><span class="tx"><b>Check for updates</b><span>Look for a newer build on GitHub now.</span></span>${I.chev}</button>${row('Credits', '♥︎★ Ai Hoshino <span class="credheart" aria-hidden="true">♥️</span><img class="credstar" alt="" aria-hidden="true" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAaC0lEQVR4nO19e3RURbrvr6r27t2dTtKdDkkIL3ll9BIQFIQZGCRwZS3gDnpGTzdHx3Mzl+WEZ2AQDwIy7vQZjzcuRXEQmCBenHE5Z24y3ovOrHu8iitxwBEQ5SIEhwETg0kIIc9+pF+7qu4f9A4NgjzSSMfxt1avdKe7q76q76vvVV9VA9/hO/QBJP74Dt8kKisrma7r1Hyt6zqtrKxkN5OmvxtIKXslvqSkRHW73ZaEt/vdauhPBBMpJQghcuvWrcVOp/OhcDj8PQDQNO1Ee3v7KytWrPifUkpKCBE3m9irhXKzCbha6LpOCCFiy5YtzzmdztXV1dU4fvw4AGDcuHHDp0+fPnvLli0jCSH/vbKyknk8Hn6TSf72wO12MykleeGFF6a8/vrrcvbs2VGr1WpkZWXxrKwsbrVaY26323j11VejzzzzTAEAkmgjUhn9gki32w1CiHQ6nYsaGhrkgQMHiMvlYjabjdpsNpqVlaVUV1dLv9+vZmdnLwQg0U/GlvJE6rpOPR6PeO65575HCHnwnXfekYQQBgBCCAghQAhBLBZj7733nmSMLdR1Pd3r9fJEg52qSHkGFBUVUQDS6XT+N5/PZz127JiwWq1EiPN2VkoJTdPIwYMHRTgczh02bNgCALKmpiblXdNUZwApKirixcXFVlVV3R988AFCoRCl9DzZhBBwzqEoCrq7u8mRI0egKMpSAKSmpiblvaGUZoCu64wQIqdNm/ZPkUhk1L59+7jNZqOJ0m8YBux2OwghUFWV1tTUcMMw7ty6descr9crUj1AS2kGABAAiNVqXXT48GHZ0dEBRTnnOcf1PoYMGYKHHnoI06dPh6IoaGpqkvX19UhLS1t6c0m/OqQsA3RdV7xer9i2bdtcwzC+X11dLS0WC5NSAjjHACEEcnJyoKoqCgoKMGLECHDOld27dwsp5ZyXXnppgsfj4am8ClKWAceOHZMAkJaWtryurg5NTU1S0zSYDDAhpYQQAlJKjBo1Cpqm4cSJE6K1tVWx2+0lN4X4a0BKMkBKSauqqvjzzz9fKISYvXv3bkEpZRd9BoQQBAIBSCkRi8UwePBguFwuRCIRtm/fPkkpfVjX9QEejydlXdKUZEBVVRUBAJfLtailpUU5fvy4sFqtSDS+wDk1FAqFIKWElBJpaWkYMmQIFEUhBw4c4D6fL2Po0KE/BYBUdUlTkQHE4/GIkpISByHk4QMHDkjOOSPkqwJMKUVPTw9isVivOzpq1ChYrVb4fD768ccfw2KxPDJjxgylqKiIIwWTjynHAF3XGQA5ZcqURd3d3Vn79+/nNpuNXCz9wLkVEI1GwTkHpRSGYSA3NxcDBgyAoih07969PBwO3/qTn/xkASFExttOKaRUNjSup3lHR4emKMrPPvroI+n3+2lGRsZX1I9pA2KxGMLhMDRNQywWg6ZpGDFiBE6fPo2zZ8/i6NGj8s4771wJ4N9xzq1NKaTUCigrK2OEEDl27NgfRaPR0R9++KGwWq30Ys/HhLkCwuEwTBVlGAZGjBgBm80GSin74IMPJCFk4osvvnhHKgZmqcYADoBomvYvn376Kc6cOQNVVb/iel6MxNjAMAw4nU4MGTIElFLU19eLuro66nA4VgFAVVXVDR/HtSBlGFBZWckIIfKFF16YTCmd8uGHHwpVVdnXTT6lFJxz+Hw+MMYuYNSoUaNAKYUQgu3du1cSQtzl5eVDqqqqeCrtFaQMISYcDkdpXV0dPv/880sGXhdDSoloNNr72rQL+fn5SE9Ph8ViIUePHuVtbW2WAQMGlAJAYWFhynhDKcGAeM6f//KXv7yFMbbg/fffl0KIS7qel0JXV9cFr4UQsNvtGDZsGDjnCIfDbM+ePVAUZeHSpUvTPR6PQIq4pCnBAMTpyM/PX9re3q7U1tZym832Fc/ncuD8q9u/nHMUFBSAMQZN08gnn3xihMPhARMmTHgYQMq4pDfdDZVSEkII13XdqSjKI++//74Mh8MsPT39igyQUoIxBp/PB8MwYO4TmGooLy8POTk5OHv2LDo7O8mBAwfk3XffXVJSUvIKgJTYtL/pK6CsrIwBkIMHD/6HWCzmOnz4MNc0jVxJ9yfCDMYSIaWEoigYNWoUDMOA1Wpl+/btEwDuGDdu3LRUcUlvOgMKCwulrutUVdXS/fv3o729nVyN6wmcXwGBQAChUAiU0q+4pMOGDYPVaoWiKGhubsZf//pXpKen/8uNHtfV4mYygLz44ouax+PhWVlZ9zHG7ty7dy/XNO1rXc+rbjwhJsjLy0MsFgOllL333nuCMTavvLx8cnyvwHLl1m4ckm0DCHCuiAo45+7V1tZe4G0UFhbK2tpa6fV6xcqVKyMbNmy4NTc391f79u0TLS0txGazXZX093YYj4YDgQAyMjIuUEXmChk6dCi++OIL2Gw21NXVob6+Xo4cOXLzjBkz/rPH4wnEaaa4tED2GiKv12sS1ncJMem/mg8lBi6mD11bW0uKiopQU1ODwsJCCQDXUo1WXl7uyM7OXmC328saGxvzf/WrX4loNEovDqiuOIA4A+bNm4fhw4cjGo32piWklLBYLPjyyy/xpz/9CRaLBdFoFE6nU/z85z+nLpfr41AoVPb222+/U1VVFb1CV70wbYc5B2fPnu0luLa2VgJAWVmZJIRccSAXMEBKSeJGEQDg9Xo5roHbbrebjRkzRh09evQtmqaxWCzmUhRleLxWM5cQMjISidiFEP8pHA7fQggZdPjwYezatUtEIhGqKMo1TT5wLhoOhUK4++67MWHChF5bEB8PLBYLGhsb8cc//hGqqgIAYrEYMjIyxIIFC+jIkSPBGPsbY6xdUZTPNE0Lcs7rAJwVQhBK6TFKaTgcDoesVmuTx+O5akbFabhgTsvKyngiY0jiBy/HsR07dgzSNI1yzl1Wq3UIpVQQQvIIIcMjkUgGpfS2SCSCSCRyK6XU6vf7BwMg5lZhMBhER0cHotEo2tra4Pf7EQgE0NTUxDs7O6mmaeRaJb93APEVMGLECMybNw/hcPgCBqiqiubmZrz11lu9eSXTPsRiMZGdnY1hw4ZRVVXhcDgwYMAA2Gw2ZGZmIi0tDYQQsxAgkp6e3so577ZarQ0Wi4VIKT9TVdXPGKuNRqNBAAiFQicdDkeosbExsnLlyrOXY4o510riP3Rdd40YMeIhTdMmxWIxFovFxhBCbKFQ6JZQKMQMw9AIIejp6UFXVxc452htbUUwGEQ4HEZraysIIWhvb0csFgPnXEYiEW4YRm8VG6UUhBDCGCOKojC73d67o3U9MCf51KlTaGlpQX5+PkKhUO/7mqahubkZFxdyKYoCRVGoz+fDoUOHhBBCSimlSSOlFIqiwGq1MkopsdlsmsPhGCqEGDpo0KCxiqLA5XLNczqdsFgsyMjIQNx+8Z6eHkNRlNDOnTubhBBdVqu1TlXVkN/v33P06NE3CCEhnBN+2VvEmpaWNjA3N/ddIcSYffv2ob29HW1tbQCAzs5OhMNhGIaBnp4eHpceCCFkXN+SuKSQ+OBIHEh8XDxxiX/7AlOiXS4XZs+eDZfL1Vs1cfz4cfz5z3/+2u9eKuVhCkXCQxqGIeN9yTjd0hwvYwyKosButzNKKex2O5xOJwghyMnJQVZWFqZOnQrO+f/r7OycvXr16nYAIGYp98svv/zbaDT6z88++2yktbWVKYoCswSNMUbiT4kpHZcj+lLPvwmY0a/FYsHw4cPhcDjQ1NSE5uZmMMYuSe+1tn+p58D5scZXuTSfc84lAMk5l5xz3HLLLfyxxx7TOOf/VlJSsqG6ulohAPDss8/aXS5X3WuvvTbg4MGDxOl09upvQshNndhrgSn1sVgMUkpQSmGxWL5Rmi9mlDmHlFJ0dHSI2bNn4/777z9aXFw8HgBRACA3Nzfb5/O5mpubqc1mk5zzpKqIbwrmYDVN6x38N03/pYTVpMNqteLs2bM0Go2a8ZekAOD3+6OqqsYsFktvuXd/RmKxVqrAXJ2EEJlYXUwBkOXLl5/RNO3zadOmiVAoJExJ+g7JgTn5QggxY8YMQin9EjgXN9HKykoKQAaDwY333HMPve+++0hPT4/4NqyEVIC5bRqJRERxcTErLCw0urq6ngZA3G43qMfj4bqu0+XLl796+vTpZfPmzZMLFy6knHOemGP/DtcOxhjC4TBUVeXLly+nU6ZMMZqamv5x1apVNbquE4/Hw3tF3HRHn3/++fsGDhy4s66uLmv79u1GIBBQbDbbJXedvsPlYabJBw0aZCxevFjJyspqamxs/PH69es/SjzF2SveHo+HV1RUqI8++uibx44dmz5s2LATa9asUQYNGmT4/X4wdtP3LvoFTJfT5/Nh7Nixsccff1xxOBx7jx8//oP169d/pOu6kpi0/IqSj9flG8XFxc6ioqI3AMx69dVX+ccff8wyMzNvimvXX2C6vj09PbKoqEg89NBDLBgMvvr222+XVlVVBS51fvmSVjbhtDnZsWPHNrvdvuiNN94w3n33XWa1WkniztN3OAezNpVzLu6//346a9YsdHZ2PrN06dK1wLmUvtfr/com92XdHDNH5PV6xUsvvbQiNzf3xZqaGlRWVgpCCFVV9aqrFr7toJQiEonAYrHwhQsXsrFjx/a0trauXLly5Y7KykrmdrvF5TLNV/IzSTxTKjZu3PjAwIEDf3vixIm0V155xQgGg98ZZ5wvkc/JyTEWLVqk5OfnN506derhdevW1VRUVKiLFi2Kfe33r9C+JIQIXdeV1atXv1FfXz9z9OjRJx5//HElLy8vFgwG/66NM6UUgUAAo0eP5mvXrlVycnKOHTt2bNrVTj5wDdVhZoNPPPHE0IKCglcppbO2bdsWq62tVdPT0/+ujLMZoAaDQTlt2jT+8MMPKz09Pbs+/fTT4s2bN/uu5bKQawp1zYYnTpyoLl68+Nfp6ekLf//734vq6mqSlpZGLs6cfhuRENnKe++9V86fP5+2tbU9u2TJkjXA5Y3t5XDNuQZd16m54bxt27YnMjIyntqzZw+qqqqEoihUUZRvrXE2I1tFUXhxcTEbP348WltbS1atWvXylYzt5XC9yR5SXV3NZs6caWzatOnh3Nzc7Z999pntlVde4ZFIhGma9q1jAmMMwWAQLpfLWLx4sZKfn99x+vTpBWvWrNkd1wwC11Gu0qdsm2kXnn766SlDhgz5321tbfkVFRVGS0uLkp6e/q3xkExjO2rUKGPJkiWKzWarbWxs/Od169Ydqq6uVmbOnGlcd9t9IWzRokUxXdeV9evX7z9y5MikrKysQ2vXrlVuu+02w+fzfSsSeYQQ+P1+OXnyZL569WpFUZR3Dh06VLRu3bpDuq73afKBJNXIm8Z55cqVzgkTJvzaYrEseO211/j+/fuZ1Wrtt4aZEIJIJII5c+bg3nvvRVdXV8XixYsXA+fH3Oc++k7mOSRa/4qKil84HI5/3bFjBz948CBLS0vrdzaBUopgMCjnzJkjHnjgAePMmTMbSktLn0vMECSjn6TuuEgpSVVVFfV4PHz79u2bpJQrn3rqKR6JRNj1Fl7dDJgVFtnZ2XzDhg2sq6trRWlp6WZd1y1erzeGJNaGJlVJE0JkbW2tlFLSurq6X1oslo6RI0fSaDQq+9PuWrzaTtx+++1MCHHi4MGDL+u6rpSVlSV18oEbUJ7u9XpFVVUVKS8vb1cU5T8KCgqIYRj9zh0SQojMzEyoqvq/fvOb34SBcwKW7H5uiJsSXwVECJHf1dV1rmyuHyJenjPgRvaR9DNiZvY0MzPTlZGRMfHUqVNQFKXf+aOMMdrU1IRIJDLV7XazsrIy7vV6k95P0iemqqqKAkBmZuZoznlGe3u7MGtG+wvi9Z60paVFGoYxatasWSPjxctJn6+kN2ieiNE0bUIgEKDd3d2iP3lAwPnq6fb2dhmJRCw2m200cGMOeN8w1cAYm3jq1KkL6vX7E+JxgOjo6ICqqrcD54Urqf0ku8H4hRuIRqMTTp48CUppvzTA5gVQn3/+OYQQPwDQexQrmUgqA3Rdp4QQuWPHjkGhUGhcY2MjVFW97HUzqQzTDtTV1SEcDk/ZuHGjLZ56SKpAJZUBpo5kjN3BObd1dHTw/maAE6GqKjlz5oyMRCJ5mZmZBcD5E6DJQlIZkJOT08sAn8+Hnp4e2R/1P9B7xJV0dXWJcDhMNE0bByTfECd1dszjmpTSOxsaGmAYRn+NwQCcM8ThcFiePXsWjLGJwHkhSxaSFojF73sTbrfbEo1Gx508eRKMsf47++dB6urqUFhYOAHABWeCk4GkrYCysjJCCJGzZ88uCIfDIxsbG6WiKP3SAJuIn8CkX3zxBUKh0Ljy8nJHsi+BTaYKogBgsVgmh8Nh2tXVxa/n4HUqwTwB2dLSIiKRyICBAweOBwCPx5O0eUu6hVQU5fb29vZ+G4BdjPhmvAiFQiCE3AUAY8aMSckVYO4Q3dbQ0IBkLtOLYZaAm38vd2w2WX3FYjE0NTVBVdXbkt1+UhggpSRer1c888wzGeFweFJdXR1uhP43JzwajcLv94uenh4jGAwafr9fxK+jSWp/Cf2S+vp6xGKxO8zMaLLaTpYXRADIvLy873V3d2c1NzdLVVWT6y/Hy79DoZAcPny4mDp1Khs4cCCVUqK5uRl79+7ljY2N1G63E8ZY0vagTUNcV1eHQCBw28yZM7MJIa1fd7fGtSApDKipqaEABKX0+6FQiPl8PkPTNCUZKyB+9yf8fr/MysoS8+fPZ3fffTdjjB2klP5WSplx6623Pjh16tSxNTU1ePfdd3kwGGRpaWkA+n7O2TTEbW1tPBQKpeXm5k4FsCuedu/zSkgKA0zfmDF2R2trK2KxGPpajmLe4RAKhaCqKp85cyabO3cuy8zMbOrq6vrFsmXLdiZ8/Nnt27eXzJ079xcTJ07M27Vrlzx8+LAA0FsW0xda4lfiyEAgQPLy8n4AYFeyArJkKE3idrsFAAghxjc0NAB9TFhRShGLxRAIBMTo0aPFY489xh588MGgqqrlf/nLX8YvW7Zsp5SS6Lqu6LquAIiVlJRsOXLkyESHw/HyI488QlasWMGGDBkiAoGANG9Xv+4Bxi8DaW5uBqX0ViB5AVmfV4D5G4+bN2/ODgaD36uvr7/uDKipbgKBgMzLyxNz585lkydPhmEYb5w4cWLdk08+eSLep0IIMQCYVWlE13Xm9XqbAJRs3Ljxf4wcOfLpxx57bOaePXvw9ttvGz6fj9lsNmL2cS2I54XoyZMn8f3vf/92Xdct8YubCPpYJZEMFUQBCIfDcVdbW1vm6dOnxbUywHQhe3p6oKoqnzt3Lps7dy5TFKW2s7NzfWlp6VvAuWq0eAXyxeWA0uv1Ggl1SfsAzNq6des/zZgx49kpU6YMefPNN/Hhhx9yzjkz76W7FhotFgtpaGiA3+8fPnTo0BEAjuu6ThLukbsu9FkFFRUVnWuI0h/EM6Diapd7olsZCoXE+PHjxYYNG9i9997bHo1GV7/55pt3lZaWvmX+gLPH4+Ff53kQQqR58FxKSZYuXfr7Q4cOTQRQ7na7o48//jgrKCgQfr9fXMshdDMz2t3dzeOZ0bvib/V5/vrcgKkLpZTjW1paIIS4qgxooneTn5/PV6xYQX/2s59Rp9P527/97W+TSkpKnq+qqgqZNZjXUgro9XoFIURWVlayjRs3tj7yyCPrmpubJ+Xk5PyfZcuW0UWLFlGHw2EEAgEze3tV9EYiEdnW1gZCyGTgvPD1BX1iACEEHo9HuN1uJoQYderUqSvWAJlRazAYlIqiGAsWLCBr1qxho0eP/qC9vX1WcXFxsdfr/SJuXElfCmDNxJmu68ratWuP/PSnP/0v3d3dP77jjjs+eeKJJ5T58+cTzjnv6em52miaNDU1AcAEJOmnEvtkA5588knq9XrF7Nmz830+38j6+npYLJZL6v9Et1JKyX/4wx+y+fPnKxkZGad8Pt8zS5Ys+TUA8TV6/roQV1mGWVKyYsWKXQD+uH379pVz5sz5xaRJk5xvvfWW/OSTT4SiKMy8Mv9SY2CM0YaGBoTD4YLVq1eneb3eYF8DsqTE7k6nc1AoFErr7OyUl8qAmlGs3+8XBQUFYtWqVczj8YQsFsvGgwcP3rFkyZKtUkppqpsbUQLo9XpFwn3RvKSk5PmTJ0+Oz87Ofq24uBilpaUsPz+f+3y+3ov7EmGWqnR3dyMcDpPx48cnha6kBGKxWKzTarVG7Ha7xefzXXA9JOccfr9f5uTkiAcffJDdddddkFK+19zcvGrt2rVHgN5fz+D4Bm40N1Va/EqGUwD+66ZNm7aPGTPm6YKCgunV1dXYvXs39/l81G639x48NA/naZomVVXFmTNnbjSpV0Y840ncbrdl586dzYsXL5aapsVcLpfIzs7mmZmZPC8vL/bAAw/Il19+Wf7ud7878tJLL/2j+X1d15UbmTW9GvoTblAn27dvX/z66683b9myRf7oRz+SLpcr5nA4eHZ2Nnc6ncJut0fWrl0rd+7c+QEAmoxKuT4P3u12s6qqKr558+aHHA7H6wcOHMD+/fvBOUdeXh7uuece5Ofn9wQCgec2bdr0b8eOHYsm+5BDX+F2u9kf/vAHLqXEsmXLsidNmvSEqqqLGxoabLt370ZXVxdsNhumT5+OsWPHoq2tbc6qVav+bzJOySRF+szTMZs2bfpxbm7uE6FQKDsWiyE9PV0ahvEfzc3NL6xfv/4kkLyjPTcCibSVl5cXDh48eAPnfEo4HCbxK/C/bG1tferRRx99J1nZ0KQhcTnqum6pqKhQJ06cqJr/iy/1lN+kv0gtYeLEiWpFRYWq63rvNfep9CtMF+BSv0hhRrE3g56+QNd1evF4LmZOMnCjJDKx3dRZpteHb9NYvsPF+P+cgnPIn5NfkwAAAABJRU5ErkJggg==">')}<div class="setrow lf-credit-box" style="flex-direction:column;align-items:stretch;justify-content:center;min-height:120px;border-radius:12px;margin:10px 14px;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.03)"><span id="lf-credit-empty" style="display:${creditPic.src ? 'none' : 'block'};text-align:center;opacity:.6;font-size:0.8125rem">Your picture or GIF appears here</span><img id="lf-credit-gif-pic" alt="" src="${creditPic.src}" style="display:${creditPic.src ? 'block' : 'none'};width:100%;max-height:260px;object-fit:contain;border-radius:12px"></div></div>`;
+    <div class="sethead">About</div><div class="setcard"><div class="setrow" style="display:flex;align-items:center;gap:14px"><img id="lf-about-logo" alt="Liquid Dark app logo"${appLogoSrc() ? ` src="${appLogoSrc()}"` : ''} style="display:${appLogoSrc() ? 'block' : 'none'};width:48px;height:48px;object-fit:contain;border-radius:12px"><span class="tx"><b>Liquid Dark</b><span>Version ${APP_BUILD} (${APP_VERSION}) · code ${MY_CODE_ID || 'n/a'}</span></span></div><button class="setrow" data-act="updcheck" style="width:100%;text-align:left"><span class="tx"><b>Check for updates</b><span>Look for a newer build on GitHub now.</span></span>${I.chev}</button>${row('Credits', '♥︎★ Ai Hoshino <span class="credheart" aria-hidden="true">♥️</span><img class="credstar" alt="" aria-hidden="true" src="data:image/png;base64,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">')}<div class="setrow lf-credit-box" style="flex-direction:column;align-items:stretch;justify-content:center;min-height:120px;border-radius:12px;margin:10px 14px;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.03)"><span id="lf-credit-empty" style="display:${creditPic.src ? 'none' : 'block'};text-align:center;opacity:.6;font-size:0.8125rem">Your picture or GIF appears here</span><img id="lf-credit-gif-pic" alt="" src="${creditPic.src}" style="display:${creditPic.src ? 'block' : 'none'};width:100%;max-height:260px;object-fit:contain;border-radius:12px"></div></div></div>`;   // v222: .setcols = two columns sideways, display:contents in portrait
   },
 };
 
@@ -958,7 +958,7 @@ function refreshProfileBg() {
 }
 /* v213: Refresh art shows the sucking-in animation (CSS class on <html>, removed after the reload has had time to paint) */
 function pulsePics() { const hr = document.documentElement; hr.classList.remove('pics-refreshing'); void hr.offsetWidth; hr.classList.add('pics-refreshing'); clearTimeout(pulsePics.t); pulsePics.t = setTimeout(() => hr.classList.remove('pics-refreshing'), 900); }
-function refreshAllPics() {
+function refreshAllPics(silent = false) {
   for (const m of [alpUrls, spUrls, ppUrl]) { for (const u of m.values()) { try { URL.revokeObjectURL(u); } catch {} unwarm(u); } m.clear(); }
   for (const o of [agUrls, gpUrls]) for (const k of Object.keys(o)) { try { URL.revokeObjectURL(o[k]); } catch {} unwarm(o[k]); delete o[k]; }
   ppBad.clear(); quickKeys.clear();   // BUG #11: forget which pictures were shown from their saved file, otherwise restorePics() skips them and they stay blank
@@ -966,7 +966,7 @@ function refreshAllPics() {
   refreshProfileBg();   // BUG #75
   for (const p of playlists) ppEnsure(p, true).catch(() => {});
   npSoon(); repaintPics();
-  toast('Pictures and GIFs refreshed');
+  if (!silent) toast('Pictures and GIFs refreshed');   // v220: Refresh art shows its own card, no toast on top of it
 }
 loadAllPics();   // v157: at once, from the lists already saved on this phone (the phone's file list is only needed for pictures we do not know about yet)
 /* v157: a picture that did not come back is tried again every time the app returns to the front, and a playlist picture marked broken gets another chance */
@@ -1274,9 +1274,17 @@ let sessionTried = false;
 let scanning = false, quietScan = false, lastCheck = 0, hasFolder = false;
 on('onScanProgress', p => { if (scanning && !quietScan) scanView.update(p); });   // v101: the scan card (src/scanview.js) replaces the progress toast
 const isBusy = e => e === 'busy' || (e && e.message === 'busy');
-async function runScan(quiet, forceArt = false) {   // one scan at a time (Java also refuses a second one with 'busy')
+/* v220: Library > Rescan shows the SAME card as the first scan: it opens at once, stays at least 2.6 s, and the covers already read from the music files
+   (embedded art / cover.jpg, never a picture the user set) are sucked into the disc while it runs, even when every song is unchanged and the scan itself is over in a blink. */
+function libCovers(max = 400) {
+  const seen = new Set(), out = [];
+  for (const t of tracks) { const c = t && t.cover; if (c && !seen.has(c)) { seen.add(c); try { out.push(Native.fileUrl(c)); } catch {} } }
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out.slice(0, max);
+}
+async function runScan(quiet, forceArt = false, fx = false) {   // one scan at a time (Java also refuses a second one with 'busy')
   scanning = true; quietScan = quiet;
-  if (!quiet) scanView.start();
+  if (!quiet) scanView.start(fx ? { instant: true, minMs: 2600, covers: libCovers() } : undefined);
   try { const r = await Native.scan({ forceArt }); hasFolder = true; if (!quiet) scanView.finish(r); return r; }
   catch (e) { if (!quiet) scanView.hide(); throw e; }
   finally { scanning = false; lastCheck = Date.now(); }
@@ -1290,14 +1298,14 @@ async function askAllFiles() {   // v106: opens Android's "All files access" scr
 }
 let libLoading = !!Native.isNative;   // v149: (BUG start-up flash: true from the very first draw on Android, because renderMain() runs before loadLib() and used to show "No music yet" for ~2 s) true while the saved library is being read at start (the Home screen shows a quiet placeholder, not "No music yet")
 var libTimerA = 0, libTimerB = 0;   // BUG-333: one pending start-up timer of each kind
-async function loadLib(rescan, forceArt = false, quiet = false) {
+async function loadLib(rescan, forceArt = false, quiet = false, fx = false) {
   if (!Native.isNative) return;
   if (scanning) { if (rescan) toast('A scan is already running'); return; }
   try {
     let r, applied = false;   // applied = the saved library is already on screen (do not build it a second time)
     if (rescan) {
       await Promise.all([loadFavs(), loadStats()]); await mergeNativePlays();
-      r = await runScan(quiet, forceArt);
+      r = await runScan(quiet, forceArt, fx);
     } else {
       // v149: read the saved library at the SAME time as favourites / stats / playlists (they used to run one after another BEFORE the library was even asked for)
       libLoading = true;
@@ -1874,56 +1882,45 @@ async function exportPl(fmt = 'json', pid = '', ids = null) {   // ids (v159): a
 }
 let plPending = null;   // v159: the playlists waiting for the person's OK in the import preview
 let plBusy = false;   // v214: a progress sheet is open (matching or importing): nothing may replace it
-/* v215: Refresh art has its own animation (not the library scan screen): pictures and GIFs spiral into a glowing core, then a check mark.
-   v218: the tiles are the FRESH pictures (built after the reload, never copies of the old ones): one tile for every place a custom picture, GIF or Canvas is used
-   (the same file counts again for each song / place that shows it), flown in waves of 40 while a counter runs up to the real total. */
-function refreshShow(title, sub, done = false, pics = [], coreOnly = false) {
-  plBusy = !done;
-  const tiles = coreOnly ? '' : pics.length
-    ? pics.map((u, k) => `<img class="rfpic" alt="" src="${u}" style="--k:${k}">`).join('')
-    : Array.from({ length: 10 }, (_, k) => `<i style="--k:${k}"></i>`).join('');
-  $('#sheet').innerHTML = sheetHtml(`<div class="rfstage${done ? ' done' : ''}" aria-hidden="true">${done ? '<span class="rfcheck"></span>' : `<span class="rfcore"></span>${tiles}`}</div><b id="rfttl">${title}</b><p id="rfsub">${sub}</p>`);
-}
-/* v218: every place that shows a custom picture / GIF / Canvas right now (after the reload): [{ u: picture address, v: true when it is a video (drawn as a plain tile) }] */
+/* v220: Refresh art uses the SAME card as the library scan (src/scanview.js: disc, ring, bar, pictures sucked in). The pictures it sucks in are the user's OWN custom pictures / GIFs
+   (the library scan shows the covers inside the music files; this one shows what the user uploaded). One tile for every place a custom picture, GIF or Canvas is used
+   (the same file counts again for each song / place that shows it). The tiles are built AFTER the reload, so an old picture is never shown. */
+let artRunning = false;
+/* every place that shows a custom picture / GIF / Canvas right now (after the reload): [{ u: picture address, n: what it is }] */
 function refreshItems() {
-  const out = [], add = (u, v = false) => { if (u) out.push({ u, v }); };
+  const out = [], add = (u, n) => { if (u) out.push({ u, n }); };
   try {
-    for (const t of tracks) {   // every song: its own picture, else its album's picture (the same GIF counts again for each song)
-      if (soHas(t)) continue;
-      add(spUrls.get(t.id) || alpUrls.get(t.albumId));
+    const orig = t => (t && t.cover ? Native.fileUrl(t.cover) : '');   // the cover that comes with the music file (embedded art / cover.jpg)
+    for (const t of tracks) {   // every song: its own picture, else its album's picture (the same GIF counts again for each song), else the original cover of the file
+      if (soHas(t)) { add(orig(t), 'Song covers'); continue; }
+      const c = spUrls.get(t.id) || alpUrls.get(t.albumId); add(c || orig(t), c ? 'Song pictures' : 'Song covers');
     }
-    for (const k of alpUrls.keys()) if (byAlbum(k)) add(alpUrls.get(k));   // the albums themselves
-    const am = apicMap(); for (const n of Object.keys(am)) { const v = String(am[n]); add(v.startsWith('gif:') ? agUrls[n] : v.startsWith('data:') ? v : ''); }   // artists (GIF or photo)
-    for (const k of Object.keys(gpUrls)) add(gpUrls[k]);   // genres
-    for (const pl_ of playlists) { const c = picsOf(pl_)[0]; add(c && ppUrl.get(c.id)); }   // playlists
-    if (pfMedia) add(pfMedia.type === 'video' ? 'video' : pfMedia.url, pfMedia.type === 'video');   // profile picture
-    if (bgUrl) add(bgUrl);   // background (Home and every screen)
-    for (const t of tracks) { const cp = cvPath(t); if (cp) { const vid = isVideo(cp); add(vid ? 'video' : Native.fileUrl(cp), vid); } }   // Canvas: one for each song that plays one
+    for (const a of albums) { const c = alpUrls.get(a.id); if (c) add(c, 'Album pictures'); else { const f = albumTracks(a.id).find(x => x.cover); add(orig(f), 'Album covers'); } }   // the albums themselves: custom picture, else the original cover
+    const am = apicMap(); for (const n of Object.keys(am)) { const v = String(am[n]); add(v.startsWith('gif:') ? agUrls[n] : v.startsWith('data:') ? v : '', 'Artist pictures'); }   // artists (GIF or photo)
+    for (const k of Object.keys(gpUrls)) add(gpUrls[k], 'Genre pictures');   // genres
+    for (const pl_ of playlists) for (const c of picsOf(pl_)) add(ppUrl.get(c.id), 'Playlist pictures');   // playlists (every picture of every playlist)
+    if (pfMedia) add(pfMedia.type === 'video' ? coverOfAny() : pfMedia.url, 'Profile picture');   // profile picture (a video shows the first cover)
+    if (bgUrl) add(bgUrl, 'Home background');   // background (Home and every screen)
+    for (const t of tracks) { const cp = cvPath(t); if (cp) add(isVideo(cp) ? (t.cover ? Native.fileUrl(t.cover) : coverOfAny()) : Native.fileUrl(cp), 'Canvas'); }   // Canvas: one for each song that plays one (an MP4 shows the song's cover)
   } catch {}
   return out;
 }
-const RF_WAVE = 40, RF_MAX = 600;   // v218: waves of 40; at most 600 tiles are flown (about 5 s). Beyond that the tiles are an even sample and the counter still runs to the real total.
-function rfWaves(items) {
+const coverOfAny = () => { try { const t = tracks.find(x => x.cover); return t ? Native.fileUrl(t.cover) : ''; } catch { return ''; } };
+/* Counts up to the real total while the pictures are sucked into the disc (about 14 ms per place, 3.5 s ... 9 s in all). Every ~75 ms one of the places is flown in (a fair sample when there are thousands). */
+function artFly(items) {
   return new Promise(res => {
-    const total = items.length, still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    if (!total) return res();
-    const fly = total > RF_MAX ? Array.from({ length: RF_MAX }, (_, i) => items[Math.floor(i * total / RF_MAX)]) : items;
-    const waves = Math.ceil(fly.length / RF_WAVE), gap = Math.max(260, Math.min(900, Math.round(5000 / waves)));
-    let w = 0;
-    const step = () => {
-      const stage = document.querySelector('#sheet .rfstage'), sub = document.getElementById('rfsub');
-      if (!stage || !sub) return res();   // the overlay was closed
-      const batch = fly.slice(w * RF_WAVE, (w + 1) * RF_WAVE);
-      if (!still) batch.forEach((it, j) => {
-        const e = document.createElement(it.v ? 'i' : 'img');
-        if (!it.v) { e.alt = ''; e.decoding = 'async'; e.src = it.u; }
-        e.className = 'rfw'; e.style.setProperty('--a', Math.round((j / batch.length) * 360 + (w % 2) * 9) + 'deg'); e.style.setProperty('--d', Math.round((j / batch.length) * gap * 0.8) + 'ms');
-        e.addEventListener('animationend', () => e.remove()); stage.appendChild(e);
-      });
-      w++; sub.textContent = `${w >= waves ? total : Math.round(total * w / waves)} of ${total} pictures and GIFs`;
-      if (w < waves) setTimeout(step, gap); else setTimeout(res, still ? 0 : 950);
+    const total = items.length; if (!total) return res();
+    const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const ms = Math.min(9000, Math.max(3500, total * 14)), t0 = Date.now(); let done = 0;
+    const tick = () => {
+      const k = Math.min(1, (Date.now() - t0) / ms), want = k >= 1 ? total : Math.round(total * k), step = want - done;
+      const it = items[Math.min(total - 1, done + Math.floor(step / 2))];
+      done = want;
+      scanView.artUpdate({ done, total, covers: still || !it ? [] : [it.u], name: it && it.n });
+      if (k >= 1) return setTimeout(res, 700);
+      setTimeout(tick, 75);
     };
-    step();
+    tick();
   });
 }
 /* v217: Refresh art also reloads what refreshAllPics() alone did not: Canvas clips / GIFs (list read again from the phone, files that failed get another chance),
@@ -1940,27 +1937,27 @@ async function refreshExtraArt() {
   const t0 = Date.now(); let last = have(), lastAt = t0;
   while (picsMissing() && Date.now() - lastAt < 6000 && Date.now() - t0 < 120000) {
     await new Promise(r => setTimeout(r, 150));
-    const n = have(); if (n !== last) { last = n; lastAt = Date.now(); const sub = document.getElementById('rfsub'); if (sub) sub.textContent = `${n} pictures and GIFs loaded…`; }
+    const n = have(); if (n !== last) { last = n; lastAt = Date.now(); scanView.artUpdate({ count: `${n} pictures and GIFs loaded…` }); }
   }
   repaintPics();
 }
 async function refreshArtRun() {
-  if (plBusy || scanning) return;
-  refreshShow('Reloading pictures and GIFs', 'Reading your saved pictures…', false, [], true);
+  if (artRunning || plBusy || scanning) return;
+  artRunning = true;
+  scanView.startArt('Reloading pictures and GIFs', 'Reading your saved pictures…');   // the library scan card, with your own pictures
   pulsePics();   // the pictures on screen are sucked in and pop back out (CSS)
   try {
     try { await mirrorSync(); } catch {}   // the list of saved picture files is read again first (a file that is gone is dropped, one that only exists as a file is found)
-    refreshAllPics();
+    refreshAllPics(true);
     await refreshExtraArt();   // waits until the saved pictures are really back
     const items = refreshItems();   // built AFTER the reload: only the fresh pictures are shown
-    refreshShow('Reloading pictures and GIFs', `0 of ${items.length} pictures and GIFs`, false, [], true);
-    const lib = loadLib(true, true, true);   // quiet: no library scan screen; runs while the pictures fly in
-    await Promise.all([rfWaves(items).then(() => { const t = document.getElementById('rfttl'); if (t && $('#sheet .rfstage:not(.done)')) t.textContent = 'Checking folder pictures'; }), lib]);
-    refreshShow('Refresh finished', `${tracks.length} songs · ${items.length} pictures and GIFs reloaded${picsMissing() ? ' · a few are still loading and will appear shortly' : ''}`, true);
-    setTimeout(() => { if ($('#sheet .rfstage.done')) closeSheet(); }, 1800);
+    scanView.artUpdate({ done: 0, total: items.length, title: 'Reloading pictures and GIFs' });
+    const lib = loadLib(true, true, true);   // quiet: no library scan screen; the folder pictures are re-checked while the pictures fly in
+    await Promise.all([artFly(items).then(() => scanView.artUpdate({ title: 'Checking folder pictures', done: items.length, total: items.length })), lib]);
+    scanView.artFinish({ title: 'Refresh finished', count: items.length ? `${items.length.toLocaleString('en-US')} pictures and GIFs reloaded` : 'No custom pictures or GIFs found', note: `${tracks.length.toLocaleString('en-US')} songs checked${picsMissing() ? ' · a few are still loading and will appear shortly' : ''}` });
   } catch (e) {
-    refreshShow('Refresh stopped', failMsg(e), true);
-  }
+    scanView.artFinish({ title: 'Refresh stopped', count: failMsg(e) });
+  } finally { artRunning = false; }
 }
 const plBusySheet = (title, sub, pct) => { plBusy = true; $('#sheet').innerHTML = sheetHtml(`<b>${title}</b><p>${sub}</p><div class="plbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div><div class="plspin" aria-hidden="true"></div>`); };
 const plSummarySheet = rows => { plBusy = false; $('#sheet').innerHTML = sheetHtml(`<b>Import finished</b><p>What changed in your app:</p><div class="plstats">${rows.map(([k, v]) => `<div class="row"><span class="meta blk"><b>${v}</b><span>${k}</span></span></div>`).join('')}</div><div class="actions"><button data-act="sheet-close">Done</button></div>`); };
@@ -2531,20 +2528,24 @@ async function tintPixels(S) {
   return tintImagePx(S.src, S.custom);
 }
 function tintFromPixels(d) {
-  const BN = 24, bw = new Array(BN).fill(0), bs = new Array(BN).fill(0), bx = new Array(BN).fill(0), by = new Array(BN).fill(0); let tot = 0, aL = 0, cnt = 0, dk = 0, sr = 0, sg = 0, sb = 0; const er = new Array(BN).fill(0), eg = new Array(BN).fill(0), eb = new Array(BN).fill(0), en = new Array(BN).fill(0); const SB = 30, qw = new Array(SB).fill(0), qs = new Array(SB).fill(0), qx = new Array(SB).fill(0), qy = new Array(SB).fill(0);
+  const BN = 24, bw = new Array(BN).fill(0), bs = new Array(BN).fill(0), bx = new Array(BN).fill(0), by = new Array(BN).fill(0); let tot = 0, aL = 0, cnt = 0, dk = 0, sr = 0, sg = 0, sb = 0, viv = 0; const ew = new Array(BN).fill(0), er = new Array(BN).fill(0), eg = new Array(BN).fill(0), eb = new Array(BN).fill(0), en = new Array(BN).fill(0); const SB = 30, qw = new Array(SB).fill(0), qs = new Array(SB).fill(0), qx = new Array(SB).fill(0), qy = new Array(SB).fill(0);
   for (let i = 0; i < d.length; i += 4) { const [h, sa, l] = rgb2hsl(d[i], d[i + 1], d[i + 2]); aL += l; cnt++; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; if (l < .12) dk++;
     if (sa >= .15 && l >= .1 && l <= .93) { const w2 = (.35 + sa) * (1 - Math.abs(l - .5)), q = Math.floor(h / 12) % SB; qw[q] += w2; qs[q] += w2 * sa; qx[q] += w2 * Math.cos(h * Math.PI / 180); qy[q] += w2 * Math.sin(h * Math.PI / 180); }   // the picker sees quieter colours too (brown skin, a dull green)
-    if (sa < .2 || l < .1 || l > .93) continue;   // grey, near black and near white say nothing about the colour
-    const w = sa * sa * (1 - Math.abs(l - .5)), k = Math.floor(h / 15) % BN; er[k] += d[i]; eg[k] += d[i + 1]; eb[k] += d[i + 2]; en[k]++; bw[k] += w; bs[k] += w * sa; bx[k] += w * Math.cos(h * Math.PI / 180); by[k] += w * Math.sin(h * Math.PI / 180); tot += w; }
+    if (sa >= .35 && l >= .08 && l <= .93) viv++;   // v209: pixels with a real colour, however small the area (a red patch on a mostly white / black cover still counts)
+    if (sa < .17 || l < .08 || l > .93) continue;   // grey, near black and near white say nothing about the colour
+    const w = sa ** 5 * (1 - Math.abs(l - .5)), k = Math.floor(h / 15) % BN;   // v209: saturation to the 5th power: a small vivid patch (blood, red hair) beats a large dull area (skin, shadow)
+     const w4 = w * sa * sa; er[k] += d[i] * w4; eg[k] += d[i + 1] * w4; eb[k] += d[i + 2] * w4; ew[k] += w4; en[k]++; bw[k] += w; bs[k] += w * sa; bx[k] += w * Math.cos(h * Math.PI / 180); by[k] += w * Math.sin(h * Math.PI / 180); tot += w; }   // v209: the hue's colour is the average WEIGHTED by vividness (saturation, 7th power in all), so a vivid red is not dragged to brown by the dull skin / shadow pixels of the same hue
   const hueOf = k => (Math.atan2(by[k], bx[k]) * 180 / Math.PI + 360) % 360;
   const sm = k => bw[k] + .6 * (bw[(k + 1) % BN] + bw[(k + BN - 1) % BN]);   // a hue and its neighbours count together
   let k1 = 0; for (let k = 1; k < BN; k++) if (sm(k) > sm(k1)) k1 = k;
-  if (!tot || sm(k1) < 1.2 * (d.length / 4096) || tot / cnt < .03) { return exactPal(rgbHex(sr / cnt, sg / cnt, sb / cnt)); }   // a grey / black cover: keeps the cover's own hue (Kiss Land = deep green, not a cold blue-grey); a truly colourless cover still gets the neutral graphite
+  if (!tot || sm(k1) < .35 * (d.length / 4096) || viv / cnt < .012) {   // v209: was tot / cnt < .03, which sent covers with a small but real colour (Echoes of Silence: red hair on white and black) to a grey average
+    return exactPal(rgbHex(sr / cnt, sg / cnt, sb / cnt)); }   // a grey / black cover: keeps the cover's own hue (Kiss Land = deep green, not a cold blue-grey); a truly colourless cover still gets the neutral graphite
   const h1 = hueOf(k1), s1 = bs[k1] / (bw[k1] || 1);
-  let k2 = -1; for (let k = 0; k < BN; k++) { const dist = Math.min((k - k1 + BN) % BN, (k1 - k + BN) % BN); if (dist >= 3 && bw[k] > .22 * bw[k1] && (k2 < 0 || bw[k] > bw[k2])) k2 = k; }
-  const avgOf = k => { let r = 0, g = 0, b = 0, n = 0; for (const j of [k, (k + 1) % BN, (k + BN - 1) % BN]) { r += er[j]; g += eg[j]; b += eb[j]; n += en[j]; } return n ? rgbHex(r / n, g / n, b / n) : null; };
+  let k2 = -1; for (let k = 0; k < BN; k++) { const dist = Math.min((k - k1 + BN) % BN, (k1 - k + BN) % BN); if (dist >= 2 && bw[k] > .15 * bw[k1] && (k2 < 0 || bw[k] > bw[k2])) k2 = k; }
+  const avgOf = (k, one) => { let r = 0, g = 0, b = 0, n = 0; for (const j of one ? [k] : [k, (k + 1) % BN, (k + BN - 1) % BN]) { r += er[j]; g += eg[j]; b += eb[j]; n += ew[j]; } if (!n) return null; const x = rgbHex(r / n, g / n, b / n), [hh, ss, ll] = rgb2hsl(...[1, 3, 5].map(o => parseInt(x.slice(o, o + 2), 16))); return ll < .24 && ss > .2 ? hsl2hex(hh, ss, .24) : x; };   // v209: weighted by vividness; a very dark colour is lifted a little so it does not turn into plain black
   const p = exactPal(avgOf(k1) || palFrom(h1, s1, false, 0).a);
-  if (k2 >= 0) { const x2 = avgOf(k2); if (x2) p.b = x2; }   // the cover's own second colour
+  if (k2 >= 0) { const x2 = avgOf(k2, true);   // v209: the second colour is that hue only (its neighbours would pull it back toward the main colour)
+    if (x2) { const [h2, s2, l2] = rgb2hsl(...[1, 3, 5].map(o => parseInt(x2.slice(o, o + 2), 16))); p.b = l2 < .34 && s2 > .3 ? hsl2hex(h2, s2, .34) : x2; } }   // v209: the second colour (the glow in the lyrics background) is lifted a little when it is dark but vivid (Blinding Lights: the red jacket) so it shows   // the cover's own second colour
   p.sw = [];   // the colours of this cover the person can pick for the lyrics (strongest first, each a different hue; black when much of the picture is black)
   const qsm = k => qw[k], qorder = qw.map((_, k) => k).sort((x, y) => qsm(y) - qsm(x)), qtop = qsm(qorder[0]) || 1;
   for (const k of qorder) { if (p.sw.length >= 6 || qsm(k) < .1 * qtop || !qw[k]) break; if (p.sw.some(w => Math.min(Math.abs(w.k - k), SB - Math.abs(w.k - k)) < 2)) continue; p.sw.push({ k, h: Math.round((Math.atan2(qy[k], qx[k]) * 180 / Math.PI + 360) % 360), s: +(qs[k] / qw[k]).toFixed(2) }); }
@@ -2771,7 +2772,7 @@ on('onTrackChanged', () => { const v = $('#cvv'); if (v && v.dataset.np === '1' 
   document.addEventListener('pointermove', e => { if (g && e.pointerId === g.pid && !g.moved && Math.hypot(e.clientX - g.x, e.clientY - g.y) > 10) { g.moved = true; clearTimeout(g.t); } });
   document.addEventListener('pointerup', e => { if (!g || e.pointerId !== g.pid) return; const k = g; stop(); if (k.long || k.moved) return; const art = e.target.closest && e.target.closest(ART); if (art) tapCover(art); });
   document.addEventListener('pointercancel', stop);
-  document.addEventListener('contextmenu', e => { if (e.target.closest && (e.target.closest(ART) || e.target.closest('.acard, .gtile, .grow[data-act="genre"]'))) e.preventDefault(); });   // BUG-278: genre tiles and rows too
+  document.addEventListener('contextmenu', e => { if (e.target.closest && (e.target.closest(ART) || e.target.closest('.acard, .gtile, .grow[data-act="genre"], .lyr'))) e.preventDefault(); });   // v209: lyrics too (no Copy / Select all bubble)   // BUG-278: genre tiles and rows too
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.np .art')) { e.preventDefault(); show(e.target); } });
 }
 
@@ -2944,7 +2945,7 @@ function sleepSheet() {
   const st = Native.sleepState();
   const item = (act, label, extra = '') => `<button class="row" data-act="${act}" ${extra}><span class="lbl" style="font-size:1.0625rem">${label}</span></button>`;
   $('#sheet').innerHTML = sheetHtml(`<b>Sleep timer</b><p id="sleepsheettxt">${st.active ? 'Running: ' + pillText(st, Date.now(), true) : 'Fades the music out and stops it.'}</p>
-    ${SLEEP_MINUTES.map(m => item('sl-min', m + ' minutes', `data-min="${m}"`)).join('')}${item('sl-song', 'End of this song')}
+    <div class="slgrid">${SLEEP_MINUTES.map(m => item('sl-min', m + ' minutes', `data-min="${m}"`)).join('')}${item('sl-song', 'End of this song')}</div>
     <div class="row" style="gap:10px;align-items:center"><span class="lbl" style="font-size:1.0625rem;flex:1">Custom</span><input type="text" id="slcustom" inputmode="text" autocomplete="off" placeholder="90 or 1:30" value="${cleanMinutes(set.sleepCustom) || ''}" aria-label="Custom sleep time: minutes, or hours and minutes" style="width:96px;background:transparent;border:0;border-bottom:1px solid var(--text-2);color:inherit;text-align:right;font:inherit;font-size:1.0625rem"><button class="chip" data-act="sl-custom">Start</button></div>
     <p id="slcustomhint" style="font-size:0.8125rem;color:var(--text-2);margin:0 0 6px">Type minutes (90) or hours:minutes (1:30). Up to 24 hours.</p>
     ${st.active ? item('sl-off', 'Turn off timer') : ''}<div class="actions"><button data-act="sheet-close">Close</button></div>`);
@@ -3157,7 +3158,7 @@ document.addEventListener('click', e => {
     case 'setimport-ok': applyImportedSettings(); break;
     case 'pickfolder': if (scanning) { toast('A scan is running. Try again in a moment.'); break; }   // T18: a running scan would write the OLD folder back into the cache
       Native.pickFolder().then(() => loadLib(true)).catch(() => {}); break;
-    case 'rescan': loadLib(true); break;
+    case 'rescan': loadLib(true, true, false, true); break;   // v221: forceArt = every file is read again (new embedded art, tags), not only the changed ones; the automatic check stays quick   // v220: the rescan card shows the covers flying in even on a fast rescan
     case 'refresh-art': if (scanning) { toast('A scan is running. Try again in a moment.'); break; } refreshArtRun(); break;   // v213: sucking-in animation while the pictures reload   // BUG-332: pictures and GIFs reloaded, folder art re-checked
     case 'copylog': copyLog(); break;
     case 'log-close': closeSheet(); break;
@@ -3206,7 +3207,7 @@ document.addEventListener('keydown', e => {   // keyboard / TalkBack control of 
 
 /* edge-to-edge (v53): MainActivity draws the app under the status + navigation bar and tells us how tall they are */
 if (Native.isNative) {
-  const put = o => { if (!o) return; const st = document.documentElement.style; st.setProperty('--sat', (+o.top || 0) + 'px'); st.setProperty('--sab', (+o.bottom || 0) + 'px'); };
+  const put = o => { if (!o) return; const st = document.documentElement.style; st.setProperty('--sat', (+o.top || 0) + 'px'); st.setProperty('--sab', (+o.bottom || 0) + 'px'); st.setProperty('--sal', (+o.left || 0) + 'px'); st.setProperty('--sar', (+o.right || 0) + 'px'); };   // v221: left / right bars (landscape)
   const ask = () => Native.insets().then(put).catch(() => {});
   ask(); [400, 1500, 4000].forEach(ms => setTimeout(ask, ms)); { let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(ask, 120); }); }   /* BUG-17: one native insets call after the resize burst */ window.addEventListener('lf-insets', e => put(e.detail));
 }

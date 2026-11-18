@@ -5,6 +5,15 @@
 # Liquid Dark: HANDOFF [v148]  (lives at `docs/HANDOFF.md` since v45; read this first; old long notes: docs/archive/HISTORY_v25.md, incl. the full v27 / v28 / v29 / v30 notes at the end)
 
 
+## Session: landscape third pass (Settings, Stats) - version stays 0.208.0
+Settings uses `.setcols` (CSS columns), Stats / View All use `.lsw > .lshd + .lsbd` (grid, sticky left column), stats details reuse `.dwrap`; long sheets (4+ `.row` children) are 2 columns; `.animdock` pages are left preview / right sliders. All in the last blocks of `app.css` (`v222 (third pass)`), landscape media queries only. New: `tests/landscape-settings-stats-v222.test.mjs`; `tests/screenshots_landscape.py` seeds fake listening history. Details and DO NOT REDO in HANDOFF_STATUS.md.
+
+## Session: landscape second pass - version stays 0.208.0
+Album / playlist / artist / genre pages use `.dwrap > .dhero + .dbody` (display:contents in portrait, two columns sideways); Library uses `.libgrid`, the Sleep timer `.slgrid`; picture cards (`.popcard`, `#lf-bgallow`) lie down sideways. All in the last blocks of `app.css`. New: `tests/landscape-polish-v221.test.mjs`, `tests/screenshots_landscape.py`.
+
+## Session: landscape support and the scan / Refresh art card - version stays 0.208.0
+The app is no longer portrait-locked: `install-native.sh` sets `screenOrientation="fullUser"` + `configChanges`; `MainActivity` sends left / right insets (`--sal` / `--sar`); `app.css` ends with a `v221: LANDSCAPE` block (height <= 520 px). Refresh art and Library > Rescan use the library scan card (`scanView.startArt / artUpdate / artFinish`, `start({ instant, minMs, covers })`). Details and DO NOT REDO in HANDOFF_STATUS.md.
+
 ## Session: accessibility of the permission cards - version stays 0.208.0
 Back / Escape close the two permission cards; the app behind them is inert while they are open; focus moves onto the card and back; screenshots have alt text; step 2 has a text-only route. New code: `src/cardlayer.js`. New test: `tests/a11y-cards-v214.test.mjs`. Details and DO NOT REDO list: HANDOFF_STATUS.md, first entry after the top block.
 

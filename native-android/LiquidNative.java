@@ -228,7 +228,7 @@ public class LiquidNative extends Plugin {
       JSONObject oldMeta = old.optJSONObject("__meta");
       final boolean lrcSame = oldMeta != null && lrcSigNow.equals(oldMeta.optString("lrcSig", ""));
       final JSONObject[] res = new JSONObject[total];
-      final boolean forceArt = call.getBoolean("forceArt", false);   // BUG-332: the Refresh art button re-checks every song's folder picture
+      final boolean forceArt = call.getBoolean("forceArt", false);   // BUG-332: the Refresh art button re-checks every song's folder picture. v221: forceArt ALSO re-reads EVERY file (embedded art, tags) even when its time and size are unchanged (Refresh art and the Rescan button; the automatic check never sets it)
       final AtomicInteger doneC = new AtomicInteger(), reusedC = new AtomicInteger(), addedC = new AtomicInteger(), newC = new AtomicInteger(), touchedC = new AtomicInteger();
       final int nth = scanThreads();   // v101: the work is mostly WAITING on the storage provider, so more threads than cores (v77: 2-6) keep it busy
       ExecutorService pool = Executors.newFixedThreadPool(nth, new ThreadFactory() {
@@ -239,8 +239,8 @@ public class LiquidNative extends Plugin {
         pool.execute(new Runnable() { @Override public void run() {
         try {
             JSONObject prev = old.optJSONObject(d.uri);
-            if (prev != null && "true".equals(prev.optString("skip")) && prev.optLong("m") == d.m && prev.optLong("s") == d.s && (d.m != 0 || d.s != 0)) { res[idx] = prev; }   // BUG-344: a file the scan cannot use is not opened again while it is unchanged
-            else if (prev != null && prev.optLong("m") == d.m && prev.optLong("s") == d.s && (d.m != 0 || d.s != 0)) {   // BUG-379: m = 0 and s = 0 means "provider gave no time / size": re-read the file
+            if (!forceArt && prev != null && "true".equals(prev.optString("skip")) && prev.optLong("m") == d.m && prev.optLong("s") == d.s && (d.m != 0 || d.s != 0)) { res[idx] = prev; }   // BUG-344: a file the scan cannot use is not opened again while it is unchanged
+            else if (!forceArt && prev != null && prev.optLong("m") == d.m && prev.optLong("s") == d.s && (d.m != 0 || d.s != 0)) {   // BUG-379: m = 0 and s = 0 means "provider gave no time / size": re-read the file
               JSONObject pt = prev.optJSONObject("t");
               if (pt != null) {
                 String lrBefore = pt.optString("lrc", ""), cvBefore = pt.optString("cover", "");
@@ -3005,7 +3005,7 @@ public class LiquidNative extends Plugin {
 
   /** v53: status bar / navigation bar heights in CSS px (the app is drawn edge-to-edge, see MainActivity). */
   @PluginMethod
-  public void insets(PluginCall call) { JSObject o = new JSObject(); o.put("top", (double) MainActivity.insetTop); o.put("bottom", (double) MainActivity.insetBottom); call.resolve(o); }
+  public void insets(PluginCall call) { JSObject o = new JSObject(); o.put("top", (double) MainActivity.insetTop); o.put("bottom", (double) MainActivity.insetBottom); o.put("left", (double) MainActivity.insetLeft); o.put("right", (double) MainActivity.insetRight); call.resolve(o); }
 
   @PluginMethod
   public void notificationStatus(PluginCall call) { JSObject o = new JSObject(); o.put("granted", notifOn()); call.resolve(o); }

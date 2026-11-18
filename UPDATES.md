@@ -7,6 +7,38 @@
 > **HISTORICAL FILE REFERENCES:** these files are named in the entries but are NOT in this ZIP (removed or never shipped): `native-android/PlayCounter.java` (STALE, plays are counted by `ListenTracker.java`), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `BUGS.txt`, `OPEN_BUGS.txt`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html` (also written `Liquid_Dark_full_setup_guide.html` in the v134 entry: same guide) and `.github/workflows/android.yml` (copied by hand). Read those mentions as history; do not look for the files.
 
 
+## Lyrics: no more Copy / Select all bubble, red glow for Blinding Lights style covers
+
+Long-pressing lyrics no longer opens Android's Copy / Select all menu. Covers with a second strong colour (a red jacket on an orange cover) now show it in the lyrics background.
+
+## Auto lyrics colour picks the cover's vivid colour
+
+Covers with a small but strong colour (red hair on a white cover, blood and a red jacket on a dark one) now give that colour instead of grey or brown.
+
+## Bigger album covers fit the Now Playing screen
+
+With "Bigger album covers" on, the Now Playing cover is now the biggest square that fits above the controls instead of overflowing them, in portrait and sideways.
+
+## Landscape: Settings and Listening Stats fit sideways
+
+Held sideways, Settings now shows its cards in two columns, and Listening Stats keeps the Daily / Weekly / Monthly / Yearly / Overall buttons, the date arrows and Share snapshot in a column on the left while the numbers, charts and lists scroll on the right. View All lists, song / artist / album stats pages, the Snapshot picture, the Animation and Lyrics animation pages and the long pop-up lists (exports, cover shortcuts) also fit sideways now. Portrait looks the same as before.
+
+## Landscape: album, artist and playlist pages, Library, sheets and cards fit sideways
+
+Held sideways, album, artist, genre and playlist pages now show the picture, title and Play / Shuffle on the left and the songs on the right. Library has two columns, the Sleep timer three, the Up Next list keeps its buttons in view, and the picture cards (including "Keep the music playing") no longer overlap. Portrait is unchanged.
+
+## The app now works in landscape
+
+Turn your phone sideways (auto-rotate on) and the whole app turns with it: full-width screens that keep clear of the camera cut-out, more covers per row, a slimmer tab bar with the mini player beside it, and Now Playing with the cover on the left and the controls on the right. Portrait looks exactly as before.
+
+## Scan and Refresh art card now fits in landscape
+
+When the phone is turned sideways, the scan / Rescan / Refresh art card lies down (disc on the left, text on the right) so nothing is cut off.
+
+## Refresh art and Rescan now show the library scan animation
+
+Refresh art now uses the same card as the library scan: your own pictures and GIFs (songs, albums, artists, genres, playlists, profile, home background and Canvas) and the original covers of your songs and albums are slowly sucked into the disc while a counter runs up to the real total, then it shows what was reloaded. Library > Rescan also shows that card with the covers flying in, even when the rescan is very fast. Both now read every song file again (including the art inside the file), not only the files that changed, so edited covers always show up; the automatic new-music check is still quick. The first scan is unchanged.
+
 ## Refresh art works with thousands of pictures
 
 Refresh art now loads your saved pictures in small batches and keeps waiting while they are still coming back (it shows how many are loaded), so very large collections (10,000 and more) reload fully. The fly-in animation still takes only a few seconds and its counter shows the real total.

@@ -62,10 +62,16 @@ missing = [n for n in ['FOREGROUND_SERVICE', 'FOREGROUND_SERVICE_MEDIA_PLAYBACK'
 if missing:
     s = s.replace('</manifest>', ''.join('<uses-permission android:name="android.permission.%s"/>\n    ' % n for n in missing) + '</manifest>', 1); open(m, 'w').write(s)
 
-# BUG-223: the app is portrait-only (its layout and the system-bar insets are made for portrait)
+# v221: the app turns with the phone (portrait AND landscape, following the system auto-rotate switch). BUG-223 used to lock it to portrait: that lock is removed here
+# (also from an android/ folder that still has it). configChanges keeps the activity alive on a turn (no restart, the music and the screen stay as they are).
 m = 'android/app/src/main/AndroidManifest.xml'; s = open(m).read()
-if 'screenOrientation' not in s and 'android:name=".MainActivity"' in s:
-    s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:screenOrientation="portrait"', 1); open(m, 'w').write(s)
+s = re.sub(r'\s*android:screenOrientation="(?!fullUser")[^"]*"', '', s)
+if 'android:name=".MainActivity"' in s:
+    if 'screenOrientation' not in s: s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:screenOrientation="fullUser"', 1)
+    mm = re.search(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>', s)
+    if mm and 'configChanges' not in mm.group(0):
+        s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity" android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|locale|layoutDirection"', 1)
+open(m, 'w').write(s)
 
 # v119 part 2: an earphone button pressed while the app is closed. The system hands the key to this receiver, which starts PlaybackService (which then
 # puts the last queue back from resume.json). Idempotent.
