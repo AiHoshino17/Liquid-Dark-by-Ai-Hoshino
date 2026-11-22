@@ -7,6 +7,10 @@
 
 
 
+## v291b split / merge settings export check (owner: "u sure?") - no app change, version stays 0.208.0
+NEW `tests/split-settings-export-v291b.test.mjs`: every Split and merge style (cell, stretch, drip, jelly, off) x Speed / Stretch / Hide after values goes Export -> Import (checked against the real DEF) unchanged, nothing dropped, still the same after cleanBarSplit; the 10 liquid glass sliders + Glass bar size too; the import preview names "Landscape mini player". Also checked by hand in Chromium: imported values show on Settings > Animation. `npm test` = 1048 pass.
+
+
 ## v291 split shown when turning sideways + landscape mini player hides after 8 s (owner) - version stays 0.208.0
 WHY (owner): "when we flip to landscape it happens instantly, we can't see the animation" and "the mini player in landscape should disappear after 8 seconds if there is no touch on it, otherwise our animation is never used".
 WHAT (`src/main.js`, `src/lsplit.js`, `src/styles/app.css`):
