@@ -16,6 +16,6 @@ test('v279: the pill animation has no landscape switch: it reads the live Animat
 });
 test('v281: landscape bar is full width with nothing playing, the right half with a mini player; the pill follows the bar size (ResizeObserver)', () => {
   assert.match(blk, /\.tabbar\{left:auto;right:var\(--gr\);margin:0;width:calc\(100% - var\(--gl\) - var\(--gr\)\);transition:width/);
-  assert.match(C, /#app:has\(#mini \.mini\) \.tabbar\{left:auto;right:var\(--gr\);margin:0;width:calc\(50% - var\(--gr\) - 8px\)\}/);
+  assert.match(C, /#app:has\(#mini \.mini:not\(\.leaving\)\) \.tabbar\{left:auto;right:var\(--gr\);margin:0;width:calc\(50% - var\(--gr\) - 8px\)\}/);
   assert.match(G, /new ResizeObserver\(/); assert.match(G, /if \(ro\) ro\.disconnect\(\)/);
 });

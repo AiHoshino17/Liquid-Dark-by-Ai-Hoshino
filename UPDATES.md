@@ -10,6 +10,26 @@
 
 
 
+## v288: Water split for the landscape glass bar
+- In landscape, when music starts, the mini player now pulls out of the glass bar like water: a thin neck stretches and snaps.
+- When music stops, it flows back and merges into the bar.
+- Follows your animation speed; turned off with Reduce Motion.
+- The red tab icon was checked on every page, in portrait and landscape, with and without music: it is always the page you are on.
+- In landscape the glass pill now sits exactly centred on its icon (it was a few pixels off).
+
+## v287: Settings has its own page
+- With the Settings icon in the tab bar, Settings now opens as its own page (big title, no back arrow) and the Settings icon lights up red.
+- The gear button opens the same page.
+
+## v286: Song picture behind the lyrics, and Apple Music style word fade-in
+Settings > Lyrics > Background style has a new choice, **Song picture**: the picture or GIF you set for that song (or its album) fills the lyrics page, or the cover when there is none; a Canvas plays instead when the song has one. Settings > Lyrics animation has **Word fade-in**: each word lights up smoothly from left to right as it is sung, like Apple Music, without blinking, in red, white or black lyrics. Turn it off for plain lyrics.
+
+## v285: One lyrics style removed
+The "Custom lyrics background" style (one picture or GIF for every song) is gone. If you used it, the lyrics now show the Cover colour palette; pick another style in Settings > Lyrics > Background style.
+
+## v284: Arrange your glass bar icons
+Settings > Tab bar now lets you move each icon left or right, so the glass bar shows them in the order you like. The order is saved in exported settings and comes back on import. Also fixed: with the Settings icon in the bar, the Settings icon (not Home) now lights up while Settings is open.
+
 ## v281: Wide glass bar in landscape
 Turned sideways with nothing playing, the glass bar now stretches across the whole screen. When music starts it slides to the right half and the mini player takes the left half.
 

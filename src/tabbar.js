@@ -12,8 +12,21 @@ export function cleanTabs(o) {
   if (!PAGE_TABS.some(k => r[k])) r.home = true;
   return r;
 }
-/** The bar's icons for a setting, in bar order. */
-export const visibleTabs = o => { const c = cleanTabs(o); return TAB_DEFS.filter(([k]) => c[k]); };
+/** v284 (owner: "give options to customize the positions of the icons"): the icons' order, left to right. A saved value (missing, corrupt, imported) -> every TAB_DEFS key exactly once: known keys keep their saved place, unknown / repeated ones are dropped, missing ones are added at the end in the default order. */
+export const DEF_ORDER = TAB_DEFS.map(([k]) => k);
+export function cleanTabOrder(a) {
+  const out = []; if (Array.isArray(a)) for (const k of a) if (typeof k === 'string' && DEF_ORDER.includes(k) && !out.includes(k)) out.push(k);
+  for (const k of DEF_ORDER) if (!out.includes(k)) out.push(k);
+  return out;
+}
+/** Move one icon one place left (dir -1) or right (dir +1) in the order. Returns { order, ok }: ok is false at either end or for an unknown key. Never mutates the input. */
+export function moveTab(a, k, dir) {
+  const o = cleanTabOrder(a), i = o.indexOf(k), j = i + (dir < 0 ? -1 : 1);
+  if (i < 0 || j < 0 || j >= o.length) return { order: o, ok: false };
+  const n = o.slice(); [n[i], n[j]] = [n[j], n[i]]; return { order: n, ok: true };
+}
+/** The bar's icons for a setting, in the chosen order (default: bar order). */
+export const visibleTabs = (o, order) => { const c = cleanTabs(o), lab = Object.fromEntries(TAB_DEFS); return cleanTabOrder(order).filter(k => c[k]).map(k => [k, lab[k]]); };
 /** Flip one icon. Returns { tabs, ok }: ok is false (and nothing changes) when it would remove the last page icon or the key is unknown. */
 export function toggleTab(o, k) {
   const c = cleanTabs(o); if (!TAB_DEFS.some(([x]) => x === k)) return { tabs: c, ok: false };

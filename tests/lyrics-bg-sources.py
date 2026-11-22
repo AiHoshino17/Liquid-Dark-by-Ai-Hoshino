@@ -82,7 +82,7 @@ with sync_playwright() as pw:
         st = lambda: ev("""(()=>{const l=document.querySelector('#lyr'),g=l.querySelector('.lyr-bgl'),m=g&&g.querySelector('img,video'),cs=getComputedStyle(l);
           return {lybg:document.documentElement.dataset.lybg, pal:(l.style.getPropertyValue('--lyr-pal')||'').length, blur:!!l.querySelector('.lyr-blur'), layer:g?g.dataset.src:null, cv:!!g&&g.classList.contains('lb-cv'), tag:m?m.tagName:null, loaded:!!m&&((m.naturalWidth||0)>0||(m.readyState||0)>=2), bg:cs.backgroundImage.slice(0,300), bgc:cs.backgroundColor}})()""")
         reset = "(()=>{const T=__lf.lyTest,t=__lf.Native.current();T.albumCover('');T.albumPic(t.albumId,'/tests/out/lyimgs/u3.gif');T.songPic(t.id,'');T.canvas(t,'')})()"
-        ev(reset); ev("__lf.lyTest.homeBg('')"); ev("__lf.lyTest.lyrPic('')")
+        ev(reset); ev("__lf.lyTest.homeBg('')");
         def go(v, wait=900):
             ev(f"__lf.lyTest.style('{v}')"); page.wait_for_timeout(wait)
             for _ in range(3):
@@ -94,19 +94,23 @@ with sync_playwright() as pw:
         page.locator('#lyr').screenshot(path=str(OUT / 'home_black.png'))
         ev("__lf.lyTest.homeBg('/tests/out/lyimgs/u5.webp')"); s2 = go('home', 1500); check(s2['lybg'] == 'home' and 'u5.webp' in s2['bg'] and not s2['layer'], f'Home style: the Home picture / GIF ({s2})')
         page.locator('#lyr').screenshot(path=str(OUT / 'home_pic.png'))
-        ev("__lf.lyTest.lyrPic('/tests/out/lyimgs/u6.webp')"); s3 = go('custom', 1500); check(s3['lybg'] == 'custom' and s3['layer'] == '/tests/out/lyimgs/u6.webp' and s3['loaded'] and not s3['cv'], f'Custom style: your picture, not the album GIF ({s3})')
-        page.locator('#lyr').screenshot(path=str(OUT / 'custom_pic.png'))
-        ev("__lf.lyTest.canvas(__lf.Native.current(),'/tests/out/lyimgs/canvas.webm')"); s4 = go('custom', 2000); check(s4['layer'] == '/tests/out/lyimgs/canvas.webm' and s4['cv'] and s4['tag'] == 'VIDEO' and s4['loaded'], f'Custom style + Canvas: the Canvas video shows ({s4})')
-        page.locator('#lyr').screenshot(path=str(OUT / 'custom_canvas.png'))
-        s5 = go('home', 2000); check(s5['layer'] == '/tests/out/lyimgs/canvas.webm' and s5['cv'] and s5['loaded'], f'Home style + Canvas: the Canvas video shows ({s5})')
+        ev("__lf.lyTest.canvas(__lf.Native.current(),'/tests/out/lyimgs/canvas.webm')"); s4 = go('home', 2000); check(s4['layer'] == '/tests/out/lyimgs/canvas.webm' and s4['cv'] and s4['tag'] == 'VIDEO' and s4['loaded'], f'Home style + Canvas: the Canvas video shows ({s4})')
+        page.locator('#lyr').screenshot(path=str(OUT / 'home_canvas.png'))
+        s5 = go('palette', 300); s5 = go('home', 2000); check(s5['layer'] == '/tests/out/lyimgs/canvas.webm' and s5['cv'] and s5['loaded'], f'Home style + Canvas: the Canvas video shows ({s5})')
+        # v286: Song picture style: the album's GIF, then the song's own picture over it, then the Canvas over both, then back
+        ev("__lf.lyTest.canvas(__lf.Native.current(),'')"); sp1 = go('pic', 1500); check(sp1['lybg'] == 'pic' and sp1['layer'] == '/tests/out/lyimgs/u3.gif' and sp1['loaded'] and not sp1['cv'], f'Song picture style: the album GIF you set ({sp1})')
+        page.locator('#lyr').screenshot(path=str(OUT / 'pic_album.png'))
+        ev("__lf.lyTest.songPic(__lf.Native.current().id,'/tests/out/lyimgs/u5.webp')"); sp2 = go('palette', 300); sp2 = go('pic', 1500); check(sp2['layer'] == '/tests/out/lyimgs/u5.webp' and sp2['loaded'], f'Song picture style: the song picture wins over the album one ({sp2})')
+        page.locator('#lyr').screenshot(path=str(OUT / 'pic_song.png'))
+        ev("__lf.lyTest.canvas(__lf.Native.current(),'/tests/out/lyimgs/canvas.webm')"); sp3 = go('palette', 300); sp3 = go('pic', 2000); check(sp3['layer'] == '/tests/out/lyimgs/canvas.webm' and sp3['tag'] == 'VIDEO', f'Song picture style + Canvas: the Canvas shows ({sp3})')
+        ev("__lf.lyTest.songPic(__lf.Native.current().id,'')")
         ev("__lf.lyTest.canvas(__lf.Native.current(),'')"); s6 = go('home'); check(not s6['layer'] and 'u5.webp' in s6['bg'], f'Canvas off: back to the Home picture ({s6})')
-        for v, ok in [('palette', lambda x: x['pal'] > 50 and not x['layer'] and x['lybg'] == ''), ('custom', lambda x: x['layer'] == '/tests/out/lyimgs/u6.webp'), ('blur', lambda x: x['blur'] and not x['layer']), ('home', lambda x: not x['blur'] and not x['layer'] and 'u5.webp' in x['bg']), ('classic', lambda x: not x['layer'] and not x['blur'] and x['lybg'] == '')]:
+        for v, ok in [('palette', lambda x: x['pal'] > 50 and not x['layer'] and x['lybg'] == ''), ('blur', lambda x: x['blur'] and not x['layer']), ('home', lambda x: not x['blur'] and not x['layer'] and 'u5.webp' in x['bg']), ('classic', lambda x: not x['layer'] and not x['blur'] and x['lybg'] == '')]:
             x = go(v, 1500); check(ok(x), f'switch to {v} ({x})')
         # v278: lyrics text colour on any style
         col = lambda: ev("(()=>{const l=document.querySelector('#lyr .lyr-t b');return {ink:document.documentElement.dataset.lyink,c:getComputedStyle(l).color}})()")
-        ev("__lf.lyTest.lyrPic('/tests/out/lyimgs/u6.webp')")
         ev("(()=>{const q=__lf.Native.state.queue,i=q.findIndex(t=>t.id==='t10');if(i>=0)__lf.Native.play(q,i,true)})()"); page.wait_for_selector('#lyrbody .ln', timeout=15000)   # a demo song WITH lyrics
-        for sty in ['custom', 'palette', 'classic']:
+        for sty in ['home', 'palette', 'classic']:
             for ink, want in [('white', 'rgb(255, 255, 255)'), ('black', 'rgb(0, 0, 0)')]:
                 go(sty, 1200); ev(f"__lf.lyTest.ink('{ink}')"); page.wait_for_timeout(200); x = col(); check(x['ink'] == ink and x['c'] == want, f'{sty} + {ink} text ({x})')
                 page.locator('#lyr').screenshot(path=str(OUT / f'ink_{sty}_{ink}.png'))

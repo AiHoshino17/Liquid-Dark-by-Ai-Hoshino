@@ -7,6 +7,44 @@
 
 
 
+## v288b red tab icon re-checked everywhere + resting pill centred - version stays 0.208.0
+Owner asked "are the red icons right when we are on a specific icon?". NEW browser check `tests/tab-lit-check.py` (176 checks, ALL PASS): portrait + landscape x music off / on x Settings icon on / off / a custom order: tapping every icon (forward and back) = exactly ONE red icon (also aria-current), the tapped one, that page shown (Settings = its own page); an album inside Albums keeps Albums red, back = Albums; the gear = Settings red (or the old screen with a back arrow when the icon is off); in landscape Library stays red during and after the water merge / split.
+FIX found by it: in the wide landscape bar the glass pill sat 4-7 px off its icon at rest (Home pill shifted right): `src/glidebar.js` paint() leaned the pill forward by 15 % of (W - Wb) even at rest; now only the stretched extra width leans (0 at rest). Portrait unchanged (there W = Wb at rest). Test in `tests/landscape-water-split-v288.test.mjs`. `npm test` = 1036 pass; landscape-check, landscape-split-check ALL PASS.
+
+
+## v288 landscape "Water split" (owner picked option 1 of 5 previews) - version stays 0.208.0
+WHAT: landscape only. Music starts: the wide glass bar slides right and the mini player is pulled out of its left end; it shows only where the bar has left it (clip), its cover / title / buttons fade in late, a water neck joins the two, thins, snaps at 14 px, and two little tips pull back. Music stops: the player stays as a "leaving" ghost (inert) while the bar flows back over it (slow-start curve, `#app.lmerge`), the tips reach out, the neck forms, they merge, the ghost is removed. Music back during the merge: the new player replaces the ghost. Speed follows the animation speed (--dur-k). Reduce Motion and portrait: no effect, as before.
+WHICH: NEW `src/lsplit.js` (neckGeom / tipAmount / contentOpacity pure, makeSplit = DOM driver: an SVG `.lneck` in #app drawn in the bar's glass look, sized by style because the global svg rule is 24 x 24). `src/main.js` renderMini (ghost + run(+1 / -1)), `__lf.renderMini` hook. `src/styles/app.css`: bar rule now `#app:has(#mini .mini:not(.leaving)) .tabbar`, the v288 neck rules (above the v222 marker) and the lmerge curve (landscape block at the end).
+CHECKED: NEW `tests/landscape-water-split-v288.test.mjs`; NEW browser check `tests/landscape-split-check.py` ALL PASS (clipped at start, neck joins then snaps, nothing left at rest, content fades in late, ghost while merging, neck again, bar wide after, music back mid-merge, Reduce Motion, portrait); landscape-check ALL PASS. Two old selector checks updated to the new selector. `npm test` = 1035 pass. NOT run on a phone.
+DO NOT REDO: the other 4 previews (drip, cell split, jelly pop, simple slide) were not chosen.
+
+
+## v287 Settings = its own page (owner) - version stays 0.208.0
+WHAT: with the Settings icon in the tab bar, Settings opens as its own top page like Home / Albums: big "Settings" title, no back arrow, the Settings icon lit red (v284 barSync). `src/main.js`: NEW openSettingsPage() (stack = [{t:'settings', id:'page'}]); sub.settings(id) draws the big title when id === 'page'; onBarPick 'settings' and the gear button both open that page. Without the Settings icon in the bar, the gear opens the old Settings screen with a back arrow (nothing to light).
+CHECKED: Chromium portrait + landscape: bar icon -> Settings page, Settings lit, no back arrow; Albums after it lights Albums; gear -> same page; no page errors, nothing off-screen. Test added in `tests/tabbar-and-landscape-glass-v224.test.mjs`. `npm test` = 1031 pass. NOT run on a phone.
+DO NOT REDO: do not put the back arrow back on the Settings page.
+
+
+## v286 Song picture lyrics background + Apple Music word fade-in - version stays 0.208.0
+WHAT the owner meant by "custom" (v285 removed the wrong one): NEW style "Song picture" (`set.lyricBg = 'pic'`): behind the lyrics, the picture / GIF set for THAT song, else for its album, else the cover (tintSource order), shown as it is (not blurred), white lyrics; a showing Canvas plays instead. Styles now: classic, Cover colour palette, Cover blur, Song picture, Home screen background.
+NEW Settings > Lyrics animation > "Word fade-in" (`set.lyWordFade`, default on, exported / imported): matched to the owner's Apple Music clip (VID_20261122_073709): a left-to-right wipe through the playing line, cutting through words, soft edge ~1 letter (.6em), unlit ~36 %. syncLyrics writes each word's --wp (0..1) from lyNow (never steps back, v280) = no blink; CSS masks the word (works on red / white / black, any style). Off = the whole playing line lit, no per-word effect.
+ALSO: palette label no longer says "(small yellow / blue kept)" (owner: a developer note).
+CHECKED: blink check ALL PASS incl. NEW "word fade-in only moves forward" on palette / home / classic x auto / white / black with report jitter + not-playing flicker; mid-line: sung words 1, the word being sung part-lit, the rest 0, in every colour; ON = mask, OFF = no mask, all words lit. Song picture: album GIF -> song picture wins -> Canvas wins (lyrics-bg-sources ALL PASS). Real UI: the toggle saves on / off, the picker lists 5 styles. `npm test` = 1030 pass. NOT run on a phone.
+
+
+## v285 Custom lyrics background REMOVED (owner) - version stays 0.208.0
+WHAT: the lyrics style "Custom lyrics background" (one picture / GIF for every song, v277) is gone: LYSTYLE, its picker rows (Choose / Remove picture), lbpick / lbrm, the lf-lyrbg IndexedDB store (an old install's database is deleted once at start-up), lyBgSrc's custom branch, `__lf.lyTest.lyrPic`, the `data-lybg="custom"` CSS. A saved lyricBg 'custom' is cleaned to '' at start-up / import, so that phone falls back to the Cover colour palette. The 4 styles left: classic, Cover colour palette, Cover blur, Home screen background (+ Lyrics text colour, Canvas first in Home style).
+TESTS: v277 / two-styles tests updated; browser checks (lyrics-bg-sources, lyrics-blink-check, landscape-check) moved from custom to home: ALL PASS; real UI: the picker shows exactly 4 styles, no picture rows; old saved 'custom' -> palette, no errors. `npm test` = 1028 pass.
+DO NOT REDO: do not bring the custom lyrics picture back unless the owner asks.
+
+
+## v284 tab bar: Settings icon lit in Settings + icon order setting - version stays 0.208.0
+FIX: with the Settings icon in the bar, opening Settings (gear button or the icon) left Home lit. `src/main.js`: NEW barIdx() / barSync() (Settings screen on top + a Settings icon = that icon, else the page's icon), called from renderSub (every screen change) and onBarPick; buildBar starts on barIdx(). Going back lights the page again. The old v224 "pill springs back" test line was changed to the new behaviour (owner's order).
+NEW: Settings > Tab bar: each icon has ▲ / ▼ (further left / right). `src/tabbar.js`: DEF_ORDER, cleanTabOrder, moveTab; visibleTabs(tabs, order). `set.tabOrder` (default home, albums, library, search, settings) is a default key, so Export settings writes it and Import type-checks it (an array; a broken value is dropped), cleaned at start-up and on import; label "Tab bar icon order" in `src/settingsio.js`.
+CHECKED: Chromium real UI: Settings open = Settings icon lit, pill 0 px off; back = Home lit; Search moved left 3 times = first in the bar, saved. Node: export -> import keeps the order, a bad value is dropped. Tests added in `tests/tabbar-and-landscape-glass-v224.test.mjs`. `npm test` = 1028 pass.
+NOT DONE (owner deciding from a preview): the water-like split / merge of the landscape glass bar into the mini player.
+
+
 ## v283 docs/ = only what users see - version stays 0.208.0
 Owner: "we only need screenshots and recordings for the users to see". All docs/palette-check-v* debug render folders deleted; docs/ pictures = docs/screenshots (13) + docs/recordings (6) only. Old notes that named those folders now say the renders were removed. DO NOT save debug renders into the project again (keep them outside the zip).
 

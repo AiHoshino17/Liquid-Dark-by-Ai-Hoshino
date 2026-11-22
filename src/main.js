@@ -1,3 +1,4 @@
+import { makeSplit } from './lsplit.js';
 import { applyA11y, rowLabel } from './a11y.js';
 import { logLine, buildReport, copyText } from './log.js';
 import './styles/tokens.css';
@@ -8,7 +9,7 @@ import { Native, on, store } from './native.js';
 import { restoreSession } from './session.js';
 import { I } from './icons.js';
 import { glide } from './glidebar.js';
-import { TAB_DEFS, cleanTabs, visibleTabs, toggleTab } from './tabbar.js';
+import { TAB_DEFS, cleanTabs, visibleTabs, toggleTab, cleanTabOrder, moveTab, DEF_ORDER } from './tabbar.js';
 import { HI as DET_HI, detailFromFrames, detailAccumulator } from './tintdetail.js';   // v225: detail pass (faint blush, small accents) + smart GIF frame picking   // v224: customizable tab bar
 import { packBlob, unpackBlob, isLegacy } from './blobsafe.js';
 import { useMirror, mirrorPut, mirrorGet, mirrorHas, mirrorDel, mirrorKeys, mirrorUrlSync, mirrorSyncKeys, mirrorForget, mirrorSync, mirrorPathSync, mirrorTombed, mirrorUntomb } from './picmirror.js';
@@ -139,7 +140,7 @@ const APP_VERSION = pkg.version;
 const APP_BUILD = String(pkg.version).split('.')[1] || pkg.version;   // 0.208.0 -> 208, the number the README, UPDATES and the workflow use
 /* ---------- settings (persisted) ---------- */
 const TAB_MIN = 40, TAB_MAX = 220, NPC_MIN = 40, NPC_MAX = 100;
-const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
+const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], lyWordFade: true, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
 let set = { ...DEF };
 try { set = { ...DEF, ...JSON.parse(localStorage.getItem('lf.settings') || '{}') }; } catch {}
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);   // v148: free lyrics size (an older Small / Medium / Large keeps its size)
@@ -163,7 +164,8 @@ function applySettings(lazy) {
   h.dataset.lyblur = set.lyricStyle === 'cover' && set.lyricBlur === true ? '1' : '0';   // Cover blur = style 'cover' + this flag (data-lyrstyle keeps only classic / cover)
   h.dataset.lypal = set.lyricStyle === 'cover' && set.lyricPal === true && set.lyricBlur !== true && !set.lyricBg ? '1' : '0';
   h.dataset.lyink = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   // v278: lyrics text colour, any background style
-  h.dataset.lybg = set.lyricStyle === 'cover' && set.lyricBlur !== true && set.lyricBg ? set.lyricBg : '';   // v277: 'home' = the Home background picture / GIF (or black), 'custom' = your own lyrics picture / GIF for every song; a Canvas shows instead when the song has one   // Cover colour palette = style 'cover' + this flag
+  h.dataset.lywf = set.lyWordFade === false ? '0' : '1';   // v286: Apple Music style word fade-in (Settings > Lyrics animation), on by default
+  h.dataset.lybg = set.lyricStyle === 'cover' && set.lyricBlur !== true && set.lyricBg ? set.lyricBg : '';   // v277: 'home' = the Home background picture / GIF (or black); a Canvas shows instead when the song has one (v285: the 'custom' style was removed)   // Cover colour palette = style 'cover' + this flag
   h.dataset.lyrstyle = set.lyricStyle;   // v92: 'cover' = white lyrics on the album's colour
   h.style.setProperty('--lyric-size', cleanLyPx(set.lyricPx, set.lyricSize) + 'px');   // v148: free size in px (default Medium = 23)
   if (lazy) { clearTimeout(setSaveT); setSaveT = setTimeout(saveSettingsNow, 400); } else saveSettingsNow();
@@ -171,13 +173,13 @@ function applySettings(lazy) {
 set.lyAnim = cleanLya(set.lyAnim);
 set.bgDim = cleanDim(set.bgDim); set.bgFit = cleanFit(set.bgFit);
 if (!['classic', 'cover'].includes(set.lyricStyle)) set.lyricStyle = DEF.lyricStyle;
-delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'custom'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277: 5 styles: + Home screen background, Custom lyrics background (style 'cover' + lyricBg) */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
+delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
 set.timeStyle = cleanTimeStyle(set.timeStyle);   // Settings > Playing bar time: a missing or corrupt saved value falls back to 'left'
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize;   // Bug 14: a corrupt saved value must not become "undefined"
 if (!['Small', 'Medium', 'Large'].includes(set.tabSize)) set.tabSize = DEF.tabSize;
 if (!Number.isFinite(+set.tabPct)) set.tabPct = { Small: 85, Medium: 100, Large: 120 }[set.tabSize] || 100;   // v108: keep the size people had chosen before the slider
 set.tabPct = Math.min(TAB_MAX, Math.max(TAB_MIN, Math.round(+set.tabPct)));
-set.tabs = cleanTabs(set.tabs);   // v224: which icons the tab bar shows
+set.tabs = cleanTabs(set.tabs); set.tabOrder = cleanTabOrder(set.tabOrder);   // v224: which icons the tab bar shows; v284: in which order
 set.home = cleanHome(set.home);   // v119: Home screen layout
 set.userName = String(set.userName || '').slice(0, 24);   // v119: name for the Home greeting
 set.npCover = +set.npCover > 0 ? Math.min(NPC_MAX, Math.max(NPC_MIN, Math.round(+set.npCover))) : 0;   // v119: 0 = automatic size
@@ -185,7 +187,7 @@ applySettings();
 try { matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', applySettings); } catch {}
 
 /* ---------- shell (built once) ---------- */
-let TABS = visibleTabs(set.tabs);   // v224: [key, label] of the icons the bar shows now (Settings > Tab bar); the Settings icon is a fifth one
+let TABS = visibleTabs(set.tabs, set.tabOrder);   // v224: [key, label] of the icons the bar shows now (Settings > Tab bar); the Settings icon is a fifth one
 const tabsHtml = (attr = 'data-tab') => TABS.map(([k, l]) => `<button class="tab" ${attr}="${k}" aria-label="${l}">${I[k]}<span>${l}</span></button>`).join('');
 document.getElementById('app').innerHTML = `
   <div id="main" class="screen"></div><div id="sub"></div><div id="mini"></div>
@@ -725,12 +727,13 @@ const sub = {
     <div class="animdock"><div class="lyr lyprev"><div class="lyprevbody" aria-hidden="true">${sample.map((t, i) => `<p class="ln tap${i === 0 ? ' cur' : ''}" data-li="${i}" style="--d:${Math.min(5, i)}">${t}</p>`).join('')}</div></div>
       <div class="animdock-r"><span>Live preview: it uses your Background style and moves like the real lyrics.</span></div>
       <div class="animchips"><button class="chip" data-act="lya-preset" data-p="default">Default</button><button class="chip" data-act="lya-preset" data-p="smooth">Smooth</button><button class="chip" data-act="lya-preset" data-p="snappy">Snappy</button><button class="chip" data-act="lya-preset" data-p="blurry">Blurry</button><button class="chip" data-act="lya-preset" data-p="still">Minimal</button></div></div>
+    <div class="setcard"><div class="setrow"><div class="tx"><b>Word fade-in</b><span>Each word lights up as it is sung, smoothly from left to right (Apple Music style). Off = the whole playing line lights up at once. Only for lyrics with word timings.</span></div><button class="toggle ${set.lyWordFade !== false ? 'on' : ''}" data-act="tg" data-k="lyWordFade" aria-label="Word fade-in"></button></div></div>
     <div class="setcard">${LYA_DEFS.map(d => `<div class="animrow"><b>${d.label}<em data-lyv="${d.k}">${Math.round(set.lyAnim[d.k])}%</em></b><input type="range" data-lyk="${d.k}" min="${d.min}" max="${d.max}" step="1" value="${set.lyAnim[d.k]}" aria-label="${d.label}"><span style="display:block;color:var(--text-2);font-size:0.8125rem;margin-top:2px">${d.hint}</span></div>`).join('')}</div>`;
   },
-  settings: () => {
+  settings: (id) => {   // v287 (owner: "give settings a separate page"): id 'page' = Settings opened as its OWN page from the glass bar: no back arrow, a big title like Home / Albums; otherwise the usual screen with a back arrow
     const row = (t, d, right = '') => `<div class="setrow"><div class="tx"><b>${t}</b>${d ? `<span>${d}</span>` : ''}</div>${right}</div>`;
     const tg = (k, on) => `<button class="toggle ${on ? 'on' : ''}" data-act="tg" data-k="${k}"></button>`;
-    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Settings</b><span style="width:44px"></span></div>
+    return `${id === 'page' ? '<h1 class="large setpage-h">Settings</h1>' : `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Settings</b><span style="width:44px"></span></div>`}
     <div class="setcols"><div class="profile"><button class="pfmain" data-act="pfpick" aria-label="Choose profile picture, GIF or video"><span class="avatar">${pfHtml() || '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c.9-4 4-6 7.5-6s6.6 2 7.5 6"/></svg>'}</span></button>
       ${set.userName && !nameEdit ? `<button class="tx pfnamebtn" data-act="nameedit" aria-label="Your name is ${escH(set.userName)}. Tap to change it"><b>${escH(set.userName)}</b><span>Tap your name to change it</span></button>`
         : `<span class="tx"><b>${set.userName ? 'Change your name' : 'Your name'}</b><span>Shown in the Home greeting. Tap the circle for a photo, GIF or video.</span><input class="pfname" id="pfname" type="text" maxlength="24" value="${escH(set.userName || '')}" placeholder="Type your name" autocomplete="given-name" autocapitalize="words" aria-label="Your name, shown in the Home greeting"><span class="pfbtns"><button class="chip sel" data-act="name-save">Save</button>${set.userName ? '<button class="chip" data-act="name-cancel">Cancel</button><button class="chip" data-act="name-rm">Remove name</button>' : ''}</span></span>`}${pfHtml() ? '<button class="chip" data-act="pfrm">Remove</button>' : ''}</div>
@@ -740,8 +743,8 @@ const sub = {
       ${row('Increase Contrast', 'Increase color contrast between app foreground and background colors.', tg('contrast', set.contrast))}
       <button class="setrow" data-act="bgopen" style="width:100%;text-align:left"><span class="tx"><b>Background picture or GIF</b><span>${bgUrl ? 'Your picture is on every screen.' : 'Use any picture or GIF, of any size, behind the whole app.'}</span></span>${I.chev}</button></div>
     <div class="sethead">Tab bar</div><div class="setcard">
-      <div class="setrow"><div class="tx"><span>Choose which icons the glass bar at the bottom shows. Add Settings as a fifth icon, then slide the glass bubble onto it and let go to open Settings. At least one of Home, Albums, Library or Search stays on.</span></div></div>
-      ${TAB_DEFS.map(([k, l]) => `<div class="setrow"><span class="tabico" aria-hidden="true">${I[k]}</span><div class="tx"><b>${l}</b>${k === 'settings' ? '<span>Off by default. The Settings button at the top of each page stays either way.</span>' : ''}</div><button class="toggle ${set.tabs[k] ? 'on' : ''}" data-act="tabtg" data-k="${k}" aria-label="Show ${l} in the tab bar"></button></div>`).join('')}</div>
+      <div class="setrow"><div class="tx"><span>Choose which icons the glass bar at the bottom shows and their order (▲ = further left, ▼ = further right). Add Settings as a fifth icon, then slide the glass bubble onto it and let go to open Settings. At least one of Home, Albums, Library or Search stays on.</span></div></div>
+      ${cleanTabOrder(set.tabOrder).map((k, oi, oa) => [k, Object.fromEntries(TAB_DEFS)[k], oi, oa.length]).map(([k, l, oi, on]) => `<div class="setrow"><span class="tabmv" style="display:flex;flex-direction:column;gap:2px;margin-right:6px"><button class="gbtn sm" data-act="tabmv" data-k="${k}" data-dir="-1" aria-label="Move ${l} left" ${oi === 0 ? 'disabled' : ''} style="width:30px;height:24px;font-size:.75rem">▲</button><button class="gbtn sm" data-act="tabmv" data-k="${k}" data-dir="1" aria-label="Move ${l} right" ${oi === on - 1 ? 'disabled' : ''} style="width:30px;height:24px;font-size:.75rem">▼</button></span><span class="tabico" aria-hidden="true">${I[k]}</span><div class="tx"><b>${l}</b>${k === 'settings' ? '<span>Off by default. The Settings button at the top of each page stays either way.</span>' : ''}</div><button class="toggle ${set.tabs[k] ? 'on' : ''}" data-act="tabtg" data-k="${k}" aria-label="Show ${l} in the tab bar"></button></div>`).join('')}</div>
     <div class="sethead">Now Playing</div><div class="setcard">
       <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Now Playing cover size<span style="float:right;color:var(--text-2)"><input type="number" data-npnum min="${NPC_MIN}" max="${NPC_MAX}" value="${set.npCover || 100}" inputmode="numeric" aria-label="Cover size in percent" style="width:58px;background:transparent;border:0;border-bottom:1px solid var(--text-2);color:inherit;text-align:right;font:inherit"> %</span></b><span>Size of the album cover while a song plays. ${set.npCover ? '' : 'Now: automatic.'}</span>
         <div class="npprev" aria-hidden="true"><div class="npprev-art"><span class="cover blk" style="--g:${(Native.current() ? gOfT(Native.current()) : 'linear-gradient(135deg,#3a4a5a,#10161c)')}"></span></div><i></i><i class="s"></i></div>
@@ -1150,6 +1153,7 @@ function lyPrevStart() {   // the Lyrics animation page: a small copy of the lyr
   }, 1800);
 }
 function renderSub(keep = false, back = false) {   // keep = same screen refreshed in place: no slide-in, scroll position stays. back = returning to the screen below: no slide-in, its saved scroll is put back
+  try { barSync(); } catch {}   // v284: the lit icon follows the screen (Settings open = the Settings icon, back = the page underneath)
   const el = $('#sub'); const top = stack[stack.length - 1];
   const y = keep && $('#sub .screen') ? $('#sub .screen').scrollTop : back && top ? top.y || 0 : 0;
   $('#main').style.display = top ? 'none' : '';
@@ -1167,23 +1171,38 @@ function renderSub(keep = false, back = false) {   // keep = same screen refresh
 const rememberScroll = () => { const top = stack[stack.length - 1], sc = top ? $('#sub .screen') : $('#main'); const y = sc ? sc.scrollTop : 0; if (top) top.y = y; else mainY = y; };
 const push = (t, id) => { rememberScroll(); stack.push({ t, id }); renderSub(); };
 const goBack = () => { stack.pop(); renderSub(false, true); };   // Bug 6
+const openSettingsPage = () => { const top = stack[stack.length - 1]; if (top && top.t === 'settings' && top.id === 'page') return; rememberScroll(); stack = [{ t: 'settings', id: 'page' }]; renderSub(); };   // v287: Settings as its own page (the glass bar's Settings icon): it replaces the screens underneath, like switching to Home or Albums
 const keepFocus = (root, fn) => {   // D2: a re-render must not drop the focused button
   const a = document.activeElement; let sel = '', k = 0;
   if (a && a !== document.body && root.contains(a)) { sel = a.id ? '#' + a.id : a.dataset && a.dataset.act ? `[data-act="${a.dataset.act}"]` : ''; if (sel) k = [...root.querySelectorAll(sel)].indexOf(a); }
   fn();
   if (sel) { const n = root.querySelectorAll(sel)[Math.max(0, k)]; if (n && n !== document.activeElement) n.focus({ preventScroll: true }); }
 };
+/* v288 (owner picked "Water split"): landscape only, the mini player splits out of / merges back into the wide glass bar like water. src/lsplit.js. */
+const LAND_Q = '(orientation:landscape) and (max-height:520px)';
+let lsplit = null, miniGone = 0;
+const lsplitOf = () => lsplit || (lsplit = makeSplit({ app: $('#app'), bar: () => $('#tabs'), host: $('#mini'), land: () => { try { return matchMedia(LAND_Q).matches; } catch { return false; } },
+  reduced: () => document.documentElement.dataset.motion === 'reduce', durK: () => { const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dur-k')); return Number.isFinite(v) && v > 0 ? v : 1; } }));
 function renderMini() {
   const t = Native.current(), el = $('#mini'); try { $('#app').classList.toggle('has-mini', !!t); } catch {}   // BUG-268: no :has() needed
-  if (!t) { el.innerHTML = ''; el._h = ''; return; }
+  const had = !!el.querySelector('.mini:not(.leaving)');
+  if (!t) {
+    const m = el.querySelector('.mini:not(.leaving)');
+    if (m) { let sp = false; try { sp = lsplitOf().run(-1); } catch {}   // v288: keep a ghost on screen while the bar flows back over it
+      if (sp) { m.classList.add('leaving'); m.setAttribute('inert', ''); el._h = ''; clearTimeout(miniGone); miniGone = setTimeout(() => { const g = el.querySelector('.mini.leaving'); if (g) g.remove(); }, lsplitOf().ms()); return; } }
+    if (el.querySelector('.mini.leaving')) return;
+    el.innerHTML = ''; el._h = ''; return;
+  }
+  clearTimeout(miniGone);
   const a = trackAlbum(t), s = Native.state;
   const h = `<div class="mini"><button class="mini-open" data-act="open-np">${covT(t)}<span class="meta"><b>${t.title}</b><span>${t.trackArtist || a.artist}, ${a.title}</span></span></button>
     <button class="mb" data-act="pp">${s.playing ? I.pause : I.play}</button><button class="mb" data-act="next">${I.next}</button></div>`;
   if (el._h === h) return; el._h = h; keepFocus(el, () => { el.innerHTML = h; });   // identical markup (duplicate events) = no rebuild
+  if (!had) { try { lsplitOf().run(1); } catch {} }   // v288: music just started: split out of the bar
 }
 const tokenColour = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();   // colours live only in tokens.css
 const hex6 = c => { c = String(c || '').trim(); const m = /^#([0-9a-f]{3})$/i.exec(c); if (m) c = '#' + [...m[1]].map(x => x + x).join(''); return /^#[0-9a-f]{6}$/i.test(c) ? c : '#000000'; };   // Bug 16: "#000" + "cc" = "#000cc" is not a colour: always 6 digits before the alpha is appended
-const LYSTYLE = { classic: 'Black background, red lyrics (default)', palette: 'Cover colour palette: the 5 main colours (small yellow / blue kept), white lyrics', blur: 'Cover blur: the album picture itself, softly blurred, white lyrics', home: 'Home screen background: your Home picture / GIF (or plain black), white lyrics', custom: 'Custom lyrics background: one picture / GIF of your own for every song, white lyrics' };
+const LYSTYLE = { classic: 'Black background, red lyrics (default)', palette: 'Cover colour palette: the 5 main colours of the cover, white lyrics', blur: 'Cover blur: the album picture itself, softly blurred, white lyrics', pic: 'Song picture: the picture or GIF you set for the song or album (else its cover), white lyrics', home: 'Home screen background: your Home picture / GIF (or plain black), white lyrics' };
 const LYINK = { auto: 'Automatic: red on the black style, white on the others', white: 'White lyrics (with a soft dark shadow)', black: 'Black lyrics (with a soft light glow)' };   // v278
 const lyStyleKey = () => set.lyricStyle === 'cover' ? (set.lyricBlur === true ? 'blur' : set.lyricBg || 'palette') : 'classic';   // 'blur' is not a data-lyrstyle value, it is 'cover' plus set.lyricBlur   // only two styles: classic (black, red lyrics) and palette ('cover' + lyricPal)
 const hexA = (g, n, al) => hex6((String(g).match(/#[0-9a-f]{6}/gi) || [tokenColour('--accent'), tokenColour('--bg')])[n]) + al;
@@ -2156,13 +2175,13 @@ function applyImportedSettings() {
     const merged = SIO.mergeSettings(set, picked);
     for (const k of Object.keys(set)) delete set[k];
     Object.assign(set, merged);
-    set.tabs = cleanTabs(set.tabs); set.home = cleanHome(set.home); set.anim = (set.anim && typeof set.anim === 'object' && !Array.isArray(set.anim)) ? set.anim : {};   // BUG-431: clean the values applySettings() reads, so a bad imported value cannot throw halfway
+    set.tabs = cleanTabs(set.tabs); set.tabOrder = cleanTabOrder(set.tabOrder); set.home = cleanHome(set.home); set.anim = (set.anim && typeof set.anim === 'object' && !Array.isArray(set.anim)) ? set.anim : {};   // BUG-431: clean the values applySettings() reads, so a bad imported value cannot throw halfway
     if (!Number.isFinite(+set.tabPct)) set.tabPct = 100; set.tabPct = Math.min(TAB_MAX, Math.max(TAB_MIN, Math.round(+set.tabPct)));
     set.npCover = +set.npCover > 0 ? Math.min(NPC_MAX, Math.max(NPC_MIN, Math.round(+set.npCover))) : 0;
     set.npImmersive = set.npImmersive === true; set.npTapOrig = set.npTapOrig !== false;
     set.lyAnim = cleanLya(set.lyAnim); set.bgDim = cleanDim(set.bgDim); set.bgFit = cleanFit(set.bgFit);
     if (!['classic', 'cover'].includes(set.lyricStyle)) set.lyricStyle = DEF.lyricStyle;
-    delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'custom'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277: 5 styles: + Home screen background, Custom lyrics background (style 'cover' + lyricBg) */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
+    delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
     set.timeStyle = cleanTimeStyle(set.timeStyle);
     if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);
     if (useExtras) for (const [k, v] of Object.entries(setPending.extras)) { try { localStorage.setItem(k, v); } catch {} }
@@ -3734,7 +3753,7 @@ async function coverPal(t) { return coverTint(trackAlbum(t), t); }   // the cove
 function setTintVars(el, p, k) { if (!el || !p) return; el.style.setProperty(k, p.a); el.style.setProperty(k + '2', p.b); el.style.setProperty(k + '3', p.c); }
 function clearTintVars(el, k) { if (!el) return; for (const n of [k, k + '2', k + '3']) el.style.removeProperty(n); }
 function lyStyleSheet() {
-  $('#sheet').innerHTML = sheetHtml(`<b>Background style</b><p>Changes the lyrics page. (Now Playing takes the cover colour only with Immersive album cover.)</p>${Object.entries(LYSTYLE).map(([v, t]) => `<button class="row" data-act="lystyleset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === lyStyleKey() ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<button class="row" data-act="lbpick"><span class="lbl" style="font-size:1.0625rem">${lbUrl ? 'Change' : 'Choose'} the custom lyrics picture or GIF…</span></button>${lbUrl ? '<button class="row" data-act="lbrm"><span class="lbl" style="font-size:1.0625rem">Remove the custom lyrics picture</span></button>' : ''}<div class="actions"><button data-act="sheet-close">Close</button></div>`);
+  $('#sheet').innerHTML = sheetHtml(`<b>Background style</b><p>Changes the lyrics page. (Now Playing takes the cover colour only with Immersive album cover.)</p>${Object.entries(LYSTYLE).map(([v, t]) => `<button class="row" data-act="lystyleset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === lyStyleKey() ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<div class="actions"><button data-act="sheet-close">Close</button></div>`);
 }
 function timeStyleSheet() {
   $('#sheet').innerHTML = sheetHtml(`<b>Playing bar time</b><p>The two times under the bar on Now Playing.</p>${Object.entries(TIME_STYLES).map(([v, t]) => `<button class="row" data-act="timestyleset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === cleanTimeStyle(set.timeStyle) ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<div class="actions"><button data-act="sheet-close">Close</button></div>`);
@@ -3778,22 +3797,13 @@ window.lyFreezeV = async v => {   // Canvas video: stops (no autoplay / loop), 8
     const t = await par._vt; v.currentTime = t; v.pause();
   } catch {}
 };
-/* v277: CUSTOM LYRICS BACKGROUND (Settings > Lyrics > Background style > Custom lyrics background): one picture / GIF / animated WebP of your own, the same behind the lyrics of EVERY song (whatever picture the song or album has). Stored as the original file in its own IndexedDB ('lf-lyrbg', key 'media'), like the Home background. A song with a Canvas shows its Canvas video / GIF instead (as it is, not blurred). */
-let lbUrl = '';
-const lbDb = () => new Promise((res, rej) => { try { const r = indexedDB.open('lf-lyrbg', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } });
-const lbDbPut = blob => lbDb().then(db => new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); blob ? t.objectStore('kv').put(blob, 'media') : t.objectStore('kv').delete('media'); t.oncomplete = () => { db.close(); res(true); }; t.onerror = () => { db.close(); rej(t.error); }; }));
-const lbDbGet = () => lbDb().then(db => new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get('media'); q.onsuccess = () => { db.close(); res(q.result || null); }; q.onerror = () => { db.close(); rej(q.error); }; }));
-function lbSet(blob) { if (lbUrl && lbUrl.startsWith('blob:')) { try { URL.revokeObjectURL(lbUrl); } catch {} } lbUrl = blob ? URL.createObjectURL(blob) : ''; }
-function lbPick() {   // any picture or GIF, stored exactly as it is
-  const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*';
-  i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return; try { const b = await ownBlob(f); lbSet(b); set.lyricStyle = 'cover'; set.lyricBlur = false; set.lyricPal = false; set.lyricBg = 'custom'; applySettings(); lyApplyTint(Native.current() || {}); toast('Lyrics picture set'); await lbDbPut(b); } catch { toast('Could not save that picture'); } };
-  i.click();
-}
-lbDbGet().then(b => { if (b && !lbUrl) { lbSet(b); if ($('#lyr')?.classList.contains('open')) lyApplyTint(Native.current() || {}); } }).catch(() => {});
+/* v285 (owner): the custom-picture lyrics style was removed; an old install's saved picture is deleted once. */
+try { indexedDB.deleteDatabase('lf-lyrbg'); } catch {}
 function lyBgSrc(t) {   // what the Home / Custom style shows behind the lyrics: the song's Canvas when it has one showing, else the custom picture (Custom style), else nothing (Home: the CSS paints the Home background or black)
   if (set.lyricStyle !== 'cover' || set.lyricBlur === true || !set.lyricBg) return null;
   try { const S = t && t.id ? tintSource(trackAlbum(t), t) : null; if (S && S.media && S.src) return { src: S.src, vid: !!S.vid, cv: true }; } catch {}
-  return set.lyricBg === 'custom' && lbUrl ? { src: lbUrl, vid: false, cv: false } : null;
+  if (set.lyricBg === 'pic') { try { const S = t && t.id ? tintSource(trackAlbum(t), t) : null; if (S && S.src) return { src: S.src, vid: false, cv: false }; } catch {} }   // v286 (owner): Song picture = the picture / GIF set for the song, else the album's, else the cover (the same order as everywhere), shown as it is
+  return null;   // v285: Home style: the CSS paints the Home background or black
 }
 function lyBgHtml(t) {
   const s = lyBgSrc(t); if (!s) return ''; const e = E(s.src);
@@ -3847,13 +3857,13 @@ async function lyricsLoad() {
   }).join('');
   syncLyrics(lyNow()); lyStart();
 }
-let lyWords = null, lyWd = -1;
+let lyWords = null, lyWd = -1, lyWp = null;   // v286: lyWp = the last --wp written per word of the playing line
 function syncLyrics(pos) {
   if (!lyr || !lyr.synced || !$('#lyrbody')) return;
   const i = currentIndex(lyr.lines, pos);
   if (i !== lyrIdx) {
     const body = $('#lyrbody'), ls = body.children;
-    lyrIdx = i; lyWords = null; lyWd = -1;
+    lyrIdx = i; lyWords = null; lyWd = -1; lyWp = null;
     for (let k = 0; k < ls.length; k++) { const n = ls[k]; n.classList.toggle('cur', k === i); n.style.setProperty('--d', Math.min(5, Math.abs(k - i))); }   // --d = distance from the playing line (more distance = softer)
     const el = ls[i];
     if (el) { if (!lyBrowsing()) lyCenter(el, lyrIdx >= 1); }   // the user is scrolling to pick a line: only the highlight moves
@@ -3863,6 +3873,11 @@ function syncLyrics(pos) {
     if (!lyWords) lyWords = document.querySelectorAll(`#lyrbody [data-li="${lyrIdx}"] .w`);
     let c = 0; while (c < line.words.length && pos >= line.words[c].t) c++;
     if (c !== lyWd) { lyWd = c; lyWords.forEach((n, k) => n.classList.toggle('wd', k < c)); }
+    if (set.lyWordFade !== false) {   // v286: word fade-in: each word's --wp (0..1) = how far its own time has run; lyNow never steps back, so a word never un-fades (no blink)
+      const nx = lyr.lines[lyrIdx + 1], lineEnd = nx && nx.t != null ? nx.t : line.words[line.words.length - 1].t + 1;
+      if (!lyWp || lyWp.length !== line.words.length) lyWp = line.words.map(() => -1);
+      line.words.forEach((w, k) => { const end = Math.min(k + 1 < line.words.length ? line.words[k + 1].t : lineEnd, w.t + 1.2), dur = Math.max(.12, end - w.t), v = Math.max(0, Math.min(1, (pos - w.t) / dur)), q = Math.round(v * 100) / 100; if (q !== lyWp[k] && lyWords[k]) { lyWp[k] = q; lyWords[k].style.setProperty('--wp', q); } });
+    }
   }
 }
 // a finger / wheel on the list = the user is browsing: stop following until they ask for it (no timer, nothing pulls the list back)
@@ -4204,7 +4219,7 @@ document.addEventListener('click', e => {
     case 'folder': push('folder', d.id); break;
     case 'lib': (lib[d.k] || (() => toast('Not available yet')))(); break;
     case 'back': plEdit = false; nameEdit = false; goBack(); break;
-    case 'settings': push('settings'); break;
+    case 'settings': if (TABS.some(t => t[0] === 'settings')) { openSettingsPage(); barLast = null; barSync(); } else push('settings'); break;   // v287: with a Settings icon in the bar, the gear opens the Settings PAGE (icon lit); without it, the usual screen on top
     case 'play': { const l = listOf(d.list); let pi = +d.i; if (d.tid && l[pi] && l[pi].id !== d.tid) { const j = l.findIndex(x => x.id === d.tid); if (j >= 0) pi = j; }   /* BUG-10: library swapped since the row was drawn */ Native.play(l, pi).catch(playFail); break; }
     case 'playall': Native.play(listOf(d.list), 0).catch(playFail); break;
     case 'shuffleall': Native.playShuffled(listOf(d.list)).catch(playFail); break;
@@ -4217,7 +4232,7 @@ document.addEventListener('click', e => {
     case 'rep': Native.setRepeat({ off: 'all', all: 'one', one: 'off' }[Native.state.repeat] || 'all').catch(playFail); break;
     case 'anim-preset': { set.anim = { ...(PRESETS[d.p] || PRESETS.default) }; applySettings(); for (const i of document.querySelectorAll('input[data-ak]')) { i.value = set.anim[i.dataset.ak]; const em = document.querySelector(`[data-av="${i.dataset.ak}"]`); if (em) em.textContent = Math.round(set.anim[i.dataset.ak]) + '%'; } break; }
     case 'tabtg': { const r = toggleTab(set.tabs, d.k); if (!r.ok) { toast('Keep at least one of Home, Albums, Library or Search'); break; } set.tabs = r.tabs; applySettings(); applyTabs(); b.classList.toggle('on', !!set.tabs[d.k]); b.setAttribute('aria-checked', set.tabs[d.k] ? 'true' : 'false'); break; }   // v224: Settings > Tab bar
-    case 'tg': { const dflt = d.k === 'albumInfo' || d.k === 'smartArtists' || d.k === 'npTapOrig' || d.k === 'coverDouble'; set[d.k] = dflt ? set[d.k] === false : !set[d.k]; applySettings(); if (d.k === 'npImmersive') npApplyTint(Native.current()); b.classList.toggle('on', dflt ? set[d.k] !== false : !!set[d.k]); if (d.k === 'smartArtists') { stack = stack.filter(s => s.t !== 'artist' || artistInfo(s.id).count > 0); stack.forEach(s => { if (s.t === 'artist') s.id = unesc(artistName(E(s.id)) || E(s.id)); }); repaintAll(); toast(set.smartArtists !== false ? 'Smart artist grouping on' : 'Smart artist grouping off'); } break; }
+    case 'tg': { const dflt = d.k === 'lyWordFade' || d.k === 'albumInfo' || d.k === 'smartArtists' || d.k === 'npTapOrig' || d.k === 'coverDouble'; set[d.k] = dflt ? set[d.k] === false : !set[d.k]; applySettings(); if (d.k === 'npImmersive') npApplyTint(Native.current()); b.classList.toggle('on', dflt ? set[d.k] !== false : !!set[d.k]); if (d.k === 'smartArtists') { stack = stack.filter(s => s.t !== 'artist' || artistInfo(s.id).count > 0); stack.forEach(s => { if (s.t === 'artist') s.id = unesc(artistName(E(s.id)) || E(s.id)); }); repaintAll(); toast(set.smartArtists !== false ? 'Smart artist grouping on' : 'Smart artist grouping off'); } break; }
     case 'abloop': abAction(); break;
     case 'apic-edit': apicEdit(d.id); break;
     case 'gp-edit': gpEdit(d.id); break;
@@ -4277,16 +4292,15 @@ document.addEventListener('click', e => {
     case 'lyricstyle': lyStyleSheet(); break;
     case 'lyricink': $('#sheet').innerHTML = sheetHtml(`<b>Lyrics text colour</b><p>The colour of the lyrics on every background style.</p>${Object.entries(LYINK).map(([v, t]) => `<button class="row" data-act="lyinkset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === (set.lyricInk || 'auto') ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<div class="actions"><button data-act="sheet-close">Close</button></div>`); break;   // v278
     case 'lyinkset': set.lyricInk = ['white', 'black'].includes(b.dataset.v) ? b.dataset.v : 'auto'; applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricink"] .tx span'); if (sp) sp.textContent = LYINK[set.lyricInk]; } break;
-    case 'lbpick': closeSheet(); lbPick(); break;   // v277: choose the custom lyrics picture / GIF
-    case 'lbrm': lbSet(null); lbDbPut(null).catch(() => {}); toast('Lyrics picture removed'); closeSheet(); lyApplyTint(Native.current() || {}); break;
     case 'timestyle': timeStyleSheet(); break;
     case 'timestyleset': set.timeStyle = cleanTimeStyle(b.dataset.v); applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="timestyle"] .tx span'); if (sp) sp.textContent = TIME_STYLES[set.timeStyle]; } { const el = $('#tl'), er = $('#tr'), t = Native.current(); if (el && er) { const z = timeTexts(0, 0, set.timeStyle); el.textContent = z.tl; er.textContent = z.tr; scr.tl = scr.tr = ''; scr.sec = -1; if (t) paintScrub(scrubPos(), t.dur); } } break;
-    case 'lystyleset': set.lyricStyle = b.dataset.v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = b.dataset.v === 'blur'; set.lyricPal = b.dataset.v === 'palette'; set.lyricBg = ['home', 'custom'].includes(b.dataset.v) ? b.dataset.v : ''; if (b.dataset.v === 'custom' && !lbUrl) { applySettings(); closeSheet(); lbPick(); break; } applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricstyle"] .tx span'); if (sp) sp.textContent = LYSTYLE[lyStyleKey()]; } lyApplyTint(Native.current() || {}); npApplyTint(Native.current()); break;
+    case 'lystyleset': set.lyricStyle = b.dataset.v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = b.dataset.v === 'blur'; set.lyricPal = b.dataset.v === 'palette'; set.lyricBg = ['home', 'pic'].includes(b.dataset.v) ? b.dataset.v : ''; applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricstyle"] .tx span'); if (sp) sp.textContent = LYSTYLE[lyStyleKey()]; } lyApplyTint(Native.current() || {}); npApplyTint(Native.current()); break;
     case 'nameedit': nameEdit = true; renderSub(true); nameFocus(); break;
     case 'name-save': nameSave(); break;
     case 'name-cancel': nameEdit = false; renderSub(true); break;
     case 'name-rm': set.userName = ''; nameEdit = false; applySettings(); refreshGreet(); renderSub(true); toast('Name removed'); break;
     case 'npreset': setNpCover(0, true); break;
+    case 'tabmv': { const r = moveTab(set.tabOrder, d.k, +d.dir); if (!r.ok) break; set.tabOrder = r.order; applySettings(); applyTabs(); renderSub(true); break; }   // v284: icon order
     case 'tabreset': setTabPct(100); { const i = document.querySelector('input[data-tabpct]'); if (i) i.value = 100; } break;
     case 'lyricsize': push('lysize'); break;   // v148: the size is a slider on its own screen
     case 'lysize-reset': set.lyricPx = LY_DEF; applySettings(); { const i = document.querySelector('input[data-lypx]'); if (i) i.value = LY_DEF; const v = document.querySelector('[data-lypxv]'); if (v) v.textContent = lyName(LY_DEF); } break;
@@ -4382,21 +4396,24 @@ initLiquidGroups();  // the tab bar's liquid pill on the other button rows (tran
 /* v224: the tab bar is built by buildBar() so Settings > Tab bar can add / remove icons live. The Settings icon is not a page: letting the pill go on it opens Settings and the pill springs back to the page that is still underneath. */
 let bar = null;
 const tabIdx = () => TABS.findIndex(t => t[0] === tab);
+const barIdx = () => { const top = stack[stack.length - 1], si = TABS.findIndex(t => t[0] === 'settings'); return top && top.t === 'settings' && si >= 0 ? si : tabIdx(); };   // v284 (owner: "in Settings the Home icon is red, not the Settings icon"): with the Settings screen open and a Settings icon in the bar, that icon is the lit one
+let barLast = null;
+function barSync() { if (!bar) return; const i = barIdx(); if (i === barLast) return; barLast = i; try { bar.set(i, true); } catch {} }
 const onBarPick = i => {
   const k = TABS[i] && TABS[i][0]; if (!k) return;
-  if (k === 'settings') { const top = stack[stack.length - 1]; if (!(top && top.t === 'settings')) push('settings'); bar.set(tabIdx(), true); return; }
+  if (k === 'settings') { openSettingsPage(); barLast = null; barSync(); return; }   // v287: its own page
   tab = k; stack = []; renderSub(); renderMain();
 };
 function buildBar() {
   const old = $('#tabs'), nav = old.cloneNode(false);   // a fresh <nav>: the old glide keeps its listeners on the old element
   if (bar) { try { bar.destroy(); } catch {} }
   nav.innerHTML = tabsHtml(); old.replaceWith(nav);
-  bar = glide(nav, { selector: '.tab', initial: Math.max(0, tabIdx()), onChange: onBarPick });
-  if (tabIdx() < 0) bar.set(-1, false);   // a page that has no icon in the bar (opened from a widget): no icon is lit
+  bar = glide(nav, { selector: '.tab', initial: Math.max(0, barIdx()), onChange: onBarPick }); barLast = barIdx();
+  if (barIdx() < 0) bar.set(-1, false);   // a page that has no icon in the bar (opened from a widget): no icon is lit
 }
 /** Settings > Tab bar changed (or an import): rebuild the bar; if the page on screen lost its icon, show the first icon's page. */
 function applyTabs() {
-  TABS = visibleTabs(set.tabs);
+  TABS = visibleTabs(set.tabs, set.tabOrder);
   if (!TABS.some(t => t[0] === tab)) { tab = TABS[0][0]; renderMain(); }
   buildBar();
 }
@@ -4465,9 +4482,9 @@ document.addEventListener('keydown', e => {
   run();
 }
 // test hooks for screenshots / debugging (harmless)
-if (!Native.isNative) window.__lf = { Native, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
-    style: v => { set.lyricStyle = v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = v === 'blur'; set.lyricPal = v === 'palette'; set.lyricBg = ['home', 'custom'].includes(v) ? v : ''; applySettings(); lyApplyTint(Native.current() || {}); },
-    lyrPic: u => { lbUrl = u || ''; }, ink: v => { set.lyricInk = v; applySettings(); }, homeBg: u => { if (u) bgSetUrl(u); else bgSetMedia(null); },   // v277
+if (!Native.isNative) window.__lf = { Native, renderMini, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
+    style: v => { set.lyricStyle = v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = v === 'blur'; set.lyricPal = v === 'palette'; set.lyricBg = ['home', 'pic'].includes(v) ? v : ''; applySettings(); lyApplyTint(Native.current() || {}); },
+    ink: v => { set.lyricInk = v; applySettings(); }, homeBg: u => { if (u) bgSetUrl(u); else bgSetMedia(null); },   // v277
     albumCover: u => { const t = Native.current(); if (t) { trackAlbum(t).cover = u || undefined; covTint.clear(); } },   // the cover read from the music file (embedded / album art)
     albumPic: (id, u) => { if (u) alpUrls.set(id, u); else alpUrls.delete(id); covTint.clear(); },
     songPic: (id, u) => { if (u) spUrls.set(id, u); else spUrls.delete(id); covTint.clear(); },

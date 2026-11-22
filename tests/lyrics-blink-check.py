@@ -47,7 +47,8 @@ DRIVE = """async ({jitter, flicker, secs}) => {
     if (flicker && el >= nextFlick) { s.playing = false; flickUntil = el + 60; nextFlick = el + 2000 + Math.random() * 2500; }
     if (flicker && flickUntil && el >= flickUntil) { s.playing = true; s.pos = Math.max(0, truth - .2); flickUntil = 0; }
     const cur = document.querySelector('#lyrbody .ln.cur'), li = cur ? +cur.dataset.li : -1, wd = cur ? cur.querySelectorAll('.w.wd').length : 0;
-    rec.push([el, truth, li, wd, cur ? +getComputedStyle(cur).opacity : 0]);
+    const wps = cur ? [...cur.querySelectorAll('.w')].map(n => +(n.style.getPropertyValue('--wp') || 0)) : [];
+    rec.push([el, truth, li, wd, cur ? +getComputedStyle(cur).opacity : 0, wps.reduce((a, b) => a + b, 0)]);
   }
   return rec; }"""
 exe = pw_helper.chromium_exe()
@@ -61,17 +62,19 @@ with sync_playwright() as pw:
     p.evaluate("__lf.go('albums'); __lf.push('album','a5')"); p.wait_for_selector('#sub [data-act="shuffleall"]'); p.click('#sub [data-act="shuffleall"]'); p.wait_for_timeout(300)
     p.evaluate(f"(()=>{{const t=__lf.Native.current();t.lyric={json.dumps(lrc())};}})()")
     p.evaluate("__lf.openNP()"); p.wait_for_selector('#np [data-act="lyrics"]'); p.click('#np [data-act="lyrics"]'); p.wait_for_selector('#lyrbody .ln .w')
-    for style, ink, jitter, flicker in [('palette', 'auto', False, False), ('palette', 'white', True, False), ('palette', 'white', True, True), ('custom', 'black', True, True), ('classic', 'auto', True, True)]:
+    for style, ink, jitter, flicker in [('palette', 'auto', False, False), ('palette', 'white', True, False), ('palette', 'white', True, True), ('home', 'black', True, True), ('classic', 'auto', True, True)]:
         p.evaluate(f"__lf.lyTest.style('{style}'); __lf.lyTest.ink('{ink}')"); p.wait_for_timeout(500)
         rec = p.evaluate(DRIVE, {'jitter': jitter, 'flicker': flicker, 'secs': 12})
         back_line = sum(1 for a, b in zip(rec, rec[1:]) if b[2] < a[2] and b[2] >= 0)
         back_word = sum(1 for a, b in zip(rec, rec[1:]) if b[2] == a[2] and b[3] < a[3])
         steady = [r for r in rec[60:] if r[2] >= 0]; opac = [r[4] for r in steady]
         dips = sum(1 for a, b in zip(steady, steady[1:]) if a[2] == b[2] and b[4] < a[4] - .05)
+        fade_back = sum(1 for a, b in zip(rec, rec[1:]) if b[2] == a[2] and b[5] < a[5] - 1e-6)
         tag = f'{style} / {ink} text / jitter={jitter} / not-playing flicker={flicker}'
         check(back_line == 0, f'{tag}: the playing line never steps back ({back_line})')
         check(back_word == 0, f'{tag}: filled words never un-fill ({back_word})')
         check(dips == 0, f'{tag}: the playing line never dims ({dips} dips)')
+        check(fade_back == 0 and max(r[5] for r in rec) > 1, f'{tag}: word fade-in only moves forward = no blink ({fade_back} steps back)')
         lines = sorted(set(r[2] for r in rec)); check(len(lines) >= 6, f'{tag}: lyrics keep moving ({lines})')
     # a real seek is NOT held back: small and big backward seeks move the lyrics at once; a real pause freezes them
     curli = lambda: p.evaluate("(()=>{const c=document.querySelector('#lyrbody .ln.cur');return c?+c.dataset.li:-1})()")
@@ -82,15 +85,23 @@ with sync_playwright() as pw:
     p.evaluate("(async()=>{await __lf.Native.pause();__lf.Native.state.pos=4.3})()"); p.wait_for_timeout(500); d1 = curli(); p.wait_for_timeout(1500); d2 = curli()
     check(d1 == d2, f'a real pause freezes the lyrics ({d1} / {d2})')
     OUT = pw_helper.out_dir() / 'blink'; OUT.mkdir(parents=True, exist_ok=True)
-    for style, ink in [('classic', 'auto'), ('palette', 'white'), ('palette', 'black'), ('custom', 'white'), ('custom', 'black')]:
-        p.evaluate(f"__lf.lyTest.lyrPic('/tests/fixtures/demo-pics/c62.jpg'); __lf.lyTest.style('{style}'); __lf.lyTest.ink('{ink}')"); p.evaluate("__lf.Native.seek(5.95)"); p.wait_for_timeout(900)
-        x = p.evaluate("(()=>{const c=document.querySelector('#lyrbody .ln.cur');const w=[...c.querySelectorAll('.w')];return {li:+c.dataset.li,filled:w.filter(n=>n.classList.contains('wd')).length,ops:w.map(n=>+getComputedStyle(n).opacity),col:getComputedStyle(c).color}})()")
-        check(x['filled'] == 3 and all(o == 1 for o in x['ops'][:3]) and all(o < .8 for o in x['ops'][3:]), f'word fill mid-line with {style} / {ink} text: 3 words filled, the rest softer ({x})')
+    for style, ink in [('classic', 'auto'), ('palette', 'white'), ('palette', 'black'), ('home', 'white'), ('home', 'black')]:
+        p.evaluate(f"__lf.lyTest.style('{style}'); __lf.lyTest.ink('{ink}')"); p.evaluate("__lf.Native.seek(5.95)"); p.wait_for_timeout(900)
+        p.evaluate("(async()=>{await __lf.Native.pause();__lf.Native.state.pos=6.05})()"); p.wait_for_timeout(500)
+        x = p.evaluate("(()=>{const c=document.querySelector('#lyrbody .ln.cur');const w=[...c.querySelectorAll('.w')];return {li:+c.dataset.li,wp:w.map(n=>+(n.style.getPropertyValue('--wp')||0)),col:getComputedStyle(c).color}})()")
+        check(x['li'] == 3 and x['wp'][0] == 1 and x['wp'][1] == 1 and 0 < x['wp'][2] < 1 and all(v == 0 for v in x['wp'][3:]), f'word fade-in mid-line with {style} / {ink} text: sung words lit, the word being sung part-lit, the rest dim ({x})')
         for _ in range(3):
             bb = p.locator('button:visible', has_text='OK')
             if bb.count(): bb.first.click(); p.wait_for_timeout(300)
             else: break
-        p.evaluate("__lf.Native.seek(5.95)"); p.wait_for_timeout(700)
         p.locator('#lyr').screenshot(path=str(OUT / f'fill_{style}_{ink}.png'))
+    mk = lambda: p.evaluate("(()=>{const w=document.querySelector('#lyrbody .ln.cur .w');return w?getComputedStyle(w).webkitMaskImage||getComputedStyle(w).maskImage:null})()")
+    p.evaluate("__lf.lyTest.style('palette'); __lf.lyTest.ink('white')"); p.evaluate("__lf.Native.seek(5.95)"); p.wait_for_timeout(600)
+    check('gradient' in (mk() or ''), f'word fade-in ON: the playing words are masked ({str(mk())[:60]})')
+    p.evaluate("(()=>{const s=JSON.parse(localStorage.getItem('lf.settings')||'{}');})()")
+    p.evaluate("document.documentElement.dataset.lywf='0'"); p.wait_for_timeout(200)
+    off = p.evaluate("(()=>{const w=[...document.querySelectorAll('#lyrbody .ln.cur .w')];return w.map(n=>[+getComputedStyle(n).opacity,(getComputedStyle(n).webkitMaskImage||'none')])})()")
+    check(all(o == 1 and m == 'none' for o, m in off), f'word fade-in OFF: plain lyrics, every word fully lit, no mask ({off[:2]})')
+    p.evaluate("document.documentElement.dataset.lywf='1'")
     check(not errs, f'no page errors ({errs[:3]})'); br.close()
 print('FAILED:', len(fails)) if fails else print('ALL PASS'); sys.exit(1 if fails else 0)

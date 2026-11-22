@@ -35,7 +35,7 @@ test('main.js wiring: default, start-up clean, live rebuild, Settings icon opens
   assert.match(M, /tabs: \{ home: true, albums: true, library: true, search: true, settings: false \}/);
   assert.match(M, /set\.tabs = cleanTabs\(set\.tabs\)/);
   assert.match(M, /case 'tabtg':/); assert.match(M, /function applyTabs\(\)/); assert.match(M, /function buildBar\(\)/);
-  assert.match(M, /if \(k === 'settings'\) \{[^}]*push\('settings'\)[^}]*bar\.set\(tabIdx\(\), true\)/);
+  assert.match(M, /if \(k === 'settings'\) \{ openSettingsPage\(\); barLast = null; barSync\(\); return; \}/);   // v287 (owner): Settings is its own page, its icon stays lit   // v284 (owner): the Settings icon stays lit while Settings is open (was: the pill sprang back to the page)
   assert.match(M, /data-act="tabtg"/); assert.match(A11, /act === 'tg' \|\| act === 'tabtg'/);
   assert.ok(!/const TABS = \[\['home'/.test(M), 'the tab list is no longer a fixed constant');
 });
@@ -82,4 +82,23 @@ test('every src/*.js file parses (a stray // comment once swallowed the rest of 
     const tmp = join(dir, f.replace(/\.js$/, '.mjs')); writeFileSync(tmp, rd('src/' + f));
     assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', tmp], { stdio: 'pipe' }), f + ' has a syntax error');
   }
+});
+import { cleanTabOrder, moveTab, DEF_ORDER } from '../src/tabbar.js';
+test('v284: icon order: cleaned, moved left / right, used by visibleTabs, saved + exported as set.tabOrder', () => {
+  assert.deepEqual(cleanTabOrder(undefined), DEF_ORDER); assert.deepEqual(cleanTabOrder(['search', 'x', 'search', 7, 'home']), ['search', 'home', 'albums', 'library', 'settings']);
+  const a = moveTab(DEF_ORDER, 'search', -1); assert.equal(a.ok, true); assert.deepEqual(a.order.slice(0, 4), ['home', 'albums', 'search', 'library']);
+  assert.equal(moveTab(DEF_ORDER, 'home', -1).ok, false); assert.equal(moveTab(DEF_ORDER, 'settings', 1).ok, false); assert.equal(moveTab(DEF_ORDER, 'nope', 1).ok, false); assert.deepEqual(DEF_ORDER.slice(0, 1), ['home'], 'never mutates');
+  assert.deepEqual(visibleTabs({ settings: true }, ['settings', 'search', 'home']).map(t => t[0]), ['settings', 'search', 'home', 'albums', 'library']);
+  assert.match(M, /tabOrder: \['home', 'albums', 'library', 'search', 'settings'\]/, 'a default, so import type-checks it (array)');
+  assert.equal((M.match(/set\.tabOrder = cleanTabOrder\(set\.tabOrder\)/g) || []).length, 2, 'cleaned at start-up and on import');
+  assert.match(M, /case 'tabmv':/); assert.match(M, /data-act="tabmv"/);
+});
+test('v284: the lit icon follows the screen (Settings open + a Settings icon = that icon is lit)', () => {
+  assert.match(M, /const barIdx = \(\) => \{ const top = stack\[stack\.length - 1\], si = TABS\.findIndex\(t => t\[0\] === 'settings'\); return top && top\.t === 'settings' && si >= 0 \? si : tabIdx\(\); \};/);
+  assert.match(M, /function renderSub\(keep = false, back = false\) \{[^\n]*\n  try \{ barSync\(\); \} catch \{\}/);
+});
+test('v287: Settings is its own page from the glass bar / gear (no back arrow, big title); without a Settings icon the gear opens the usual screen', () => {
+  assert.match(M, /const openSettingsPage = \(\) => \{[^\n]*stack = \[\{ t: 'settings', id: 'page' \}\]; renderSub\(\); \};/);
+  assert.match(M, /\$\{id === 'page' \? '<h1 class="large setpage-h">Settings<\/h1>' : /);
+  assert.match(M, /case 'settings': if \(TABS\.some\(t => t\[0\] === 'settings'\)\) \{ openSettingsPage\(\); barLast = null; barSync\(\); \} else push\('settings'\); break;/);
 });

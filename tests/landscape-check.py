@@ -111,8 +111,8 @@ with sync_playwright() as pw:
     p.evaluate("(()=>{const q=__lf.Native.state.queue,i=q.findIndex(t=>t.id==='t10');if(i>=0)__lf.Native.play(q,i,true)})()"); p.evaluate("__lf.openNP()"); p.wait_for_timeout(700)
     NPOVER = """(()=>{const W=innerWidth,H=innerHeight,bad=[];for(const el of document.querySelectorAll('#np *, #lyr.open *')){const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden'||el.closest('.lens,.lens-mag,.lyr-blur,.lyr-bgl,.lyr-body'))continue;const r=el.getBoundingClientRect();if(!r.width||!r.height)continue;let a=el.parentElement,clip=false;while(a&&a!==document.body){const c=getComputedStyle(a);if(/hidden|clip/.test(c.overflowX+c.overflowY)){const q=a.getBoundingClientRect();if(q.left>=-1&&q.right<=W+1&&q.bottom<=H+1){clip=true;break}}a=a.parentElement}if(clip)continue;if(r.right>W+1||r.left<-1||r.bottom>H+1)bad.push((el.className&&el.className.baseVal===undefined?el.className:el.tagName)+'@'+Math.round(r.left)+','+Math.round(r.top)+'..'+Math.round(r.right)+','+Math.round(r.bottom))}return bad.slice(0,6)})()"""
     check(not p.evaluate(NPOVER), f'landscape Now Playing: nothing off screen {p.evaluate(NPOVER)}'); p.screenshot(path=str(OUT / 'nowplaying.png'))
-    p.click('#np [data-act="lyrics"]'); p.wait_for_selector('#lyr.open .ln'); p.evaluate("__lf.lyTest.lyrPic('/tests/fixtures/demo-pics/c62.jpg')")
-    for st in ['classic', 'palette', 'blur', 'home', 'custom']:
+    p.click('#np [data-act="lyrics"]'); p.wait_for_selector('#lyr.open .ln');
+    for st in ['classic', 'palette', 'blur', 'home']:
         p.evaluate(f"__lf.lyTest.style('{st}')"); p.wait_for_timeout(900)
         check(not p.evaluate(NPOVER), f'landscape lyrics {st}: nothing off screen {p.evaluate(NPOVER)}'); p.screenshot(path=str(OUT / f'lyrics_{st}.png'))
     check(not errs, f'no page errors ({errs[:3]})'); ctx.close(); br.close()

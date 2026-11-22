@@ -1051,7 +1051,7 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   html .tabbar .tab{gap:1px;font-size:.6875rem;min-height:40px}
   html .tabbar .tab svg{width:24px;height:24px}
   .mini{left:var(--gl);right:auto;width:calc(50% - var(--gl) - 8px);bottom:calc(max(8px,var(--sab)) + (var(--lbar) - 56px) / 2);height:56px}
-  #app:has(#mini .mini) .tabbar{left:auto;right:var(--gr);margin:0;width:calc(50% - var(--gr) - 8px)}
+  #app:has(#mini .mini:not(.leaving)) .tabbar{left:auto;right:var(--gr);margin:0;width:calc(50% - var(--gr) - 8px)}   /* v288: a leaving ghost (water merge) no longer holds the bar short */
   #app::after,#app.has-mini::after,#app:has(#mini .mini)::after{height:calc(var(--sab) + var(--lbar) + 30px)}
   .toast{top:calc(var(--sat) + 8px)}
   /* sheets: centred, never wider than the screen, scroll when taller */
@@ -1138,12 +1138,11 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
 /* v277: Home screen background / Custom lyrics background (data-lybg on <html>, style 'cover' + set.lyricBg). Home = the same paint as the Home screen (picture / GIF + its dim) or plain black; Custom = black under .lyr-bgl (your picture / GIF, added by main.js). A Canvas (.lyr-bgl.lb-cv) shows as it is. A light veil + soft text shadow keep the white lyrics readable on any picture. */
 html[data-lybg="home"] .lyr{background:#000;background-image:none;transition:none}
 html[data-bg="1"][data-lybg="home"] .lyr{background:var(--bgpaint)}
-html[data-lybg="custom"] .lyr{background:#000;background-image:none;transition:none}
-html[data-lybg="home"] .lyr::before,html[data-lybg="custom"] .lyr::before{display:none}
+html[data-lybg="home"] .lyr::before{display:none}
 .lyr-bgl{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#000}
 .lyr-bgl>img,.lyr-bgl>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .lyr-bgl::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,.34) 50%,rgba(0,0,0,.5) 100%)}
-html[data-lybg="home"] .lyr .ln,html[data-lybg="custom"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.45)}
+html[data-lybg="home"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.45)}
 
 /* v278: Lyrics text colour (Settings > Lyrics > Lyrics text colour), any background style: white = white lyrics + soft dark shadow; black = black lyrics + soft light glow; auto = the style's own colour (no rule) */
 html[data-lyink="white"] .lyr .ln,html[data-lyink="white"] .lyr .ln.cur,html[data-lyink="white"] .lyr .ln.tap,html[data-lyink="white"] .lyr .lyr-t b,html[data-lyink="white"] .lyr .empty{color:#fff!important}
@@ -1152,6 +1151,20 @@ html[data-lyink="white"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.6),0 0 2px 
 html[data-lyink="black"] .lyr .ln,html[data-lyink="black"] .lyr .ln.cur,html[data-lyink="black"] .lyr .ln.tap,html[data-lyink="black"] .lyr .lyr-t b,html[data-lyink="black"] .lyr .empty{color:#000!important}
 html[data-lyink="black"] .lyr .lyr-t span{color:rgba(0,0,0,.72)!important}
 html[data-lyink="black"] .lyr .ln,html[data-lyink="black"] .lyr .lyr-t{text-shadow:0 0 12px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.6)!important}
+/* v286: Song picture lyrics background (data-lybg="pic"): the song's / album's own picture or GIF (else the cover) in .lyr-bgl, as it is */
+html[data-lybg="pic"] .lyr{background:#000;background-image:none;transition:none}
+html[data-lybg="pic"] .lyr::before{display:none}
+html[data-lybg="pic"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.45)}
+/* v286: Apple Music style word fade-in (Settings > Lyrics animation > Word fade-in; html[data-lywf]). Each word of the playing line is masked from left to right by its own progress --wp (0..1, set in syncLyrics from the no-step-back clock): the lit part is full strength, the rest dim, with a soft edge about one letter wide (.6em, matched to the owner's Apple Music clip: the wipe cuts through words, unlit = ~36 %). Any lyrics colour (the mask works on the word, not on its colour). Off = the whole playing line lit. */
+html[data-lywf="1"] .lyr .ln.cur .w{opacity:1!important;transition:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(var(--wp,0) * (100% + .6em) - .6em),rgba(0,0,0,.36) calc(var(--wp,0) * (100% + .6em)));mask-image:linear-gradient(90deg,#000 calc(var(--wp,0) * (100% + .6em) - .6em),rgba(0,0,0,.36) calc(var(--wp,0) * (100% + .6em)))}
+html[data-lywf="0"] .lyr .ln.cur .w{opacity:1!important}
+/* ===== v288 (owner picked "Water split"): landscape, the mini player splits out of / merges back into the glass bar. The water neck between them is an SVG drawn by src/lsplit.js, in the bar's glass look (dark glass + thin light rim). ===== */
+.lneck{position:absolute;z-index:29;pointer-events:none;overflow:visible;stroke:none}
+.lneck-f{fill:rgba(255,255,255,.05);stroke:none}
+.lneck-r{fill:none;stroke:rgba(255,255,255,.42);stroke-width:1.2}
+.mini.lsplit>*{opacity:var(--lsop,1)}
+.mini.leaving{pointer-events:none}
+
 /* ===== v222 (third pass): LANDSCAPE for Settings and Listening Stats (Stats, View All, song / artist / album details, the Snapshot sheet).
    Portrait is not touched: .lsw / .lshd / .lsbd / .setcols are display:contents, so in portrait the markup lays out exactly as before. ===== */
 .lsw,.lshd,.lsbd,.setcols{display:contents}
@@ -1267,4 +1280,7 @@ html[data-lyink="black"] .lyr .ln,html[data-lyink="black"] .lyr .lyr-t{text-shad
 }
 @media (orientation:landscape) and (max-height:520px) and (max-width:780px){
   html .tabbar .tab{font-size:clamp(.5rem,calc(.6875rem * var(--tabk,1)),.8125rem)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  #app.lmerge .tabbar{transition-timing-function:cubic-bezier(.55,0,.3,1)}   /* v288 merge: a slow start, so the two tips reach out and the neck forms before the bar flows over the player */
 }
