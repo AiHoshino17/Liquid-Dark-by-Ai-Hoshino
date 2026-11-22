@@ -1,0 +1,93 @@
+PALETTE FIX PROGRESS  (project Liquid Dark, version stays 0.208.0, do NOT bump)
+=====================================================================
+OVERALL: [###################---] 92 %   (12 of 13 known palette mistakes done; the 13th = phone / APK test cannot be done in a chat sandbox)
+
+RULE FOR EVERY AI: read this file first. When you finish, (1) update the bar and the tables below,
+(2) add a "SESSION N" block, (3) say "Progress: NN % done" in your final answer, (4) return the zip with the same name.
+Do NOT redo anything listed under DONE. Work only in the "v223+" block of src/main.js (between
+'/* v223+: COVER COLOUR MIX' and '/* v223+ end */').
+
+DONE (session 1)
+ [x] 1 Eye colour missing on stills (olive iris of girl, purple iris of Ai)  -> tintPaletteAddEyeRings
+ [x] 2 Red missing in Too Late (blood / coat) and hidden under the dark bottom veil -> tintPaletteAddVivid + tintPaletteGrad change
+ [x] 3 Starboy took too many colours (10 -> 6) -> tintPaletteTidy
+ [x] 4 General: all three steps are picture-independent; tested on 18 pictures (4 owner pictures + 14 demo pictures)
+
+DONE (session 2)
+ [x] 5 Eye step false eyes on non-faces -> FACE CHECK in tintPaletteAddEyeRings (skin share around the spot >= 18 %; a 2nd eye colour must be level with the 1st). Red / green hair strands (c12, notif, c13) no longer give an eye.
+ [x] 6 Too Late red: MEASURED, not a bug. Real coat red = about #7e0c15 (bottom corners), the palette's #7d0915 matches; it shows as a red glow. No code change.
+ [x] 7 Starboy orange (4 %): new tintPaletteDropBlends (small colour on the line between two bigger ones = blend, dropped). Starboy 6 -> 5: black, red, yellow, blue, light blue. Teal (0.4 %) kept on purpose: owner listed "light blue".
+
+DONE (session 4)
+ [x] 11 Dark-haired portrait: owner's REAL picture arrived (anime girl, purple eyes; fixture tests/fixtures/yuki-192.b64). MEASURED: black hair 51 % (L .165) + olive near-black strands 20 % (L .286) are two colours, purple eye kept, skin kept. Already right since v245/v246, no code change. Guard: tests/lyrics-palette-fix6-v251.test.mjs.
+ [i] Also run on 18 pictures (red circles + gradient): (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings) . New pictures in tests/fixtures/demo-pics: yuki_dark_hair, dawn_fm, take_my_breath. Dawn FM (Weeknd): 6 colours incl. gold rim light, ok.
+
+DONE (session 5)
+ [x] 9 Real blonde pictures arrived (blonde_bed.gif 31 frames, girl_blush.jpg). GIF palette keeps the pale gold hair (#e3d08a, 1 %, vivid) + tan hair + beige. girl_blush hair is well covered (brown 11 % + darker 17 %; no light highlights exist: 0.005 % of pixels). The earlier lost case (dull light-brown highlight) did not show on real pictures. No code change.
+ [x] (solved in session 7, see SESSION 7) 10 now REPRODUCED a part: Gasoline (real cover, gasoline_cover.png) gets a FALSE EYE colour (rust #7c2a1a, 0.04 %, hue 34) because the rust mask counts as skin and a pair of mask holes looks like eyes; the eye boost (x up to 2.2 chroma) then draws it brick red. Real mask colour = rgb 129,71,59 (hue ~25), palette colours 2 / 6 are hue 34 and more saturated. TRIED and REVERTED: single orange / brown eye spot (hue 10-70, no pair) scores 0: removed a false eye on c12 / notif but another false eye took its place, and take_my_breath changed (compare.mjs: 3 of 22 changed). Needs a rule that also works for a pair, e.g. skin-hue check of the iris vs the surround, or capping the eye boost for hue 10-70.
+ [x] (solved in session 7 by tintPaletteEyeOne) Also: blonde_bed.gif palette has a false brown eye (colour 6, hue ~40, 0.4 %) next to the real olive eye: same cause.
+
+DONE (session 6, extra: owner asked for star / pink / violet eyes like Ai c62 and c12) - progress stays 85 %
+ [x] tintPaletteAddEyeRings (v223+ block only): (a) pink-lavender skin (hue >= 315) counts as skin in the face check; (b) tinted pale whites (L > .72, chroma < .12) count as eye-white; (c) a pale pink iris (L .55-.75, chroma .09+) is no longer taken for skin; (d) dark pupil need 15 % -> 10 %; (e) a small chromatic iris bin (chroma >= .075, >= 2.5 % of the window) counts; (f) a hue bin must sit AROUND the highlight, so blue hair in the window no longer hides a small iris. RESULT: Ai (c62 = p4) now has a violet / magenta eye colour with BOTH eyes circled (before: none). Gasoline: the false 0.04 % boosted rust eye is gone (6 -> 5 colours; the existing rust colour is flagged eye instead, still false but no boost swatch). c13 / p1 / c63 / p2: eye colour a bit lighter and more exact, c13 lost a false 2nd eye. compare.mjs: 8 of 20 still pictures changed, all eye-related. Test: tests/lyrics-palette-fix7-v251.test.mjs (116 palette tests, 968 all pass).
+ [x] (solved in session 7, see SESSION 7) c12 / notif (red-lit blue-haired girl, pink star eyes) STILL has NO real eye colour (a false rust eye at the hair stays). The iris is only ~20 px at 192, chroma ~.10, and the skin is washed grey-cream (hue 127), so the face check fails (skin 8-16 %). TRIED and REVERTED: grey-cream counts as skin (eyes jumped to the white shirt, c13 / p1 / take_my_breath broke); a pair needs only 11 % skin (eyes jumped to the bottom of the picture). A fix needs a smarter test (e.g. eyes = two level spots with a star highlight AND a dark upper lid line).
+
+STILL OPEN (next AIs, ~30 % each)
+ [x] 8 DONE (session 7): both eyes are circled (c12, c13, c62, c63, Ai, p1, p2, p4: strict level pair of spots)
+ [x] 9 DONE (closed session 5, confirmed session 7): the blonde_bed.gif palette keeps the pale gold hair #e5d18e (1 %, vivid); girl_blush has no light highlights in the picture
+ [x] 10 DONE (session 7): the false rust eye is gone (no eye colour on Gasoline any more); the palette rust #903d2c (144,61,44) is within the real copper (mean 126,63,46, brightest quarter 173,100,81)
+ [x] 11 DONE (session 4): see DONE (session 4)
+ [x] 12 DONE (session 7): animated harness (prep_anim.py + run_anim.mjs) on ai.gif and blonde_bed.gif: ai identical to before; blonde_bed lost only its false brown eye (9 colours, gold hair kept). WebP / Canvas video go through the same tintPaletteAuto (not run separately)
+ [ ] 13 Nothing tested on the phone; no APK built (OPEN: needs the GitHub build + a phone; no chat sandbox can do it). Do this first next time: build the APK, open c12 / Ai / a blonde picture and compare with (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings)
+
+WHERE EVERYTHING IS (src/main.js, search by function name)
+ tintPaletteAuto        pipeline. Order now: AutoRaw > SplitBig > AddTints > AddMasses > AddGaps > Dedupe > Consolidate >
+                        AddCoverage > AddHair > Tidy > TrueTone > AddMissing > Tidy > AddVivid > Relocate > AddEyeRings (LAST)
+ tintPaletteTidy        NEW. cost rule share x distance, merges look-alikes into a bigger same-hue colour. Protects eye, vivid,
+                        blush, hair >= 3 %, rank 1. Skips palettes under 3 colours.
+ tintPaletteGiveSlot    NEW. frees one slot (smallest plain colour) for a new detail colour.
+ tintPaletteAddVivid    NEW. every hue family with >= 0.6 % vivid pixels (chroma >= .085) must be in the palette; a duller colour of
+                        that hue is replaced by the true vivid colour (top 30 % chroma). Flags vivid.
+ tintPaletteAddEyeRings NEW. highlight on a dark pupil + eye-white nearby + unrepresented iris colour around it; prefers a pair;
+                        skips text/labels (crowd rule) and skin pixels; adopts an existing palette colour as the eye if it matches.
+ tintPaletteGrad        CHANGED: vivid colours (< 8 %) are drawn as accents on top; vivid / eye glows are kept above y = 56 % so
+                        the dark bottom veil does not hide them.
+ Older steps (unchanged): tintPaletteAddIris / AddEyes (animated only), AddHair, AddCoverage, AddMissing...
+
+TESTS: tests/lyrics-palette-*.test.mjs (103 pass). New: tests/lyrics-palette-fix1-v248.test.mjs. Two wiring regexes updated
+ (coverage-v210, missing-v247).  Run: node --import ./tests/register.mjs --test tests/lyrics-palette-*.test.mjs
+
+HARNESS (runs the real palette code on any picture, no phone needed), folder tests/palette-harness/
+ 1 put pictures as PNG in /home/claude/src_pics/NAME.png   2 python3 prep.py NAME1 NAME2 ... (makes frames.json)
+ 3 node --import <project>/tests/register.mjs run.mjs <project> TAG  (makes pal_TAG.json)   4 python3 render.py TAG
+ (render.py needs playwright + chromium; draws red circles + lyrics gradient). hexdump.mjs / stats.mjs print colours.
+ Paths inside the scripts are /home/claude/...; edit them if different.
+
+BEFORE -> AFTER (colours): Starboy 10 -> 6, Ai 10 -> 7 (purple eye), girl blush 10 -> 9 (olive eye), Too Late 10 -> 9 (red kept).
+NOTE: not run on a phone. Eye colour is boosted in the gradient (x up to 2.2, like the older iris step).
+
+SESSION 2 (v249): items 5, 6 (measured), 7 done. Item 8 (second eye circle) NOT done; 9-13 NOT done.
+ New: tintPaletteDropBlends (wired between AddVivid and Relocate), face check in AddEyeRings. Test: tests/lyrics-palette-fix2-v249.test.mjs.
+ Harness (15 demo pictures + 4 owner pictures): Starboy 5, Ai 7 (purple eye), girl 9 (olive eye), Too Late 9; c12 / notif no false eye.
+ WARNING: a `g.score > 0` filter was once pasted into AddEyes / AddIris by a replace-all; check with a diff that only AddEyeRings changed.
+ npm test: 955 pass, 0 fail, 9 skipped (the skips were already there). Not run on a phone, no APK.
+
+SESSION 4 (v251 files, version stays 0.208.0): item 11 done with the real picture (counted 1: 10.5 of 13 = 81 %). Left: 9 (half, needs blonde portrait), 10 (needs Gasoline cover), 13 (phone / APK). Palette tests 115 pass. Do NOT lower Consolidate TH. Harness paths: /home/claude/w -> project, /home/claude/harness, /home/claude/src_pics.
+
+SESSION 5 (version stays 0.208.0): item 9 closed with real pictures (counted: 11 of 13 = 85 %). Item 10 investigated, not fixed (see above), not counted. Renders of 22 pictures in (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings) New fixtures in tests/fixtures/demo-pics: blonde_bed.gif, two_girls.webp, gasoline_cover.png, girl_blush.jpg. Harness: prep.py + run.mjs now take the project root as arg 2 (run.mjs imports it dynamically) so old / new code can be compared.
+
+SESSION 6: eye step widened (see DONE session 6). c12 / notif pink star eyes NOT solved. Do not retry the two reverted rules as they are.
+
+SESSION 7 (version stays 0.208.0): counted 12 of 13 = 92 %. Owner: "too much green, no purple / pink, eyes + ear missing" on c12, then "work on the other things".
+ [x] 14 c12 / notif pink star eyes SOLVED. AddEyeRings: a strict LEVEL pair (<= 5 px in height, hue 20 deg, lightness .12, strength x1.6) = the two irises, score x4 on top of the loose pair x3; the face check is passed by the strict-pair partner of a spot that passes it; the iris pixel count is capped at 100 px (192) in the score; the iris colour is read within .55 R of the highlight. c12 eye = pink-mauve ~#b36994 on BOTH eyes (before: dull maroon taken from the red hair rim by the ear).
+ [x] 15 NEW tintPaletteFamilyCap (after DropBlends, before Relocate): a green / blue / violet family (hue 120-330) with >= 3 colours and >= 25 % of the picture merges its smallest VIVID member (2.5-8 %) into its nearest colour, only when stacked on the same spot (<= .3 apart) and that colour is its nearest in the whole palette. c12 greens 3 -> 2. Changed only c12 / notif of 24 pictures. Eye glows in the gradient a little bigger.
+ [x] 16 NO FALSE EYES (items 8 / 9 / 10 and the open "false eye" notes): (a) an existing palette colour of 3 % or more is never adopted as THE eye (Gasoline 8 % rust mask, a 40 % brown on girl_blush); (b) a lone spot (no level partner) needs skin >= 30 % around it (real lone eyes .36-.56, chrome / sky .18-.23: take_my_breath); (c) a warm eye (hue 15-85) that is only a shade of a big palette colour is not an eye (two_girls gold hair); (d) NEW tintPaletteEyeOne at the end: both eyes of a face are ONE colour, two eye colours of different hue (> 30 deg) -> one stays, a non-warm one wins (blonde_bed.gif: olive stays, brown false eye removed).
+ [x] 17 Animated check (item 12): blonde_bed.gif lost only its false brown eye; ai.gif identical.
+ TESTS: tests/lyrics-palette-fix8-v252.test.mjs (new, 6 tests; fixture tests/fixtures/c12-pink-eyes-192.b64); 3 older tests adjusted (fix1-v248 wiring regex, fix2-v249 face-check regex, fix6-v251 no longer expects a 3 % skin tone as "eye"). npm test: 974 pass, 0 fail, 9 skipped.
+ THE 9 SKIPS ARE BY DESIGN, NOT FAILURES: they test .github/workflows/android.yml and .gitignore, which the owner keeps in the GitHub repo and which are NOT in the project zip (tests/docs-claims.test.mjs #19). They run (and must pass) on GitHub. Nobody should invent those files to make the zip show "skipped 0". To run them here, upload the real .github/workflows/android.yml and .gitignore.
+ RENDERS of all 24 pictures: (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings) (_ALL_contact_sheet.png).
+ STILL OPEN: 13 = nothing tested on a phone and no APK built (needs the GitHub build + a phone). Idea, not a known mistake: the ear's purple-rose shade (skin lit by magenta rim light) has no swatch of its own.
+ Do NOT: widen FamilyCap to warm hues or far-apart colours (it dropped a blush, a purple hair streak and a light blue); remove the iris cap (the strict pair jumped to a blue shirt area on c13); bring back a "lone warm spot = no eye" rule (it removed a real eye on the yuki portrait).
+
+SESSION 9 (version stays 0.208.0): ANIMATED pictures get tintPaletteMultiFrame as the LAST step (stills untouched): reads every kept frame time-weighted, chroma-weighted distance, swap search adds missing true colours (olive jacket, navy wall, pale-blue shirt, white pillow), polishes plain colours to the true mean, recounts shares (sum 100 %), every colour keeps its source frame (c.fi) + a real pixel spot; eye colour is placed on an open-eye frame. prep_anim.py now squeezes the whole frame like the app (no centre crop); new render_multi.py circles each colour on its own frame. Renders: (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings) Test: tests/lyrics-palette-multiframe-v254.test.mjs. Open: blonde girl's olive eye on the two-girls WebP, tiny blue earring / pink ribbon, item 13 (phone / APK). Progress stays 92 %.
+
+SESSION 10 (version stays 0.208.0): EYE RESCUE for animated pictures. Owner: eye colours missing on 3 animated pictures (gif156 night GIF, web47 close-up green eyes, web115 = two_girls WebP). NEW tintPaletteEyeRescue (after EyeOne, before MultiFrame, 3+ eye frames only); AddEyeRings got a 4th param `dull`. web47: yellow-green eye #c4c17b; gif156: violet eye on the dark-haired girl's eye; two_girls / ai.gif / blonde_bed.gif identical to before. gif156's blonde iris is near-black in the file (no colour to read). Test tests/eye-rescue-v256.test.mjs; renders (debug renders removed in v283, owner: docs/ keeps only screenshots + recordings) Open: item 13 (phone / APK); the blonde olive eye of two_girls is still a 0.01 % dark olive. Progress stays 92 %.

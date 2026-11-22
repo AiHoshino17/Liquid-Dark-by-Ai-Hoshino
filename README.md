@@ -5,10 +5,10 @@
 *MIT license · No accounts, no ads, no streaming*
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="19%" alt="Home">
-  <img src="docs/screenshots/now-playing.png" width="19%" alt="Now Playing">
-  <img src="docs/screenshots/albums.png" width="19%" alt="Albums">
-  <img src="docs/screenshots/immersive-cover.png" width="19%" alt="Immersive album cover">
+  <img src="docs/screenshots/home.png" width="23%" alt="Home">
+  <img src="docs/screenshots/now-playing.png" width="23%" alt="Now Playing">
+  <img src="docs/screenshots/lyrics.png" width="23%" alt="Synced lyrics">
+  <img src="docs/screenshots/immersive-cover.png" width="23%" alt="Immersive album cover">
 </p>
 
 *Every picture here was taken from the app itself, at phone size, with a built-in demo library. The library is fake, and I'm telling you up front, which is more than I do for most things. No real music is shown. Nothing sneaky.*
@@ -68,7 +68,7 @@ It plays the music you already own. Lossless **FLAC** is the star (16-bit, 24-bi
 
 | | |
 |---|---|
-| ![Home](docs/screenshots/home.png) **Home** | ![Albums](docs/screenshots/albums.png) **Albums** |
+| **Home** | **Albums** |
 
 ### Home, your way
 
@@ -92,7 +92,7 @@ Home is the first thing you see, so I made it yours and tried to keep it out of 
 - **Cover shortcuts.** Tap the cover to view it full screen on pure black. Press and hold it to open the lyrics. You can switch press-and-hold off under Settings > Cover shortcuts.
 - **Lyrics** work like Apple Music. They use synced `.lrc` files next to the FLAC (matched by a fuzzy file name), embedded lyrics tags and plain text. Enhanced `.lrc` files get word-by-word highlighting, and many encodings are read (UTF-8, UTF-16, GBK and Latin-1). The current line is highlighted and follows the song. Tap a line to jump to it, scroll freely, and tap **Now** to follow again.
 - **Lyrics size.** A slider from 14 to 48 px, with a one-tap reset to the default.
-- **Lyrics style.** Classic red lyrics on black, or white lyrics on the colour of the album cover, which changes with each song.
+- **Lyrics style.** Classic red lyrics on black, the Cover colour palette (white lyrics on the cover's main colours), or the Cover blur (the picture itself, blurred into soft colours with its shapes and small details still showing, behind white lyrics, also from a Canvas or GIF). The colour changes with each song. v277: two more: **Home screen background** (your Home picture / GIF behind the lyrics, or plain black when you have none) and **Custom lyrics background** (one picture / GIF of your own, the same for every song, chosen from the style list). In both, a song with a Canvas shows its Canvas video instead, as it is. v278: **Lyrics text colour**: Automatic, White or Black, on any background style.
 - **Lyrics animation.** Choose how the lines glide and fade, how big the playing line grows, how bright the others are, and how much the far lines blur. Presets are there if you want a starting point.
 - **Sleep timer** for 15, 30, 45 or 60 minutes, until the end of the current song, or a custom time (type minutes like `90`, or hours and minutes like `1:30`, from 1 minute to 24 hours). It runs inside the playback service, so it works with the screen off. The volume fades out over the last 10 seconds, a countdown appears, and you can cancel it any time. (Goodnight. Sleep well. I know what lying awake feels like, so I made sure this one can end on its own. I'll keep the stars on for you.)
 - **A-B loop** with draggable handles on the scrub bar.
@@ -104,7 +104,7 @@ Home is the first thing you see, so I made it yours and tried to keep it out of 
 
 | | |
 |---|---|
-| ![Now Playing](docs/screenshots/now-playing.png) **Now Playing** | ![Lyrics](docs/screenshots/lyrics.png) **Synced lyrics** |
+| **Now Playing** | **Synced lyrics** |
 
 ### Playlists, favorites and history
 
@@ -158,7 +158,8 @@ A picture or a GIF works everywhere you can choose one. (GIFs are my favourite. 
 ### Look and feel
 
 - **Black liquid glass** throughout, with red as the only accent. There's no background blur, so long lists stay smooth. Large titles, round header buttons and a mini player above the tab bar.
-- **Lyrics colour: any colour.** Now Playing > ... > Lyrics colour has no preset colour squares and no Android colour dialog. A colour wheel is built in: drag the small circle round the wheel to pick the colour, use the slider under it for brightness, or type a Hex code such as FFAA95. The colour you pick is used exactly as chosen (dark stays dark). Auto uses the album cover's own colour with no boost: the plain average of the cover's main colour area (grey, near-black and near-white pixels are ignored), or the song's own picture if you set one; "Back to Auto" returns to it.
+- **Lyrics background: Cover colour palette.** Settings > Lyrics > Background style > Cover colour palette picks the cover's five main colours (a small yellow or blue is kept, and on a still picture small details like the eye colour or a blush when there is room) and lets the main one fill the middle while the other four glow in the corners, with white lyrics. You can switch between all four styles at any time.
+- **Tab bar icons.** Settings > Tab bar: keep or remove Home, Albums, Library and Search, and add a **Settings** icon as a fifth one (slide the glass bubble onto it, let go, and Settings opens). The round button at the top right of each page shows a gear and the word Settings.
 - **Glass bar size.** One slider (40 % to 220 %) sets the size of the glass tab bar. It is in Settings > Display options and also in Settings > Liquid glass & wobble (the Animation screen), pinned under the test bar, and both are the same setting, so the size stays the same in the real bar, the test bar and every screen.
 - **Liquid tab bar.** Press and hold, then drag between tabs. The pill stretches like liquid, and the icons it passes over turn red. The same pill is used on the player controls and on button pairs such as Play and Shuffle. Toggles have a liquid knob, and buttons squash when pressed. (Squishy! I poked it for a whole afternoon.)
 - **Lens refraction.** The pill bends the picture behind its rim like thick glass. You can turn it off for plain glass.
@@ -174,20 +175,32 @@ The full feature checklist is in [docs/FEATURES.md](docs/FEATURES.md).
 
 | | | |
 |---|---|---|
-| ![Albums](docs/screenshots/albums.png) **Albums** | ![Artists](docs/screenshots/artists.png) **Artists** | ![Immersive album cover](docs/screenshots/immersive-cover.png) **Immersive album cover** (Now Playing) |
-| ![Now Playing on a phone](docs/screenshots/now-playing-phone.png) **Now Playing on a real phone** (FLAC 24-bit / 44.1 kHz) | | |
+| ![Albums](docs/screenshots/albums.png) | ![Artists](docs/screenshots/artists.png) | ![Now Playing on a real phone](docs/screenshots/now-playing-phone.png) |
+| **Albums** | **Artists** | **Now Playing on a real phone** (FLAC 24-bit / 44.1 kHz) |
 
-The screenshots above were taken from the app itself with the built-in demo library, except the last one, which is a real phone screenshot. The screen recordings below show more of the app.
+**Landscape** (phone turned sideways)
+
+| | |
+|---|---|
+| ![Now Playing, landscape](docs/screenshots/landscape-now-playing.png) | ![Album, landscape](docs/screenshots/landscape-album.png) |
+| **Now Playing** | **Album** |
+| ![Library, landscape](docs/screenshots/landscape-library.png) | ![Listening Stats, landscape](docs/screenshots/landscape-stats.png) |
+| **Library** | **Listening Stats** |
+| ![Settings, landscape](docs/screenshots/landscape-settings.png) | ![Sleep timer, landscape](docs/screenshots/landscape-sleep-timer.png) |
+| **Settings** | **Sleep timer** |
+
+The screenshots above were taken from the app itself with the built-in demo library, except "Now Playing on a real phone", which is a real phone screenshot. The screen recordings below show more of the app.
 
 ## Screen recordings
 
-Short clips of the app in use (demo library, Oshi no Ko-themed names and lyrics). Files are in [docs/screen-recordings](docs/screen-recordings).
+Short clips of the app in use (demo library, Oshi no Ko-themed names and lyrics). Tap one to watch it.
 
-- [01 Full app tour](docs/screen-recordings/01-app-tour.mp4)
-- [02 Synced lyrics](docs/screen-recordings/02-lyrics.mp4)
-- [03 Immersive album cover](docs/screen-recordings/03-immersive-cover.mp4)
-- [04 Library: songs, genres, playlists](docs/screen-recordings/04-library.mp4)
-- [05 Settings](docs/screen-recordings/05-settings.mp4)
+- [01 Full app tour](docs/recordings/01-app-tour.mp4)
+- [02 Synced lyrics](docs/recordings/02-lyrics.mp4)
+- [03 Immersive album cover](docs/recordings/03-immersive-cover.mp4)
+- [04 Library: songs, genres, playlists](docs/recordings/04-library.mp4)
+- [05 Settings](docs/recordings/05-settings.mp4)
+- [06 Liquid glass settings (Animation studio)](docs/recordings/06-liquid-glass-settings.mp4)
 
 ## Get the app
 

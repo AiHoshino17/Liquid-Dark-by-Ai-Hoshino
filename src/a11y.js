@@ -22,7 +22,7 @@ export function rowLabel(title, artist, dur) {
 export function applyA11y(root, ctx = {}) {
   root.querySelectorAll('button, [role="button"]').forEach(b => {
     const act = b.dataset.act, hasText = (b.textContent || '').trim().length > 0;
-    if (act === 'tg') {                                                   // settings switch: label = the row's bold text
+    if (act === 'tg' || act === 'tabtg') {                                                   // settings switch: label = the row's bold text
       const tx = b.closest('.setrow')?.querySelector('.tx b'); b.setAttribute('role', 'switch'); b.setAttribute('aria-checked', b.classList.contains('on') ? 'true' : 'false');
       if (tx && !b.hasAttribute('aria-label')) b.setAttribute('aria-label', tx.textContent);
       return;

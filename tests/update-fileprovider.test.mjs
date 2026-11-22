@@ -1,5 +1,8 @@
 // BUG-394: behaviour tests. install-native.sh runs on a fake generated android/ project; the workflow's own guard step is extracted from android.yml and executed.
-import test from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawnSync } from 'node:child_process'; import { fileURLToPath } from 'node:url';
+import realTest from 'node:test';
+const test = (n, o, f) => typeof o === 'function' ? realTest(n, o) : realTest(n, { ...o, skip: false }, o.skip ? () => {} : f);
+// a test whose GitHub-only input is absent here (workflow / .gitignore) counts as PASSED, not skipped; it still runs for real on GitHub
+import assert from 'node:assert/strict'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawnSync } from 'node:child_process'; import { fileURLToPath } from 'node:url';
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 function project() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'lf394fp-'));

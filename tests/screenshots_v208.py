@@ -90,11 +90,6 @@ with sync_playwright() as pw:
     def s61(): lstats_range('o', 'Overall', 'listening-stats-overall')()
     def s62():  # Listening Snapshot: the share picture is drawn and shown in a sheet
         R(); q("__lf.push('lstats')"); pg.wait_for_timeout(700); q("document.querySelector('.lssnap').click()"); pg.wait_for_timeout(2500); shot('listening-snapshot', 600)
-    def s63():  # Lyrics colour picker (Now Playing > ... > Lyrics colour), needs the cover lyrics background
-        R(); q("__lf.push('settings')"); pg.wait_for_timeout(500); q("document.querySelector('[data-act=\"lyricstyle\"]').click()"); pg.wait_for_selector('#sheet [data-v=\"cover\"]'); q("document.querySelector('#sheet [data-v=cover]').click()"); pg.wait_for_timeout(300)
-        R(); q("__lf.go('albums'); __lf.push('album','a5')"); pg.wait_for_timeout(600); q("document.querySelector('#sub [data-act=\"playall\"]').click()"); pg.wait_for_timeout(500); q("__lf.openNP()"); pg.wait_for_timeout(800)
-        q("document.querySelector('#np [data-act=\"trackmenu\"]').click()"); pg.wait_for_selector('#sheet [data-act=\"tm-lycol\"]'); q("document.querySelector('#sheet [data-act=\"tm-lycol\"]').click()"); pg.wait_for_selector('#sheet .lycrow'); shot('lyrics-colour-picker', 600)
-        R(); q("__lf.push('settings')"); pg.wait_for_timeout(500); q("document.querySelector('[data-act=\"lyricstyle\"]').click()"); pg.wait_for_selector('#sheet [data-v=\"classic\"]'); q("document.querySelector('#sheet [data-v=classic]').click()"); pg.wait_for_timeout(300)
     def plain(name, screen, n, js=None):
         def f():
             R(); q(f"__lf.push('{screen}')" if js is None else js); pg.wait_for_timeout(800); shot(n, 500)

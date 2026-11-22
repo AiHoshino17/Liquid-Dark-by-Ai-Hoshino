@@ -9,6 +9,7 @@ import { A, tune, EDGE_WOBBLE_MAX, MAGNIFY_MAX } from './animcfg.js';
 // finger from button to button and on release it clicks the button it ended on. magnify:false = no magnified clone of the items (default: same as persist).
 // v80: a button row presses its button on pointerup. If that opens a sheet / overlay, the browser's own click (sent right after pointerup) would land on the
 // NEW thing under the finger (the sheet's scrim closes it again at once: Canvas and Queue looked dead). So that one real click is eaten.
+const REF_BAR_H = 70;   // v224: see paint(): the overshoot / magnify room of a bar shorter than this is worked out as if it were this high
 let eatClick = 0;
 if (typeof document !== 'undefined') document.addEventListener('pointerdown', () => { eatClick = 0; }, true);   // BUG-308: a new touch means no trailing click is coming
 if (typeof document !== 'undefined') document.addEventListener('click', e => { if (eatClick && performance.now() < eatClick && e.isTrusted && e.detail !== 0) { eatClick = 0; e.stopPropagation(); e.preventDefault(); } else if (eatClick && performance.now() >= eatClick) eatClick = 0; }, true);
@@ -46,17 +47,17 @@ export function glide(root, { onChange, initial = 0, selector = 'button', persis
   const metrics = () => metricsC || (metricsC = { h: contentH(), w: contentW(), mids: itemMids(), p: pad() });
   const dropMetrics = () => { metricsC = null; };
   const paint = () => {
-    const p = S.pop, pp = Math.max(0, p), pad0 = metrics().p, rh = root.clientHeight, rw = root.clientWidth;
+    const p = S.pop, pp = Math.max(0, p), pad0 = metrics().p, rh = root.clientHeight, rw = root.clientWidth, rref = Math.max(rh, REF_BAR_H);   // v224: rref = the bar height the pill's overshoot is measured against: a short bar (landscape, 58 px) gets the same room to stretch and magnify as a portrait bar (the sliders did almost nothing there)
     const big = persist && root.classList.contains('tabbar'), barIn = S.ih || rh - 2 * pad0, tabW = Math.max(1, S.tr - S.tl), cur = S.r - S.l;
     const ext = Math.max(-0.45, Math.min(1.2, (cur - tabW) / tabW));  // spring lag stretch (+) / squash (-)
     const Wb = Math.max(tabW * 0.6, rw * 0.19); let W = Math.max(Wb * 0.85, tabW + 4, Wb + (cur - tabW) + rw * ((big ? 0.03 : 0.02) * A.pillSize * pp + 0.12 * S.sq * A.pillStretch));   // v72: never narrower than the tab, so the label always fits
     W = Math.min(W * (1 + (persist ? 0.12 * Math.min(1, pp) * Math.min(A.pillSize, 3) : 0)), Math.max(tabW * 1.25, rw * 0.36) * (1 + 0.25 * Math.min(1, pp) * Math.min(A.pillSize, 3))); if (!persist) W = Math.min(W, rw - 2 * pad0);   // reference: held ~1/3 of the bar, fast drag ~1/2
     let T0 = 0; const full = persist ? rh : barIn; let H = full * (big ? 0.86 + 0.1 * A.pillSize * Math.min(pp, 1) : 0.84 + 0.06 * A.pillSize * Math.min(pp, 1)) * (1 - 0.1 * Math.min(ext, 1.2) - (ext < 0 ? 0.2 * ext : 0)) / (1 + 0.1 * S.sq * A.pillStretch);   // nearly the full bar height, only a little thinner while stretched
     let L = pad0 + (S.l + S.r) / 2 - W / 2 + S.dir * 0.15 * (W - Wb); const T = persist ? (rh - H) / 2 : (S.it || pad0) + (barIn - H) / 2; L = Math.max(persist ? 3 - 0.06 * rw * Math.min(1, pp) : 0, Math.min(rw - W - (persist ? 3 - 0.06 * rw * Math.min(1, pp) : 0), L));   // v72: the pill stays inside the bar   // the front edge gets the bigger share: it stretches FORWARD
-    if (persist) { const ov = 0.22 * Math.min(1, pp) * Math.min(A.pillSize, 3) * rh; H = Math.min(rh - 4 + 2 * ov, Math.max(24, H + S.ob - S.ot + ov)); T0 = Math.max(2 - ov, Math.min(rh - H - 2 + ov, T + S.ot - ov / 2)); } else T0 = T;   // v74: top and bottom edges are their own springs: the pill wobbles up / down too
+    if (persist) { const ov = 0.22 * Math.min(1, pp) * Math.min(A.pillSize, 3) * rref; H = Math.min(rh - 4 + 2 * ov, Math.max(24, H + S.ob - S.ot + ov)); T0 = Math.max(2 - ov, Math.min(rh - H - 2 + ov, T + S.ot - ov / 2)); } else T0 = T;   // v74: top and bottom edges are their own springs: the pill wobbles up / down too
     lens.style.width = W + 'px'; lens.style.height = H + 'px';
     lens.style.transform = `translate3d(${L}px,${T0}px,0)`;
-    const ch = metrics().h, k = Math.max(1, Math.min(1 + (big ? 0.35 : 0.25) * A.magnify * Math.min(1, pp), MAGNIFY_MAX, (H - 10) / ch, (W - 14) / metrics().w));   // v72: magnified icon + label always fit inside the pill                         // magnification
+    const ch = metrics().h, k = Math.max(1, Math.min(1 + (big ? 0.35 : 0.25) * A.magnify * Math.min(1, pp), MAGNIFY_MAX, (H - (rh >= REF_BAR_H ? 10 : rh * 0.1)) / ch, (W - 14) / metrics().w));   // v72: magnified icon + label always fit inside the pill                         // magnification
     if (!persist) lens.style.opacity = Math.min(1, pp * 3).toFixed(3);   // invisible at rest: it fades in under the finger and out after the release
     if (magnify) mag.style.cssText = `width:${rw}px;height:${rh}px;left:${-L}px;top:${-T0}px;transform-origin:${L + W / 2}px ${T0 + H / 2}px;transform:scale(${k});opacity:${Math.min(1, pp * 2.4)};`;
     lens.style.setProperty('--pop', Math.min(1, pp).toFixed(3));
@@ -94,6 +95,7 @@ export function glide(root, { onChange, initial = 0, selector = 'button', persis
   function set(i, animate = true) {
     dropMetrics();   // BUG-120
     idx = committed = i; syncClone(); mark(i);
+    lens.style.visibility = i < 0 ? 'hidden' : '';   // v224: -1 = no icon is selected (a page that has no icon in the bar): no pill
     const g = geo(i); if (!g) return;
     aim(g);
     if (!animate) { S.l = S.tl; S.r = S.tr; S.vl = S.vr = 0; paint(); } else kick();
@@ -155,9 +157,10 @@ export function glide(root, { onChange, initial = 0, selector = 'button', persis
   });
   const onResize = () => { if (!root.isConnected) { destroy(); return; } set(idx, false); };   // BUG-136 / 255: a row that left the page drops its listener
   addEventListener('resize', onResize);
+  let ro = null, rw0 = -1, rh0 = -1; try { if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(() => { if (!root.isConnected) return; const w = root.clientWidth, h = root.clientHeight; if (w === rw0 && h === rh0) return; rw0 = w; rh0 = h; if (!dragging && root.dataset.down !== '1') set(idx, false); }); ro.observe(root); } } catch {}   // v281: the BAR itself changing size (landscape: wide bar -> half bar when the mini player appears, the Glass bar size slider) moves the pill with it, every frame of the slide; a window resize alone missed it (the pill stayed over the wrong tab)
   if (!persist) set(initial, false);   // built on the first press: the geometry is already there
   const startRaf = requestAnimationFrame(() => { if (!dragging) set(committed, false); });   // BUG-307
-  const destroy = () => { removeEventListener('resize', onResize); removeEventListener('pointerup', end, true); removeEventListener('pointercancel', cancel, true); root.removeAttribute('data-down'); root.classList.remove('lensing');   // BUG-309
+  const destroy = () => { removeEventListener('resize', onResize); try { if (ro) ro.disconnect(); } catch {} removeEventListener('pointerup', end, true); removeEventListener('pointercancel', cancel, true); root.removeAttribute('data-down'); root.classList.remove('lensing');   // BUG-309
     cancelAnimationFrame(startRaf); if (S.raf) cancelAnimationFrame(S.raf); S.raf = 0; lens.remove(); };
   return { set, destroy };
 }

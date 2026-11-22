@@ -568,6 +568,21 @@ html[data-lyrstyle="cover"] .lyr::before{content:"";position:absolute;z-index:0;
   background:radial-gradient(closest-side,rgba(255,255,255,.22) 0%,transparent 100%);background:radial-gradient(closest-side,color-mix(in srgb,var(--lyr-bg,#2a0c12) 55%,#fff) 0%,transparent 100%);opacity:.42;animation:lf-lyr-drift 4s ease-in-out 1 forwards;will-change:transform}
 @keyframes lf-lyr-drift{from{transform:translate3d(-8%,-4%,0) scale(1)}to{transform:translate3d(10%,16%,0) scale(1.25)}}
 html[data-lyrstyle="cover"] .lyr .lyr-t span{color:rgba(255,255,255,.78)}
+/* Cover blur (data-lyblur="1" beside data-lyrstyle="cover"): .lyr-blur (added by main.js, first child of #lyr) holds the picture the screen shows, blurred by the browser; a light dark veil keeps the white lyrics readable. A Canvas video / GIF keeps playing under the blur. */
+html[data-lyblur="1"] .lyr{background-color:#000;background-image:none;transition:none}
+html[data-lyblur="1"] .lyr::before{display:none}
+.lyr-blur{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--lyr-bg,#111)}
+.lyr-blur>img,.lyr-blur>video{position:absolute;left:-12%;top:-8%;width:124%;height:116%;object-fit:fill;filter:blur(48px) saturate(1.7) brightness(1.08);transform:translateZ(0)}   /* fill = the WHOLE picture is stretched over the page (not a zoomed crop) and blurred so hard that no detail is left: only smooth colour fields, like a gradient. The picture is a little oversized so the blurred edges do not fade, but the top and bottom of the cover (a yellow title) still show. */
+.lyr-blur::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.16) 45%,rgba(0,0,0,.22) 100%)}   /* dark veil, strongest at the bottom, keeps white lyrics readable (a little darker since the detail layer was added) */
+.lyr-blur>.lb-d{left:0;top:0;width:100%;height:100%;filter:blur(7px) saturate(1.8) contrast(1.1) brightness(1.25);opacity:.72}   /* detail layer: the same picture / GIF / Canvas video with a light blur on top of the heavy one, so the shapes and small details of the cover show through (title letters, face, mask) while the colours stay smooth. It is NOT oversized (left:0, 100% x 100%): the heavy base layer is oversized and crops the cover edges, which hid small things in the corners (the yellow Parental Advisory label of Starboy); this layer shows the whole picture, and its blurred edge fades into the base layer. Slightly brighter so small bright spots stay visible. */
+/* GIF / animated WebP / Canvas video (.lb-anim): they came out too bright (white lyrics lost contrast) and the faint blush / eyes were washed out. Darker base, detail layer sharper and NOT brightened, stronger veil. Still pictures are unchanged. */
+.lyr-blur.lb-anim>img,.lyr-blur.lb-anim>video{filter:blur(48px) saturate(1.9) brightness(.5)}
+.lyr-blur.lb-anim>.lb-d{filter:blur(3px) saturate(3) contrast(1.15) brightness(.58);opacity:.92}
+.lyr-blur.lb-anim::after{background:linear-gradient(180deg,rgba(0,0,0,.3) 0%,rgba(0,0,0,.4) 45%,rgba(0,0,0,.55) 100%)}
+html[data-lyblur="1"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.65),0 0 2px rgba(0,0,0,.4)}   /* the veil is lighter now so small bright details (Starboy's bottom-right label) show; this soft shadow keeps the white lyric lines readable on top of them */
+/* v236: Cover colour palette (data-lypal="1" beside data-lyrstyle="cover"): --lyr-pal is a CSS gradient built in main.js (tintPaletteGrad) from the cover's five main colours: the primary colour in the middle and as the base, the other four glowing in the corners, a dark veil at the bottom. Falls back to the plain cover gradient. Nothing animates. */
+html[data-lypal="1"] .lyr{background-color:#000;background-image:var(--lyr-pal,linear-gradient(180deg,var(--lyr-bg,#c8102e) 0%,#000 100%));background-size:100% 100%;background-position:center;background-repeat:no-repeat;transition:none}
+html[data-lypal="1"] .lyr::before{display:none}
 
 /* v93: credit popup (notifications). No glass rim / bars, transparent box: just the picture, the text and two plain buttons on the dark scrim */
 #sheet .sheetbox.notifcard{background:none;box-shadow:none;border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none;left:20px;right:20px;bottom:auto;top:50%;transform:translateY(-50%);text-align:center;overflow:visible;animation:lf-fade calc(.35s * var(--dur-k,1)) ease-out}
@@ -733,7 +748,7 @@ select.hsren{flex:1;min-width:0;margin-top:0;appearance:auto}
 /* A synced line: the playing one is full colour and slightly bigger; the others are softer and a little smaller (--d = distance from the playing line, set in main.js). */
 .ln.tap{opacity:calc(var(--ly-op,.58) - var(--d,5) * .03);transform:scale(var(--ly-small,.94));transform-origin:left center;-webkit-tap-highlight-color:transparent;
   translate:0 var(--ty,0px);
-  transition:opacity calc(.4s * var(--ly-fade,1)) ease,transform calc(.5s * var(--ly-fade,1)) var(--spring),filter calc(.45s * var(--ly-fade,1)) ease,color calc(.25s * var(--ly-fade,1)),translate calc(.7s * var(--ly-glide,1)) cubic-bezier(.22,.8,.25,1)}
+  transition:opacity calc(.4s * var(--ly-fade,1)) ease,transform calc(.5s * var(--ly-fade,1)) var(--spring),filter calc(.45s * var(--ly-fade,1)) ease,color calc(.25s * var(--ly-fade,1)),translate var(--tt,calc(.7s * var(--ly-glide,1))) cubic-bezier(.22,.8,.25,1)}   /* v236: --tt = 0s only while a line is put at its start position for the glide (main.js lyCenter), so the fade / size transitions are never switched off */
 .ln.tap.cur{opacity:1;transform:scale(var(--ly-zoom,1.02))}
 html[data-lyblur="1"] .ln.tap:not(.cur){filter:blur(calc(var(--d,5) * var(--ly-blur,0px)))}
 .ln:not(.tap){opacity:.92;color:var(--accent)}
@@ -962,24 +977,8 @@ html[data-immersive="1"] .np .titles span{color:rgba(255,255,255,.82)}
 html[data-immersive="1"] .np .cluster,html[data-immersive="1"] .np .sbtn,html[data-immersive="1"] .np .bottom button,html[data-immersive="1"] .np .titles .gbtn{background:rgba(255,255,255,.18)}
 html[data-immersive="1"] .np .times{color:rgba(255,255,255,.78)}
 
-/* v148+: Lyrics colour picker (Now Playing > ... > Lyrics colour) */
-.lycrow{display:flex;flex-wrap:wrap;gap:14px 8px;padding:6px 2px 14px}
-.lycrow{display:flex;align-items:flex-start;gap:14px;padding:6px 2px 12px}
-.lycwheel{position:relative;flex:1;max-width:240px;aspect-ratio:1;border-radius:50%;touch-action:none;cursor:pointer;background:radial-gradient(circle,#fff 0,rgba(255,255,255,0) 72%),conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);box-shadow:0 2px 12px rgba(0,0,0,.4)}
-.lycknob{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;box-sizing:border-box;border:3px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.5);pointer-events:none}
-.lycprev{flex:none;width:44px;align-self:stretch;max-height:240px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.lycbright{position:relative;height:16px;margin:2px 14px 16px;border-radius:8px;touch-action:none;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.lycbk{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;box-sizing:border-box;border:3px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.55);pointer-events:none}
-.lychexbox{display:flex;align-items:center;gap:8px;margin:0 2px;padding:10px 14px;border-radius:16px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
-.lychexbox span{color:var(--text-2);font-size:.875rem;font-weight:600;margin-right:auto}.lychexbox em{font-style:normal;color:var(--text-2);font-weight:700}
-.lychexbox input{width:92px;background:transparent;border:0;border-bottom:1px solid var(--text-2);color:var(--text);font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:left;outline:none}
-.lychexbox input.bad{border-bottom-color:var(--accent);color:var(--accent)}
 .animdock-s{padding:8px 2px 0}.animdock-s b{display:flex;justify-content:space-between;font-weight:600;font-size:1rem}.animdock-s b em{font-style:normal;color:var(--accent);font-variant-numeric:tabular-nums}
 .animdock-s input[type=range]{width:100%;margin:6px 0 2px;accent-color:var(--accent);touch-action:pan-y}.animdock-s span{display:block;color:var(--text-2);font-size:.75rem;line-height:1.3}
-.lycauto{display:flex;align-items:center;gap:12px;margin:12px 2px 0;padding:10px 12px;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);color:var(--text-2);font-size:.8125rem;line-height:1.35}
-.lycauto.on{box-shadow:inset 0 0 0 2px rgba(255,255,255,.45);color:var(--text)}.lycauto b{color:var(--text)}
-.lycauto i{flex:none;display:block;width:32px;height:32px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.2)}
-.lychint{margin:8px 4px 4px;color:var(--text-2);font-size:.8125rem;min-height:1.2em}
 .actions button[disabled]{opacity:.4;pointer-events:none}
 /* v208: no wobble loops that run forever: decorative animations play a few times and stop (scan spinners stay, they show progress) */
 
@@ -1047,7 +1046,7 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   .detail-art{width:min(26vh,132px)}   /* v221 second pass: the album / playlist picture sits in the left column (see .dwrap below), so it is small */
   html[data-bigcovers="1"] .detail-art{width:min(34vh,170px)}
   /* tab bar: slim, centred; with a mini player it takes the right half and the mini player the left half (same line) */
-  .tabbar{left:0;right:0;margin:0 auto;width:min(460px,calc(100% - var(--gl) - var(--gr)));bottom:max(8px,var(--sab));height:var(--lbar)}   /* the Settings "glass bar size" slider is for portrait; sideways the bar has one slim size */
+  .tabbar{left:0;right:0;margin:0 auto;width:min(460px,calc(100% - var(--gl) - var(--gr)));bottom:max(8px,var(--sab));height:var(--lbar)}   /* v279: --lbar (height) and the width follow Settings > Glass bar size, see the v279 block below */
   html .tabbar,html .lens-mag{padding:3px 10px}
   html .tabbar .tab{gap:1px;font-size:.6875rem;min-height:40px}
   html .tabbar .tab svg{width:24px;height:24px}
@@ -1130,6 +1129,29 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   .qlist{max-height:calc(100vh - 215px)}
 }
 
+/* v224: Settings button with a gear + the word "Settings" (top right of every main page) and the icon column of Settings > Tab bar */
+.gbtn.setbtn{width:auto;padding:0 16px 0 12px;gap:7px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-pill);font-weight:700;font-size:.9375rem;color:var(--text)}
+.gbtn.setbtn svg{width:22px;height:22px;flex:none}
+.tabico{display:grid;place-items:center;width:32px;height:32px;flex:none;color:var(--text-2)}
+.tabico svg{width:26px;height:26px}
+
+/* v277: Home screen background / Custom lyrics background (data-lybg on <html>, style 'cover' + set.lyricBg). Home = the same paint as the Home screen (picture / GIF + its dim) or plain black; Custom = black under .lyr-bgl (your picture / GIF, added by main.js). A Canvas (.lyr-bgl.lb-cv) shows as it is. A light veil + soft text shadow keep the white lyrics readable on any picture. */
+html[data-lybg="home"] .lyr{background:#000;background-image:none;transition:none}
+html[data-bg="1"][data-lybg="home"] .lyr{background:var(--bgpaint)}
+html[data-lybg="custom"] .lyr{background:#000;background-image:none;transition:none}
+html[data-lybg="home"] .lyr::before,html[data-lybg="custom"] .lyr::before{display:none}
+.lyr-bgl{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#000}
+.lyr-bgl>img,.lyr-bgl>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lyr-bgl::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,.34) 50%,rgba(0,0,0,.5) 100%)}
+html[data-lybg="home"] .lyr .ln,html[data-lybg="custom"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.45)}
+
+/* v278: Lyrics text colour (Settings > Lyrics > Lyrics text colour), any background style: white = white lyrics + soft dark shadow; black = black lyrics + soft light glow; auto = the style's own colour (no rule) */
+html[data-lyink="white"] .lyr .ln,html[data-lyink="white"] .lyr .ln.cur,html[data-lyink="white"] .lyr .ln.tap,html[data-lyink="white"] .lyr .lyr-t b,html[data-lyink="white"] .lyr .empty{color:#fff!important}
+html[data-lyink="white"] .lyr .lyr-t span{color:rgba(255,255,255,.78)!important}
+html[data-lyink="white"] .lyr .ln{text-shadow:0 1px 10px rgba(0,0,0,.6),0 0 2px rgba(0,0,0,.4)!important}
+html[data-lyink="black"] .lyr .ln,html[data-lyink="black"] .lyr .ln.cur,html[data-lyink="black"] .lyr .ln.tap,html[data-lyink="black"] .lyr .lyr-t b,html[data-lyink="black"] .lyr .empty{color:#000!important}
+html[data-lyink="black"] .lyr .lyr-t span{color:rgba(0,0,0,.72)!important}
+html[data-lyink="black"] .lyr .ln,html[data-lyink="black"] .lyr .lyr-t{text-shadow:0 0 12px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.6)!important}
 /* ===== v222 (third pass): LANDSCAPE for Settings and Listening Stats (Stats, View All, song / artist / album details, the Snapshot sheet).
    Portrait is not touched: .lsw / .lshd / .lsbd / .setcols are display:contents, so in portrait the markup lays out exactly as before. ===== */
 .lsw,.lshd,.lsbd,.setcols{display:contents}
@@ -1188,7 +1210,8 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>p{margin:4px 0 10px}
   .screen.sub:has(>.animdock){display:grid;grid-template-columns:minmax(0,44%) minmax(0,1fr);column-gap:24px;align-content:start;align-items:start}
   .screen.sub:has(>.animdock)>.top{grid-column:1 / -1}
-  .screen.sub:has(>.animdock)>.animdock{grid-column:1;grid-row:2;position:sticky;top:calc(var(--sat) + 4px);margin:0;padding:0 2px 0 0;border:0;background:transparent;max-height:calc(100vh - var(--sat) - var(--lbar) - 30px);overflow-y:auto;scrollbar-width:none}
+  .screen.sub:has(>.animdock)>.animdock{grid-column:1;grid-row:2;position:sticky;top:calc(var(--sat) + 4px);margin:0;padding:0 2px 0 0;border:0;background:transparent;max-height:calc(100vh - var(--sat) - var(--lbar) - 104px);overflow-y:auto;scrollbar-width:none}   /* v223: 104 = the title row above the dock + the gap over the real tab bar / mini player; before (30) the dock's bottom (Glass bar size) went under them */
+  #app .animdock .tabbar.demobar,#app:has(#mini .mini) .animdock .tabbar.demobar{position:relative;left:auto;right:auto;bottom:auto;margin:0;width:100%}   /* v223: with a mini player the real-bar rule (half width, shifted right) also caught the test bar and cut its Home tab off */
   .screen.sub:has(>.animdock)>.animdock::-webkit-scrollbar{display:none}
   .screen.sub:has(>.animdock)>.setcard{grid-column:2;grid-row:2;margin:0 0 12px}
   .animdock .lyr.lyprev{margin:0 0 6px}
@@ -1211,3 +1234,37 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   .lshd .lsfilter{padding:7px 12px;margin:0 0 4px}
 }
 
+
+/* ===== v224 (landscape): the slim landscape bar used to ignore Glass bar size: now 58 px at 100 % and it follows the slider (46 .. 90 px); icon and label scale with it ===== */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--lbar:clamp(46px,calc(58px * var(--tabk,1)),90px)}
+  html .tabbar .tab{font-size:clamp(.5625rem,calc(.6875rem * var(--tabk,1)),.75rem);letter-spacing:-.01em}   /* capped: five labels share half the screen when a mini player is open */
+  html .tabbar .tab svg{width:clamp(18px,calc(24px * var(--tabk,1)),38px);height:clamp(18px,calc(24px * var(--tabk,1)),38px)}
+  .gbtn.setbtn{padding:0 14px 0 10px}
+  html .tabbar .tab{min-width:0;overflow:hidden;text-overflow:clip}
+  html .tabbar .tab span{max-width:100%;white-space:nowrap}
+  /* the mini player (left half) follows Glass bar size too, and stays centred on the bar's line */
+  :root{--lmini:clamp(46px,calc(56px * var(--tabk,1)),84px)}
+  .mini{height:var(--lmini);bottom:calc(max(8px,var(--sab)) + (var(--lbar) - var(--lmini)) / 2);padding:0 10px 0 calc((var(--lmini) - 44px) / 2)}
+  .mini .cover{width:calc(var(--lmini) - 12px)}
+  .mini .mb{width:calc(var(--lmini) - 12px);height:calc(var(--lmini) - 12px);max-width:56px;max-height:56px}
+  .mini .mb svg{width:clamp(20px,calc(26px * var(--tabk,1)),36px);height:clamp(20px,calc(26px * var(--tabk,1)),36px)}
+  .mini .meta b{font-size:clamp(.8125rem,calc(.9375rem * var(--tabk,1)),1.125rem)}
+  .mini .meta span{font-size:clamp(.6875rem,calc(.7812rem * var(--tabk,1)),.9375rem)}
+}
+@media (orientation:landscape) and (max-height:520px) and (max-width:780px){
+  html .tabbar .tab{font-size:clamp(.5rem,calc(.6875rem * var(--tabk,1)),.625rem)}
+}
+
+/* ===== v279 (owner: "glass bar size should be applied even in landscape"): the v224 landscape bar stopped at 90 px (160 % and 220 % looked the same) and its width never changed. Now height, width, padding, icons, labels and the mini player all follow the slider over its whole range, capped only so the bar stays on a short screen (34 % of the height). ===== */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--lbar:clamp(38px,calc(58px * var(--tabk,1)),34vh);--lmini:clamp(42px,calc(56px * var(--tabk,1)),30vh)}
+  .tabbar{left:auto;right:var(--gr);margin:0;width:calc(100% - var(--gl) - var(--gr));transition:width calc(.45s * var(--dur-k,1)) cubic-bezier(.22,.8,.25,1),left calc(.45s * var(--dur-k,1)) cubic-bezier(.22,.8,.25,1),right calc(.45s * var(--dur-k,1)) cubic-bezier(.22,.8,.25,1)}   /* v281 (owner: "in landscape stretch the glass bar out super wide when no music is playing; when music plays make it smaller with the mini player on the left"): nothing playing = the bar spans the whole width; a mini player = the bar takes the right half (rule above, #app:has(#mini .mini)), sliding between the two */
+  html .tabbar,html .lens-mag{padding:calc(3px * var(--tabk,1)) calc(10px * var(--tabk,1))}
+  html .tabbar .tab{min-height:0;font-size:clamp(.5rem,calc(.6875rem * var(--tabk,1)),1rem)}
+  html .tabbar .tab svg{width:clamp(16px,calc(24px * var(--tabk,1)),min(52px,14vh));height:clamp(16px,calc(24px * var(--tabk,1)),min(52px,14vh))}
+  .mini .mb{max-width:none;max-height:none}
+}
+@media (orientation:landscape) and (max-height:520px) and (max-width:780px){
+  html .tabbar .tab{font-size:clamp(.5rem,calc(.6875rem * var(--tabk,1)),.8125rem)}
+}

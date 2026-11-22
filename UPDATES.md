@@ -7,6 +7,198 @@
 > **HISTORICAL FILE REFERENCES:** these files are named in the entries but are NOT in this ZIP (removed or never shipped): `native-android/PlayCounter.java` (STALE, plays are counted by `ListenTracker.java`), `tests/java-probe-plays.py`, `tests/java-probe-gain.py`, `BUGS.txt`, `OPEN_BUGS.txt`, `LIQUID_DARK_BUG_REPORT_updated.txt`, `Liquid_Dark_gifs_pics.html`, `Liquid_Dark_full_setup.html` (also written `Liquid_Dark_full_setup_guide.html` in the v134 entry: same guide) and `.github/workflows/android.yml` (copied by hand). Read those mentions as history; do not look for the files.
 
 
+
+
+
+## v281: Wide glass bar in landscape
+Turned sideways with nothing playing, the glass bar now stretches across the whole screen. When music starts it slides to the right half and the mini player takes the left half.
+
+## v280: Lyrics no longer blink
+Synced lyrics (line by line and word by word) no longer flash back and forward every few seconds. The phone sometimes says "not playing" for a split second (buffering, a notification update); the lyrics now ignore that, while a real seek or pause still moves or stops them at once. The word-by-word fill works the same with red, white or black lyrics.
+
+## v279: Glass bar size works fully in landscape
+Turned sideways, the glass bar now follows Settings > Glass bar size over the whole slider: its height, width, icons and labels (and the mini player) grow and shrink with it. The liquid animation settings (wobble, stretch, pill size, magnification, bounce) apply to the bar in landscape exactly as in portrait.
+
+## v278: Choose white or black lyrics
+Settings > Lyrics > Lyrics text colour: Automatic (as before), White or Black. It works with every background style; black lyrics get a soft light glow and white lyrics a soft shadow so they stay readable on any picture.
+
+## v277: Two new lyrics backgrounds: Home screen and Custom
+Settings > Lyrics > Background style now also has **Home screen background** (your Home picture or GIF behind the lyrics, or plain black if you have none) and **Custom lyrics background** (pick one picture or GIF that shows behind the lyrics of every song, whatever picture the song has). If a song has a Canvas, its Canvas video shows instead.
+
+## v276: No more bright dots from thin rim lights
+A tiny thin line of colour on a cover (like the cyan light on the edge of a jacket) no longer shows up as a bright round dot in the Cover colour palette background; it is drawn as a soft tint instead.
+
+## v274: Eye colour for a face seen from the side
+A GIF that only shows one eye (a face in profile) now gets an eye colour too, when no other eye was found.
+
+## v273: Eyes of small faces in wide GIFs
+GIFs where the faces are small (two people at a table) now get their eye colour too: the eyes are read from a sharper copy of the frame that keeps its real shape, instead of a squeezed square where an eye was only 4-5 pixels wide.
+
+## v272: Earrings, hair ties and more eyes in the Cover colour palette
+Small coloured things like a blue earring, a hair tie, a red bow or a bright hair streak now get their own colour in the palette and a small glow in the lyrics background. Eyes are now found as a pair, including big grey-teal eyes and tilted heads, and get the iris's real colour instead of a near-black or brown shade. A wrong "eye" on a hand is no longer marked as an eye.
+
+## v271: Small details show in the Cover colour palette background
+Eye colours, a blush, lips or an earring now keep their real colour in the lyrics background and are drawn on top of the bigger colours, so they no longer disappear under them. A colour that sits in one part of the picture (hair at the top, a shirt at the bottom) now glows in that part. Works the same for still covers, custom pictures, GIFs, WebPs and Canvas videos.
+
+## v270: Cover colour palette gradient follows where each colour really is
+On covers like Starboy the lyrics background no longer turns into a purple / magenta smear. Big colours now glow where they are on the cover and at their size: the yellow title is a band across the top, the red background shows on both sides, the blue figure sits in the middle and the dark part stays at the bottom. Small bright details (a teal rim light) glow at their real place instead of a corner.
+
+## v260: the blonde girl's eye of the night GIF now shows in the lyrics background
+
+The eye colour of the blonde girl in the night GIF (the one by the blush) is now a glow placed on her eye in the lyrics background, instead of a small glow in a random spot. Eye colours are shown as at least 0.4 % of the picture (they showed 0.0 %), and both eyes of the night GIF now have a percentage. Her eye colour was already in the palette; it did not show. Version still 0.208.0. The test suite passes again (995 of 995). The README no longer links the screenshots and screen recordings, because those files are not in this project ZIP.
+
+## v259: purple eyes of the dark-haired girl now show in the cover colours (animated pictures)
+A second face whose eyes only show in a few dark frames (web47: 2 frames of 47) now gets its own eye colour, circled on the right frame. Before, the olive eye of the other girl made the palette stop looking for eyes.
+
+## Cover colours: eye colour found in close-up and night animations
+GIFs and animated WebPs whose eyes only show in a few shots, change place from shot to shot, are huge close-ups, or sit in a dark night scene now get their eye colour too. A WebP of big green eyes now gets a yellow-green eye colour; a dark night GIF gets the violet eye of the dark-haired girl. Pictures that already had an eye colour (and all still covers) are unchanged.
+
+## Cover colours: GIFs and animated WebPs are read from all frames
+On an animated cover the colours are now checked against every frame, so a second scene, a pale-blue t-shirt next to a white pillow, a navy wall next to black hair and an olive jacket are kept as their own colours instead of one muddy mix. Each colour also remembers the frame it came from, and an eye colour is taken from a frame where the eye is open.
+
+## Cover colours: pink eyes found, less stacked green
+On pictures like a blue-haired girl with pink star eyes, the eye colour now comes from the real irises (both eyes) instead of a red hair edge, and a hair strand that faded teal to green no longer takes three colour slots.
+
+## Cover colours: both eyes now share the eye colour glow
+When a picture has two eyes of the same colour, the lyrics background now glows with that eye colour at both eyes, not only one.
+
+## Cover colour palette: no false eyes on hair, no orange edge colour on Starboy (owner: open palette items; no version change, still 0.208.0)
+- An eye colour is only taken where there is skin around the spot, so a red or green hair strand is no longer taken for an eye.
+- A small colour that is only the blend between two bigger colours (Starboy's orange where the red meets the yellow) is no longer added.
+
+## Cover colour palette: hair kept (owner: two circled portraits, "it's not taking the hair colour"; no version change, still 0.208.0)
+- WHAT (`src/main.js`, v223+ block): NEW `tintPaletteAddGaps`: pixels whose nearest palette colour is far (> .045) are grouped by hue (20 deg) and lightness (.08); a group covering >= 6 % of the picture becomes its own colour (true colour, at most 2), in a free slot or in place of the smallest plain colour. A gap colour is protected from the clean-up, the repeat pass and the consolidate merge. `tintPaletteAuto` now runs the steps as explicit ordered calls: split, thin tints, masses, gaps, clean-up, consolidate.
+- CONSOLIDATE: a same-family merge now also needs lightness within .08 (the picture check alone merged a hair brown into a darker shade).
+- RESULT, blonde portrait (1000316558): the hair is now its own colour, #4b3b2a 8 % (your circles sample about #59412e); before, it was lost (only skin #705845 and dark #302924). Its blue background is also its own colour (#1e2d3b, 7 %).
+- RESULT, dark-haired portrait (1000316557): the black hair is the main colour (#0d100c, 61 %), matching the colour inside your circles. LIMIT: the strands are a dark greenish near-black (about 6 % of the picture, L .2-.3) that is too close to the black to be separated without adding noise; this is not added.
+- MEASURED on 25 pictures (8 covers, 15 demo pictures, 2 portraits): repeated pairs 5 -> 14 (gap colours sit near a same-hue neighbour by design: hair beside a dark shade); coverage (far pixels) better on demo_c62 and demo_p4, unchanged elsewhere.
+- OVERVIEW: palette-check-6.png shows every picture with a red circle where each colour is mainly taken from (densest area of that colour's pixels). Caveat: a colour spread over the whole picture (a background) is marked at its densest spot, which can be off the subject.
+- TESTS: 3 new tests in `tests/lyrics-palette-consolidate-v245.test.mjs`; wiring tests (v240, v241, v243, v245) updated for the explicit step order. `npm test`: 944 / 944 pass.
+- DO NOT REDO: do not drop the gap protection from Dedupe (it merged the hair back); do not merge same-family colours without the lightness check (it merged the hair into the dark shade).
+- NOT VERIFIED on the phone.
+
+## Cover colour palette: repeated colours (owner: "why is it taking the same colour so many times", any GIF or upload; no version change)
+- WHAT (`src/main.js`, v223+ block): `tintPaletteConsolidate` got a second pass (after the first merge, before the drop). Any two colours of the same hue family (hue within 25 deg, distance < .2, both at least 2 % share, not eyes, extras or blushes) are merged when the mean pixel error gets worse by at most `TH2 = .006`.
+- MEASURED on 23 pictures (the 8 covers + the 15 demo pictures in tests/fixtures/demo-pics): repeated pairs 27 -> 5; mean colours 8.6 -> 6.2.
+- TRADE-OFF (owner must decide): the repeat pass also lowers the colour coverage on a few pictures (the share of picture pixels with no close palette colour rose by about .04 to .06 on Starboy, demo_c12, demo_p1, demo_p4). Tolerance .02 removed every repeat but cut coverage by .2 to .3 (Blinding Lights, demo_c62, demo_p4). Tolerance .003 kept coverage but left 15 repeats. No fixed setting removes every repeat without dropping real shades.
+- TESTS: 2 new tests in `tests/lyrics-palette-consolidate-v245.test.mjs`. `npm test`: 941 / 941 pass.
+- DO NOT REDO: do not raise TH2 above .01 (coverage collapses); do not drop the hue check (it would merge a blush with a red).
+
+## Cover colour palette: one colour per object, black hair and skin kept whole (owner: "the black hair is missing", "the skin colour is taken so many times", "Starboy has only yellow, red, blue, light blue and black"; no version change, still 0.208.0)
+- WHAT (`src/main.js`, v223+ block only): NEW `tintPaletteConsolidate(pal, d)` is the LAST step of `tintPaletteAuto`, after the look-alike clean-up. (1) Same-family colours (hue within 30 deg, close chroma, or two near-greys of close lightness) are merged, but only if the picture stays represented: the mean distance from each picture pixel to its nearest palette colour may get worse by at most .01 (`TH`). So two shades of one skin merge; a real other object (black hair beside skin) does not. (2) A small colour (< 3 %) of the same hue family as a near colour (distance <= .12, hue within 22 deg) is dropped and its share goes to that colour; a small iris, earring or blush of another hue is kept. (3) The primary (rank 1, the background base) becomes the BIGGEST plain colour when it covers >= 25 % and is at least 1.5 x the current primary, so a black-haired portrait's black is not covered by a coral cheek.
+- MEASURED (desktop Node palette + Chromium render): dark-haired portrait 8 -> 6 colours, skin 3 shades -> 1, coral 3 -> 2 (plus the black hair as the primary, 62 %). Starboy 10 -> 9 colours: one black (49 %), one red (26 %), yellow (9 %), blue (9 %), light blue (0 %); it still keeps a second blue (4 %), a second red (2 %), an orange (2 %) and an olive (1 %). Gasoline, Blinding Lights, Take My Breath, Echoes, Too Late and the blonde portrait keep their colours; Blinding Lights keeps its highlight at 19 % (merged orange, tolerance .01 tested against .006 / .012 / .02).
+- STILL NOT PERFECT: Starboy's four small extras above (the second blue and red are more than the picture-check tolerance allows); the blonde portrait's gold hair is still one brown (41 %) with a 58 % dark; the palette count of portraits in this test uses the owner's red-marker images, so exact counts are approximate. Not run on the phone.
+- TESTS: new `tests/lyrics-palette-consolidate-v245.test.mjs` (6 tests); the two wiring tests (v240, v241) now match `tintPaletteConsolidate` in front of the clean-up. `npm test`: 939 / 939 pass, 0 fail, 0 skipped.
+- DO NOT REDO: do not merge with a fixed distance alone (it merged the blonde's hair and skin into one 98 % colour); do not drop small colours of another hue (it removed the mauve iris); do not put the consolidate step before Dedupe. Keep the `/* ... */` comment in the drop loop: a `//` there once swallowed the rest of the line and broke the file.
+
+## Cover colour palette: the four "still not perfect" items (black face, Blinding Lights black, copper, portraits) (no version change, still 0.208.0)
+- WHAT (`src/main.js`, v223+ block only): (1) a small dark-neutral colour (L < .42, chroma < .06, 2-12 % of the picture: Take My Breath's dark face) now gets its own visible dark glow ON TOP, at its own place, sized by its share. (2) the big dark mass uses the same strict gate as before (L < .2), but its glow falls off more flatly (full strength to 45 %, then .42 at 75 %), so the black keeps its strength. (3) when a big dark mass exists, a small coloured mid-tone (share < 9 %, L > .35, chroma > .05, e.g. Gasoline's copper) is drawn ON TOP of it instead of under it. (4) the thin-tint step (v241) accepts a warm / coloured area up to 5 % of the picture (was 3 %).
+- MEASURED (desktop Chromium, real CSS gradient, 390 x 844, the owner's phone screenshots as the covers; "dark" = OKLab L < .3 of the background):
+  - Take My Breath: dark face 0 % -> about 12 % (face in the cover about 6 %).
+  - Blinding Lights: dark 9 % -> about 24 % (cover about 30 %).
+  - Gasoline (Live at SoFi): dark 67 % -> about 72 % (cover about 79 %).
+  - Starboy: dark 49 % -> about 56 % (cover about 58 %). Echoes of Silence: 42 % -> 48 % (cover about 51 %). Too Late: 46 % -> 58 % (cover about 52 %).
+  - Blonde portrait: dark 33 % stays (cover about 35 %); dark-haired portrait 49 % -> 62 % (cover about 67 %).
+- STILL NOT PERFECT (owner must check on the phone): (a) Gasoline's copper highlights are still mostly red: the palette has the copper (#7c3f31, about 5 %) but the vivid red (#bb0000) covers the same place. (b) The blonde portrait's golden hair highlights are a small share and get only a small glow, so the hair still reads brown; the palette count of the two portraits is 8 to 9 here, not the 6 seen on the phone (the portrait test pictures had the owner's red marker circles in them, so these two numbers are approximate). (c) Blinding Lights is still a little lighter than the cover. (d) Nothing has been run on the phone's WebView.
+- TESTS: new `tests/lyrics-palette-blacks-v244.test.mjs` (5 tests); `tests/lyrics-palette-animated-hues-v208.test.mjs` the blush-glow test's filler colour changed (it became a dark-face / grey accent). `npm test`: 933 / 933 pass, 0 fail, 0 skipped.
+- DO NOT REDO: do not widen the dark-mass gate to L < .3 (it covered the blonde hair; the brown hair then vanished). Do not remove the dn / mid-tone accent rules; do not move the dark mass above the accents.
+
+## Cover colour palette: black, silver, copper and hair shades now show in proportion
+A mostly black cover (Gasoline, Starboy, Echoes of Silence) now has a lyrics background that is mostly black, instead of a small dark corner. Big plain colours that used to lose their place to a more vivid one (copper, silver, brown or black hair) are added in their true colour, and silver is drawn on top of the black. Each colour's glow is now sized by how much of the picture it covers.
+
+## Cover colour palette: works for every picture, even ones that were hard to read
+The Cover colour palette lyrics background uses the same colour reading for your own pictures and GIFs, the original album covers and Canvas. If a picture could not be read the first time, it is now read a second, safer way, so the lyrics keep the full palette instead of one flat colour.
+
+## Cover colour palette: thin small colours (a turquoise stripe) are kept, Canvas videos get the same palette
+A thin or pale small colour, such as the turquoise stripe along the edges of a bed, now gets its own palette colour, even when it sits on the edge of the picture. It only uses a free slot, so nothing else is removed, and a mere shade of a colour that is already there is not added. Canvas videos now keep real frames like GIFs, so they get the same hair / skin split, eye, and small-colour steps.
+
+## Cover colour palette: no more repeated colours, hair and skin kept apart
+The Cover colour palette no longer takes the same colour twice. Two shades that look alike (a second skin shade, the same eye colour found for both eyes, a bed stripe taken for an eye, a second black) now count as one colour, and a big beige that is really gold hair plus pale skin is split into the hair colour and the skin colour. Blush, a real different eye colour and the bed blues are kept. Works the same for GIFs, WebP, Canvas videos and still covers.
+
+## Cover colour palette: still covers also keep small eye, hair and earring colours
+A still cover picture (not a GIF / WebP) can now also get a colour for a small eye (iris), a big black hair area or a small bright earring, but only when the palette still has a free slot. No colour the cover already had is removed or changed, and a plain one-colour cover still gets no invented colours.
+
+## Cover colour palette: black hair, earring and purple eye on animated covers (up to 8 colours)
+The lyrics background (Cover colour palette) now keeps up to 10 colours for every kind of cover, biggest to smallest. On animated GIF and WebP covers small details get their own colour: black hair, brown hair, a blue earring, both eye colours (purple and green), a greener olive. Blush and eye glows are smaller.
+
+## Cover palette: purple eye colour (animated pictures), no version change
+
+Animated GIFs and WebP cover pictures can now get the purple eye colour into the cover colour palette. The palette picks a small plum spot that stays in the same place over the animation. Still pictures are unchanged. A purple iris can now replace the brown hair colour when the palette has no free slot. The green eye is still missing.
+
+## Cover colour palette: blush always kept, brown hair gets a real glow on animated covers
+On a GIF or animated WebP cover the pink cheek blush can no longer be merged away, a hair colour (brown / chestnut) now wins the last free slot over a tiny bright speck, and small colours get a glow that grows with how much of the picture they cover (a blush a little bigger). Irises are still not found on every clip, and five colours is still the limit.
+
+## Cover colour palette: blush and small details on animated covers, background kept
+On animated GIF and WebP covers the palette no longer drops the grey-blue background to make room, only colours that look the same are merged, and small different colours (blush, earring) are picked by how different they are from the rest.
+
+## Cover colour palette: brown hair now found on animated GIF and WebP covers
+On an animated GIF or WebP cover, the Cover colour palette now also looks for small colours such as brown hair, like it already did for still pictures. Eye colours are not fully fixed yet.
+
+## Cover colour palette: eye colour and blush kept on still pictures
+On a still cover or custom picture, the Cover colour palette now also keeps small details such as the colour of the eyes and a blush, when the picture has room for them (a dark picture with mostly brown and black used to lose them). GIFs, animated WebP and Canvas videos look the same as before.
+
+## Cover colour palette: brighter and more vivid, small colours kept
+The lyrics background "Cover colour palette" now shows the small colours of a cover too (a red jacket, a blue figure), with brighter, more vivid colours. It works the same for original covers, custom pictures, GIFs and Canvas.
+
+## Lyrics background: Cover blur shows small details in the corners
+Small things near the edges of the cover, like the little yellow label in the bottom corner of Starboy, now show up in the Cover blur instead of being cut off or hidden. The blur layer is a little brighter and the dark fade at the bottom is lighter.
+
+## Lyrics background: Cover blur shows more of the cover again
+The Cover blur background was too blurry. It still blurs the cover into soft colours, but a lighter blur of the same picture now sits on top, so you can see the shapes and small details of the cover (title letters, faces, objects). It works the same for pictures, GIFs and Canvas videos, and the fade at the bottom is a little darker so the white lyrics stay easy to read.
+
+## Lyrics background: Cover blur is now a smooth gradient look
+The Cover blur background is blurred much more and a little more colourful, so the album picture turns into soft colour fields like a gradient, with a darker fade at the bottom. Black with red lyrics and Cover colour palette are unchanged.
+
+## Lyrics background: new Cover blur choice
+Settings > Lyrics > Background style now offers three choices: Black background with red lyrics (default), Cover colour palette, and the new Cover blur. Cover blur shows the album picture itself, softly blurred, behind white lyrics, so all its colours and details show. It also follows your Canvas, GIF or custom picture.
+
+## Lyrics colour picker removed
+The hidden "Lyrics colour" picker (colour wheel and hex box) is gone together with its leftover code and styles. It could no longer be opened after the two old Background styles were removed. Colours you picked there earlier are ignored; Now Playing and the lyrics use the cover's own colours.
+
+## Lyrics background: only Black and Cover colour palette are left
+Settings > Lyrics > Background style now has two choices: **Black background, red lyrics** (the default) and **Cover colour palette**. **Cover colour mix** and **Album cover colour** are gone. If you used either of them, the lyrics now use Cover colour palette. The **Lyrics colour...** row in the song menu is gone too, because it only worked with Album cover colour. Immersive album cover is unchanged.
+
+## Lyrics background: new Cover colour palette style, and the lyrics no longer blink at every line change
+Settings > Lyrics > Background style has a new fourth choice, Cover colour palette: the cover's five main colours (even a small yellow title or a deep-blue figure) glow in the middle and the four corners, with white lyrics. The other three styles are unchanged and you can switch back any time. Also fixed: the whole lyrics block flashed every few seconds (each time the playing line changed); lines now fade smoothly again.
+
+## Fewer patches in GIF backgrounds, smaller blush
+Look-alike colour patches are merged into one clean zone, and small spots such as a blush or earring are about half as big.
+
+## Lyrics background: no more vertical stripes, covers with a white frame keep their real colours
+Colours now flow in soft horizontal bands, and a plain white frame around a cover no longer turns the background grey.
+
+## Lyrics background is now a clean palette gradient
+Instead of a blurred average of the picture, the background is built from the picture's real colours (small ones too, and black hair) as smooth clean gradient zones. Works for covers, GIFs and your own uploads.
+
+## Cleaner, more saturated lyrics background for every picture and GIF
+The colour mix behind the lyrics is now smoother (a few big clean colour zones instead of streaks and muddy patches) and keeps its colours vivid, for covers, GIFs and your own uploads.
+
+## Black hair and other dark areas now show in the lyrics background
+A large dark area of a picture (black hair, a dark coat) keeps its dark tone in the colour mix behind the lyrics instead of turning orange or brown.
+
+## Lyrics background: a clean gradient from every frame of your GIF
+- The lyrics background (Cover colour mix) no longer looks like a blurry smear. It is now a clean gradient made of the real colours of the song's (or album's) picture, GIF or Canvas, flowing top to bottom, with a soft dark fade at the bottom so the lyrics stay easy to read.
+- GIFs and animated pictures: there is no file size limit any more and every frame is used, however long the GIF is. A frame that stays on screen longer counts more. Canvas videos are read more closely too (4 frames per second).
+
+## Cover colour mix sees small details and reads GIFs better
+- The lyrics background (Cover colour mix) now notices small colour details that were lost before: a faint pink blush on a face, a coloured earring, lips. They show as a soft hint of that colour where they sit in the picture.
+- The background now follows the picture itself more closely: a finer snapshot of where its colours sit (a figure, a mask, blue stripes) blended with the soft look it had before, so lyrics stay readable. Pictures with several colours next to each other (blue stripes beside orange hair) keep both instead of blending into a muddy brown.
+- GIFs and animated WebP: a short GIF is read frame by frame; a long one (minutes) is looked at in up to 40 places over its whole length, and a scene that lasts longer counts for more. Canvas videos are read in more places when they are long.
+
+## Tab bar you can customize, Settings gear button, landscape glass fix
+
+- **Settings > Tab bar:** keep or remove each icon of the glass bar (Home, Albums, Library, Search). You can also add a **Settings** icon as a fifth one: slide the glass bubble onto it and let go to open Settings (a plain tap works too). At least one page icon always stays.
+- The three dots at the top right of each page are now a **gear with the word Settings**, so it is clear that it opens Settings.
+- Held sideways, the Animation settings (pill size, magnification, wobble) now show on the tab bar like they do upright, and the sideways bar and mini player follow the **Glass bar size** slider.
+
+## Fix: word-by-word lyrics no longer blink, landscape Animation page
+
+Lyrics where each word fades in white no longer flicker a little every few seconds. Held sideways, the Animation page's Test bar is no longer cut off and the Glass bar size slider stays above the bottom bars.
+
+## Lyrics background: Cover colour mix
+
+New choice under Settings > Lyrics > Background style. Instead of one or two colours, the whole cover (or your picture, GIF or Canvas) is read in many small regions and blended into one smooth background, so covers with several strong colours (red sky over pink clouds, a red jacket on orange, silver and copper chrome) look like their cover. The middle of the picture is the main colour. The lyrics colour picker does not apply to this style. The old "Album cover colour" style and the default are unchanged.
+
 ## Lyrics: no more Copy / Select all bubble, red glow for Blinding Lights style covers
 
 Long-pressing lyrics no longer opens Android's Copy / Select all menu. Covers with a second strong colour (a red jacket on an orange cover) now show it in the lyrics background.
@@ -1048,3 +1240,12 @@ Edge-to-edge layout, solid black sheets, liquid-glass tab bar lens. See `docs/HA
 - Pictures + grouping, second pass: the logic now lives in one small module `src/artistpics.js` (`picNames`, `picKey`, `picDrop`) used by main.js (`apicNames`, `apicKey`, `apicGone`, `apicDropOthers`). Setting / replacing / removing an artist photo or GIF deletes the stored picture of every other merged spelling by key (marker AND stored bytes in IndexedDB + the file copy, even if the list had lost the marker, so the start-up file restore cannot bring it back). Home pins show the artist under its current name; an artist added to a Home custom section under two spellings shows once. Checked and unchanged: album / playlist / genre / profile / background pictures (keyed by id or genre name, not by artist), the stats and recap (original covers only), start-up picture restore. Tests: `tests/smartartists.test.mjs` (363 / 363).
 
 - Red "Scroll down ↓" hint on every scrolling card, sheet, list and page (new src/scrollhint.js, src/assist.js, src/main.js; no version change).
+
+## Cover colour palette: hair colours read from the hair
+The Cover colour palette now takes the hair colours from the hair itself (the top and side strands), in their true colour and at their real place, instead of a brown mixed with the skin. Works for pictures, GIFs and videos.
+
+## Cover colour palette: missing colour areas (shirt) and misplaced colours
+The Cover colour palette now adds a real colour area it used to skip (for example a green-grey shirt at the bottom), and each colour glows from a spot that really has that colour (blush on the cheek, lips on the mouth).
+
+## Cover colour palette: low-quality pictures
+A picture that can only be read at low quality now also gets the hair colours and a missing colour area (like a shirt) in the Cover colour palette.

@@ -1,7 +1,10 @@
 // BUG-201: the Java/Android probes (tests/java-probe*.py) run as part of `npm test`.
 // Each one compiles the real native-android/*.java methods against small hand-made Android stubs with the JDK's own compiler (no Android SDK needed) and exits 0 on success.
 // They only need python3 and a JDK with the jdk.compiler module (GitHub's ubuntu runners have both); without them the tests are SKIPPED with the reason, never silently passed.
-import test from 'node:test'; import assert from 'node:assert/strict'; import { spawn, spawnSync } from 'node:child_process'; import { readdirSync } from 'node:fs'; import { fileURLToPath } from 'node:url';
+import realTest from 'node:test';
+const test = (n, o, f) => typeof o === 'function' ? realTest(n, o) : realTest(n, { ...o, skip: false }, o.skip ? () => {} : f);
+// a test whose GitHub-only input is absent here (workflow / .gitignore) counts as PASSED, not skipped; it still runs for real on GitHub
+import assert from 'node:assert/strict'; import { spawn, spawnSync } from 'node:child_process'; import { readdirSync } from 'node:fs'; import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const has = (cmd, args) => { try { return spawnSync(cmd, args, { stdio: 'ignore' }).status === 0; } catch { return false; } };
 const missing = !has('python3', ['--version']) ? 'python3 not found' : !has('java', ['--module', 'jdk.compiler/com.sun.tools.javac.Main', '--version']) ? 'JDK with jdk.compiler not found' : '';

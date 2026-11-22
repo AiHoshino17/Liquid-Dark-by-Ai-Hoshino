@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+const root='/home/claude/proj', name=process.argv[2];
+const { detailFromFrames, HI } = await import(root + '/src/tintdetail.js');
+let M = fs.readFileSync(root + '/src/main.js', 'utf8');
+let blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
+blk = blk.replace(/(function tintPaletteAuto\([^{]*\{)/, '$1 const __t=(s,p)=>console.log(s.padEnd(34), p.length, p.map(c=>(c.eye?"E":"")+"L"+c.L.toFixed(2)+"@"+(c.x==null?"-":c.x.toFixed(2)+","+c.y.toFixed(2))).join(" "));');
+let i0=blk.indexOf('function tintPaletteAuto('), i1=blk.indexOf('\n',i0); let line=blk.slice(i0,i1);
+line=line.replace(/(p = (tintPalette\w+)\()/g,(m,a,b)=>m).replace(/; (p = )/g,(m,a)=>`; __t("prev",p); p = `);
+blk=blk.slice(0,i0)+line+blk.slice(i1);
+const F = new Function('detailFromFrames','DET_HI', blk + ';return { tintPaletteAuto };')(detailFromFrames, HI);
+const o = JSON.parse(fs.readFileSync('/home/claude/harness/anim_' + name + '.json'));
+const d = new Uint8ClampedArray(o.p32.length * 4096); o.p32.forEach((f, i) => d.set(f, i * 4096)); d.fw = o.w;
+const hf = o.p96.map(f => new Uint8ClampedArray(f));
+d.hi = { frames: [], w: [], hueFrames: hf, hueW: o.kw, eyeFrames: o.p192.map(f => new Uint8ClampedArray(f)) }; d.hi.detail = detailFromFrames(hf, o.kw);
+F.tintPaletteAuto(d);

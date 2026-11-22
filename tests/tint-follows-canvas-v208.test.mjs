@@ -32,7 +32,7 @@ test('tintFromPixels: frames of different colours are averaged (a loop that chan
 // tintSource with fake state
 const mk = ({ canvasOn = true, cvPathV = '', bad = [], fileUrl = p => 'http://localhost/_f_' + p, so = false, sp = null, ap = null } = {}) => {
   const spUrls = new Map(sp ? [['T1', sp]] : []), alpUrls = new Map(ap ? [['A1', ap]] : []);
-  return extract('src/main.js', 'tintSource', { soHas: () => so, spUrls, alpUrls, canvasOn, cvPath: () => cvPathV, cvBad: new Set(bad), Native: { fileUrl }, isVideo: p => /\.(mp4|webm)$/i.test(p) });
+  return extract('src/main.js', 'tintSource', { soHas: () => so, spUrls, alpUrls, canvasOn, cvPath: () => cvPathV, cvBad: new Set(bad), cvWeb: new Map(), Native: { fileUrl }, isVideo: p => /\.(mp4|webm)$/i.test(p) });
 };
 const A = { id: 'A1', cover: 'content://cover' }, T = { id: 'T1', albumId: 'A1' };
 
@@ -68,10 +68,10 @@ test('Canvas beats a custom song / album picture; when the Canvas cannot be read
 test('GUARD (needs the running app): animated sources are read over several frames, the Canvas / custom picture feed coverTint, only the newest read paints, stale reads are not kept', () => {
   assert.ok(M.includes('function tintVideoPx('));
   assert.ok(M.includes('async function tintDecodeFrames('));
-  assert.ok(M.includes('Math.min(n, 8)'));
+  assert.ok(M.includes('for (let i = 0; i < n; i++) {') && !M.includes('pickCandidates('), 'v230: every frame of the animation is read (v225 sampled 40, v208 took 8)');
   assert.match(M, /const S = tintSource\(a, t\), ck = S\.ck, key = S\.key;/);
   assert.match(M, /c\.ck = ck;[^\n]*covTint\.set\(key, c\)/);
   assert.match(M, /my === npTintSeq/);
   assert.match(M, /my === lyTintSeq/);
-  assert.ok(M.includes("p.ck"), 'the lyrics colour is still saved under the stable key');
+  assert.ok(!M.includes('lf.lycol'), 'the per-song Lyrics colour picker (and its saved key) is gone');
 });

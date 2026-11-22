@@ -59,7 +59,7 @@ const start = () => { clearInterval(timer); timer = setInterval(tick, 250); };
 const mock = {
   async pause() { s.playing = false; emit('onState', s); },
   async resume() { if (s.index < 0) return; s.playing = true; start(); emit('onState', s); },
-  async seek(sec) { s.pos = sec; if (cur()) emit('onProgress', { pos: s.pos, dur: cur().dur }); },
+  async seek(sec) { s.pos = sec; if (cur()) { emit('onSeek', { pos: s.pos, dur: cur().dur }); emit('onProgress', { pos: s.pos, dur: cur().dur }); } },   // v280: the browser player announces a seek like the phone one (Native.seek emits onSeek), so the lyrics clock is reset on a seek in both
   async next(auto) {   // auto = the song ended by itself (the Next BUTTON passes nothing)
     if (!s.queue.length) return;
     let i = s.index + 1;
