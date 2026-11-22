@@ -79,7 +79,7 @@ export const GROUP_LABELS = {
   anim: 'Liquid glass & wobble (animation studio)',
   lyAnim: 'Lyrics animation',
   refract: 'Lens refraction (tab bar)',
-  tabs: 'Tab bar icons', tabOrder: 'Tab bar icon order',
+  tabs: 'Tab bar icons', tabOrder: 'Tab bar icon order', barSplit: 'Landscape mini player: split and merge (style, speed, stretch)',
   lyricSize: 'Lyrics size', lyricPx: 'Lyrics text size', lyricStyle: 'Lyrics style', lyricBlur: 'Lyrics: Cover blur',
   lyricPal: 'Lyrics: Cover colour palette', lyricBg: 'Lyrics: Home screen / Song picture background', lyWordFade: 'Lyrics: word fade-in', lyricInk: 'Lyrics text colour', timeStyle: 'Playing bar time', coverLyrics: 'Cover in lyrics',
   tabSize: 'Glass bar size (older Small / Medium / Large choice)', tabPct: 'Glass bar size', redHover: 'Red highlight on hover', motion: 'Reduce motion', contrast: 'Increase contrast',

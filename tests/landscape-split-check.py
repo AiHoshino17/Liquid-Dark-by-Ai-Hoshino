@@ -1,6 +1,6 @@
-"""v288: Chromium check of the LANDSCAPE water split / merge (owner picked option 1 "Water split").
-Start music: the bar slides right, the mini player is only shown where the bar has left it, a water neck joins them, thins and snaps (then gone at rest).
-Stop music: the mini player stays as a ghost while the bar flows back, the neck forms again, the ghost is removed, the bar is wide again. Reduce Motion: no neck, instant.
+"""v288 / v289: Chromium check of the LANDSCAPE water split / merge, every style of Settings > Animation > Landscape mini player.
+Start music: player and bar start JOINED (one bar: a full water bridge), pull apart, the neck thins and snaps; at rest nothing is left over (gap 16 px).
+Stop music: the player stays as a ghost, tips reach out, they join again, the ghost is removed, the bar is wide. Off / Reduce Motion / portrait: no water.
 Frames: tests/out/lsplit/.  Run: python3 tests/landscape-split-check.py"""
 import http.server, threading, pathlib, sys, json
 from playwright.sync_api import sync_playwright
@@ -43,47 +43,40 @@ with sync_playwright() as pw:
         return ctx, p, errs
     SAMPLE = """async (n) => { const out = []; for (let i = 0; i < n; i++) { await new Promise(r => requestAnimationFrame(r));
       const b = document.querySelector('#tabs').getBoundingClientRect(), m = document.querySelector('#mini .mini'), nk = document.querySelector('.lneck');
-      const mr = m && m.getBoundingClientRect(); out.push({ bl: b.left, bw: b.width, mr: mr ? mr.right : null, clip: m ? m.style.clipPath : '', op: m ? getComputedStyle(m.firstElementChild).opacity : null,
-        neck: !!(nk && nk.style.display !== 'none' && nk.querySelector('.lneck-f').getAttribute('d')), joined: !!(nk && nk.style.display !== 'none' && /A.*A/.test(nk.querySelector('.lneck-f').getAttribute('d') || '') && !/Z.*Z/.test(nk.querySelector('.lneck-f').getAttribute('d') || '')), leaving: !!document.querySelector('#mini .mini.leaving') }); } return out; }"""
-    START = "(()=>{const q=__lf.Native.state.queue.length?__lf.Native.state.queue:null; __lf.go('albums'); __lf.push('album','a5'); setTimeout(()=>document.querySelector('#sub [data-act=\"shuffleall\"]').click(),50)})()"
-    STOP = "(async()=>{await __lf.Native.pause(); __lf.Native.state.index=-1; __lf.renderMini()})()"
-    for slow in (False, True):
-        ctx, p, e = page_with(LAND, {}); wide = p.evaluate("document.querySelector('#tabs').getBoundingClientRect().width")
-        if slow: p.evaluate("document.documentElement.style.setProperty('--dur-k','4')")
-        p.evaluate(START); p.wait_for_selector('#mini .mini')
-        if slow:
-            for i in range(14): p.screenshot(path=str(OUT / f'split_{i:02d}.png'), clip={'x': 0, 'y': 290, 'width': 600, 'height': 100}); p.wait_for_timeout(60)
-        else:
-            fr = p.evaluate(SAMPLE, 50)
-            check(any(f['clip'] for f in fr[:6]), 'split: at the start the mini player is hidden under the bar (clipped)')
-            check(any(f['joined'] for f in fr), 'split: a water neck joins the mini player and the bar on the way')
-            ji = max(i for i, f in enumerate(fr) if f['joined']); check(not fr[-1]['neck'] and not fr[-1]['clip'], f'split: at rest the neck has snapped and gone, nothing clipped (last joined frame {ji})')
-            check(fr[0]['op'] is not None and float(fr[0]['op']) < .5 and float(fr[-1]['op']) > .99, f"split: the player's cover / title fade in late ({fr[0]['op']} -> {fr[-1]['op']})")
-            check(fr[-1]['bw'] < wide * .7, f"split: the bar ends short on the right ({round(fr[-1]['bw'])} of {round(wide)})")
-        p.wait_for_timeout(2600 if slow else 900)
-        p.evaluate(STOP)
-        if slow:
-            for i in range(14): p.screenshot(path=str(OUT / f'merge_{i:02d}.png'), clip={'x': 0, 'y': 290, 'width': 600, 'height': 100}); p.wait_for_timeout(60)
-        else:
-            fr = p.evaluate(SAMPLE, 50)
-            check(fr[0]['leaving'], 'merge: the mini player stays as a ghost while the bar flows back')
-            check(any(f['joined'] for f in fr), 'merge: the neck forms again and they merge')
-            p.wait_for_timeout(500)
-            st = p.evaluate("({mini: !!document.querySelector('#mini .mini'), w: document.querySelector('#tabs').getBoundingClientRect().width, neck: (document.querySelector('.lneck')||{style:{display:'none'}}).style.display})")
-            check(not st['mini'] and st['w'] > wide - 2 and st['neck'] == 'none', f'merge: ghost removed, bar wide again, no neck ({st})')
-            # restart while the ghost is still there: the new mini player replaces it
-            p.evaluate(START); p.wait_for_selector('#mini .mini'); p.evaluate(STOP); p.wait_for_timeout(120); p.evaluate("__lf.Native.state.index=0; __lf.renderMini()"); p.wait_for_timeout(1200)
-            st = p.evaluate("({n: document.querySelectorAll('#mini .mini').length, leaving: !!document.querySelector('#mini .mini.leaving'), w: document.querySelector('#tabs').getBoundingClientRect().width})")
-            check(st['n'] == 1 and not st['leaving'] and st['w'] < wide * .7, f'music back during the merge: one live player, bar short ({st})')
-        check(not e, f'no page errors {e}')
+      const mr = m && m.getBoundingClientRect(); out.push({ bl: b.left, bw: b.width, ml: mr ? mr.left : null, mr: mr ? mr.right : null, joined: !!(m && m.style.clipPath), shape: !!(nk && nk.style.display !== 'none'),
+        op: m ? +getComputedStyle(m.firstElementChild).opacity : null, leaving: !!document.querySelector('#mini .mini.leaving'), inl: document.querySelector('#tabs').style.width }); } return out; }"""
+    for st in ['cell', 'stretch', 'drip', 'jelly']:
+        ctx, p, e = page_with(LAND, {'barSplit': {'style': st}}); wide = p.evaluate("document.querySelector('#tabs').getBoundingClientRect().width")
+        p.evaluate("__lf.demoPlay()"); fr = p.evaluate(SAMPLE, 90)
+        if st != 'jelly':
+            check(fr[0]['joined'] or fr[1]['joined'], f'{st} split: starts joined (one bar with a water bridge)')
+            ji = [i for i, f in enumerate(fr) if f['joined']]; check(len(ji) >= 3 and max(ji) < 80, f'{st} split: joined for {len(ji)} frames, then the neck snaps')
+            gaps = [f['bl'] - f['mr'] for f in fr if f['mr'] is not None]; check(max(gaps) > 20, f'{st} split: it stretches apart past the rest gap (max {round(max(gaps))} px)')
+        else: check(not any(f['joined'] for f in fr), 'jelly: no water bridge')
+        check(fr[-1]['inl'] == '' and not fr[-1]['shape'] and abs((fr[-1]['bl'] - fr[-1]['mr']) - 16) < 1.5, f"{st} split: at rest the bar is back on its CSS size, nothing drawn, gap {round(fr[-1]['bl'] - fr[-1]['mr'])} px")
+        check(fr[0]['op'] < .5 and fr[-1]['op'] > .99, f"{st}: the player's content fades in")
+        p.wait_for_timeout(600); p.evaluate("__lf.demoStop()"); fr = p.evaluate(SAMPLE, 80)
+        check(fr[0]['leaving'], f'{st} merge: the player stays as a ghost while it merges')
+        if st != 'jelly': check(any(f['joined'] for f in fr), f'{st} merge: they join again into one bar')
+        p.wait_for_timeout(400); s2 = p.evaluate("({mini: !!document.querySelector('#mini .mini'), w: document.querySelector('#tabs').getBoundingClientRect().width, inl: document.querySelector('#tabs').style.width})")
+        check(not s2['mini'] and abs(s2['w'] - wide) < 2 and s2['inl'] == '', f'{st} merge: ghost removed, bar wide again ({s2})')
+        p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(300); p.evaluate("__lf.demoStop()"); p.wait_for_timeout(150); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(1700)
+        s3 = p.evaluate("({n: document.querySelectorAll('#mini .mini').length, leaving: !!document.querySelector('#mini .mini.leaving'), w: document.querySelector('#tabs').getBoundingClientRect().width, inl: document.querySelector('#tabs').style.width})")
+        check(s3['n'] == 1 and not s3['leaving'] and s3['w'] < wide * .7 and s3['inl'] == '', f'{st}: play / stop / play quickly = one live player, bar short ({s3})')
+        check(not e, f'{st}: no page errors {e[:2]}')
         ctx.close()
-    # Reduce Motion: instant, no neck, no ghost
-    ctx, p, e = page_with(LAND, {'motion': True}); p.evaluate(START); p.wait_for_selector('#mini .mini'); fr = p.evaluate(SAMPLE, 20)
-    check(not any(f['neck'] or f['clip'] for f in fr), 'Reduce Motion: no neck, no clipping')
-    p.evaluate(STOP); check(not p.evaluate("!!document.querySelector('#mini .mini')"), 'Reduce Motion: the player goes at once')
-    ctx.close()
-    # portrait untouched
-    ctx, p, e = page_with(PORT, {}); p.evaluate(START); p.wait_for_selector('#mini .mini'); fr = p.evaluate(SAMPLE, 20)
-    check(not any(f['neck'] or f['clip'] for f in fr), 'portrait: no water split'); p.evaluate(STOP); check(not p.evaluate("!!document.querySelector('#mini .mini')"), 'portrait: the player goes at once as before')
-    ctx.close(); br.close()
+    for name, vp, stt in [('Off', LAND, {'barSplit': {'style': 'off'}}), ('Reduce Motion', LAND, {'motion': True}), ('portrait', PORT, {})]:
+        ctx, p, e = page_with(vp, stt); p.evaluate("__lf.demoPlay()"); fr = p.evaluate(SAMPLE, 20)
+        check(not any(f['joined'] or f['shape'] for f in fr), f'{name}: no water'); p.evaluate("__lf.demoStop()"); p.wait_for_timeout(50)
+        check(not p.evaluate("!!document.querySelector('#mini .mini')"), f'{name}: the player goes at once'); ctx.close()
+    # the setting in the real UI
+    ctx, p, e = page_with(PORT, {}); p.evaluate("__lf.push('animation')"); p.wait_for_selector('#bsplit')
+    p.click('#bsplit [data-act="bsplit"]'); p.wait_for_selector('[data-act="bsplitset"][data-v="stretch"]'); p.click('[data-act="bsplitset"][data-v="stretch"]'); p.wait_for_timeout(300)
+    saved = p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit"); txt = p.inner_text('#bsplit')
+    check(saved['style'] == 'stretch' and 'Long stretch' in txt and 'Stretch' in txt and 'Speed' in txt, f'Settings: choosing Long stretch saves it and shows Speed + Stretch ({saved})')
+    p.screenshot(path=str(OUT / 'settings.png'), full_page=False)
+    p.eval_on_selector('#bsplit input[data-bsk="speed"]', "el => { el.value = 150; el.dispatchEvent(new Event('input', {bubbles: true})); }"); p.wait_for_timeout(700)
+    check(p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.speed") == 150, 'Settings: the Speed slider saves')
+    check(not e, f'settings: no page errors {e[:2]}'); ctx.close()
+    br.close()
 print('ALL PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

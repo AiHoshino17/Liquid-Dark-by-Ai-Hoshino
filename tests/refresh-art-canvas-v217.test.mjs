@@ -96,7 +96,7 @@ test('left and right insets travel from MainActivity to the page (--sal / --sar)
 });
 test('landscape layout: full width, bars side by side, Now Playing in two columns, 5 covers per row', () => {
   const L = CSS.slice(CSS.indexOf('v221: LANDSCAPE'));
-  for (const x of ['@media (orientation:landscape) and (max-height:520px)', '#app{max-width:none}', '#app:has(#mini .mini:not(.leaving)) .tabbar', 'grid-template-columns:minmax(0,38%) minmax(0,1fr)', 'repeat(5,minmax(0,1fr))', '.np>.art{grid-column:1']) assert.ok(L.includes(x), x);
+  for (const x of ['@media (orientation:landscape) and (max-height:520px)', '#app{max-width:none}', '#app:has(#mini .mini:not(.leaving):not(.away)) .tabbar', 'grid-template-columns:minmax(0,38%) minmax(0,1fr)', 'repeat(5,minmax(0,1fr))', '.np>.art{grid-column:1']) assert.ok(L.includes(x), x);
   assert.ok(!L.includes('--tabbar-h'), 'the portrait glass-bar-size slider is not used sideways');
 });
 

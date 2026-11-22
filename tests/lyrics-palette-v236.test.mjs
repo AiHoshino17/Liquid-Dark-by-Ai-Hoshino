@@ -1,6 +1,6 @@
 // v236: lyrics background "Cover colour palette" (5 main colours, small yellow / blue kept) + the "whole lyrics blink at every line change" fix.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8'), CSS = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8'), CSS = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteFromPixels, tintPaletteGrad, tintPaletteFlat, tintPaletteFill, mixToLab };')();
 const frame = fn => { const d = new Uint8ClampedArray(4096); for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) d.set([...fn(x, y), 255], (y * 32 + x) * 4); return d; };

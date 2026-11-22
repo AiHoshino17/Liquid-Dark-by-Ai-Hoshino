@@ -2,7 +2,7 @@
 // (flags eye + dark2, share .0004) must be a visible glow ON the eye in the lyrics gradient, not a fallback slot glow.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto, tintPaletteGrad };')(detailFromFrames, HI);
 const load = (n, k) => { const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/' + n + '.b64', import.meta.url), 'utf8'), 'base64'), P = 192 * 192 * 3;

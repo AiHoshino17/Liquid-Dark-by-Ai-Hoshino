@@ -1,7 +1,7 @@
 // v240 (owner: "the palette takes the same colour so many times: hair is one, eye is one, blush is one, skin is one, bed about 3"): every palette ends with tintPaletteDedupe (no two colours alike) and a big plain colour that is really hair + skin is split into two by tintPaletteSplitBig.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAuto, tintPaletteDedupe, tintPaletteSplitBig, mixToLab, PALMAX };')();
 const dist = (p, q) => Math.hypot((p.L - q.L) * .6, (p.a - q.a) * 1.6, (p.b - q.b) * 1.6);

@@ -1051,7 +1051,7 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
   html .tabbar .tab{gap:1px;font-size:.6875rem;min-height:40px}
   html .tabbar .tab svg{width:24px;height:24px}
   .mini{left:var(--gl);right:auto;width:calc(50% - var(--gl) - 8px);bottom:calc(max(8px,var(--sab)) + (var(--lbar) - 56px) / 2);height:56px}
-  #app:has(#mini .mini:not(.leaving)) .tabbar{left:auto;right:var(--gr);margin:0;width:calc(50% - var(--gr) - 8px)}   /* v288: a leaving ghost (water merge) no longer holds the bar short */
+  #app:has(#mini .mini:not(.leaving):not(.away)) .tabbar{left:auto;right:var(--gr);margin:0;width:calc(50% - var(--gr) - 8px)}   /* v288: a leaving ghost (water merge) no longer holds the bar short */
   #app::after,#app.has-mini::after,#app:has(#mini .mini)::after{height:calc(var(--sab) + var(--lbar) + 30px)}
   .toast{top:calc(var(--sat) + 8px)}
   /* sheets: centred, never wider than the screen, scroll when taller */
@@ -1160,10 +1160,15 @@ html[data-lywf="1"] .lyr .ln.cur .w{opacity:1!important;transition:none;-webkit-
 html[data-lywf="0"] .lyr .ln.cur .w{opacity:1!important}
 /* ===== v288 (owner picked "Water split"): landscape, the mini player splits out of / merges back into the glass bar. The water neck between them is an SVG drawn by src/lsplit.js, in the bar's glass look (dark glass + thin light rim). ===== */
 .lneck{position:absolute;z-index:29;pointer-events:none;overflow:visible;stroke:none}
-.lneck-f{fill:rgba(255,255,255,.05);stroke:none}
-.lneck-r{fill:none;stroke:rgba(255,255,255,.42);stroke-width:1.2}
+.lneck-f{fill:rgba(255,255,255,.012);stroke:none}
+.lneck-r{fill:none;stroke:rgba(255,255,255,.36);stroke-width:1}
 .mini.lsplit>*{opacity:var(--lsop,1)}
 .mini.leaving{pointer-events:none}
+#mini .mini.away{display:none}   /* v291: landscape, merged back into the bar after the idle time; portrait never hides it */
+@media (orientation:landscape) and (max-height:520px){
+  #app.lrot .tabbar{width:calc(100% - var(--gl) - var(--gr))!important;transition:none!important}   /* v291: just turned sideways: the wide bar first, then the player splits out */
+  #app.lrot #mini .mini{opacity:0!important}
+}
 
 /* ===== v222 (third pass): LANDSCAPE for Settings and Listening Stats (Stats, View All, song / artist / album details, the Snapshot sheet).
    Portrait is not touched: .lsw / .lshd / .lsbd / .setcols are display:contents, so in portrait the markup lays out exactly as before. ===== */
@@ -1280,7 +1285,4 @@ html[data-lywf="0"] .lyr .ln.cur .w{opacity:1!important}
 }
 @media (orientation:landscape) and (max-height:520px) and (max-width:780px){
   html .tabbar .tab{font-size:clamp(.5rem,calc(.6875rem * var(--tabk,1)),.8125rem)}
-}
-@media (orientation:landscape) and (max-height:520px){
-  #app.lmerge .tabbar{transition-timing-function:cubic-bezier(.55,0,.3,1)}   /* v288 merge: a slow start, so the two tips reach out and the neck forms before the bar flows over the player */
 }

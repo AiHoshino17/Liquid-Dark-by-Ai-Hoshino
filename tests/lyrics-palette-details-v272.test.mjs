@@ -1,6 +1,6 @@
 // v272 (owner, 7 GIFs / WebPs: "if they miss small details like that, fix them up too"; "definitely eyes are being missed in some of them"): tintPaletteSmallVivid (a small coloured object: an earring, a hair tie, a bow) and tintPaletteEyeCheck (an eye PAIR on the 192 px eye frames: grey-teal eyes, a tilted head, the iris's own colour).
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteSmallVivid, tintPaletteEyeCheck, mixToLab };')();
 const lab = rgb => { const [L, a, b] = F.mixToLab(...rgb); return { L, a, b }; };

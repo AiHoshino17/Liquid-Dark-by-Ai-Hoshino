@@ -2,7 +2,7 @@
 // MEASURED with the harness (PIL pictures, Lanczos): strands >= 6 px wide at 760 px are kept; 3 px strands and a dull light-brown highlight (#aa7d46, 6 px) were LOST. This test uses a box-averaged scene, where even 3 px survives, so it only guards the kept case. The real blonde portrait is still needed for the lost case.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto };')(detailFromFrames, HI);
 const S = 768, hair = [92, 66, 44], gold = [222, 170, 70];

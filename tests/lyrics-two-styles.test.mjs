@@ -1,6 +1,6 @@
 // Background style has exactly three choices: classic (black, red lyrics), palette (Cover colour palette) and blur (Cover blur: the picture itself, blurred). The old Album cover colour and Cover colour mix are gone.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8'), CSS = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8'), CSS = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
 test('LYSTYLE has exactly classic, palette, blur, pic and home (v277 Home, v285 Custom removed, v286 Song picture)', () => {
   const m = M.match(/const LYSTYLE = \{([^\n]*)\};/); assert.ok(m);
   assert.deepEqual([...m[1].matchAll(/(\w+): '/g)].map(x => x[1]), ['classic', 'palette', 'blur', 'pic', 'home']);   // v285: Custom removed; v286: Song picture added

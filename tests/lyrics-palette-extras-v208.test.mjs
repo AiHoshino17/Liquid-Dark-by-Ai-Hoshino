@@ -1,7 +1,7 @@
 // v208 extras (owner: black hair, blue earring, purple eye missing from the cover palette): an animated picture may carry up to 2 EXTRA detail colours (PALMAX = 7) on top of the 5 core ones: a big dark mass (hair) that the core palette merged into the background, and a small vivid spot (an earring) whose hue is far from every palette colour and that stays in place over many frames.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAuto, tintPaletteAddExtras, tintPaletteGrad, tintPaletteAddIris, mixToLab, PALN, PALMAX, PALSLOTS };')();
 const pic = fn => { const d = new Uint8ClampedArray(HI * HI * 4); for (let y = 0; y < HI; y++) for (let x = 0; x < HI; x++) d.set([...fn(x, y), 255], (y * HI + x) * 4); return d; };

@@ -1,7 +1,7 @@
 // session 7 (owner: c12 = red-lit blue-haired girl with pink star eyes: "too much green, no purple / pink at all, the eyes and the ear are missing"). Before: the eye colour was a dull maroon taken from the red hair rim next to the ear (a lone spot beat the real irises on pixel count), 3 of 10 colours were greens (teal + bright green + dark green, stacked on the left edge, 39 % of the picture). Now: a LEVEL, matching pair of spots (the two irises) outranks a lone look-alike, the iris pixel count is capped, and one hue family may not stack 3 colours on one spot.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto, tintPaletteGrad, tintPaletteFamilyCap };')(detailFromFrames, HI);
 const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/c12-pink-eyes-192.b64', import.meta.url), 'utf8'), 'base64');

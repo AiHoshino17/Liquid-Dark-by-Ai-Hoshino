@@ -1,7 +1,7 @@
 // v208 eyes (owner: purple eyes missing from the cover palette): an animated picture whose iris is a small plum / mauve spot that stays in the same place over many frames gets that colour into the palette (tintPaletteAddEyes, called from tintPaletteAuto's animated path only).
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAuto, tintPaletteAddEyes, mixToLab, PALN };')();
 const hueOf = c => (Math.atan2(c.b, c.a) * 180 / Math.PI + 360) % 360;

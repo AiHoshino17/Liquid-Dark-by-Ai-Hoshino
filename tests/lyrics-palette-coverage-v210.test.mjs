@@ -1,7 +1,7 @@
 // v210: a real colour AREA the palette misses (a shirt) is added; every colour sits on a spot that really has it.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAuto, tintPaletteAddCoverage, tintPaletteRelocate, tintPaletteReadPx, mixToLab, mixToRgb, PALMAX };')();
 const pic = (S, fn) => { const d = new Uint8ClampedArray(S * S * 4); for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) d.set([...fn(x, y), 255], (y * S + x) * 4); return d; };

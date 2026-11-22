@@ -10,6 +10,19 @@
 
 
 
+## v291: See the split when you turn the phone, and an auto-hiding landscape mini player
+- Turning the phone sideways while music plays now shows the wide glass bar first, then the mini player splits out of it.
+- In landscape the mini player merges back into the glass bar after 8 seconds without a touch (music keeps playing). Swipe up on the bar, change song, or play / pause to bring it back.
+- Settings > Animation > Landscape mini player > Hide after: Never, 5, 8 or 15 seconds.
+
+## v290: Lyrics open instantly, no more freezing
+- Tapping Lyrics no longer freezes the app with Cover colour palette on, even with a big GIF. The colours are worked out in the background and look exactly the same as before.
+- Clearer descriptions for Cover blur (a blurred still of your picture or GIF, else the original cover) and Cover colour palette.
+
+## v289: Landscape mini player split, rebuilt and customisable
+- The mini player now really splits out of the glass bar: it starts as part of the bar, a water neck stretches and snaps. Stopping music merges it back into one bar.
+- New Settings > Animation > Landscape mini player: choose Cell split, Long stretch, Drip, Jelly pop or Off, plus Speed and Stretch sliders. Saved with Export settings.
+
 ## v288: Water split for the landscape glass bar
 - In landscape, when music starts, the mini player now pulls out of the glass bar like water: a thin neck stretches and snaps.
 - When music stops, it flows back and merges into the bar.

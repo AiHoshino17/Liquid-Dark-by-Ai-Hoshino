@@ -5,6 +5,9 @@
 # Liquid Dark: HANDOFF [v148]  (lives at `docs/HANDOFF.md` since v45; read this first; old long notes: docs/archive/HISTORY_v25.md, incl. the full v27 / v28 / v29 / v30 notes at the end)
 
 
+## Session: lyrics never freeze, landscape split styles - version stays 0.208.0
+Cover colour palette maths = `src/palcore.js` (pure, no DOM), run in a Web Worker `src/palworker.js` through `palAsync()` in `src/main.js` (main-thread fallback). Change palette RESULTS only in palcore.js; never move it back to the main thread. Landscape mini player split / merge = `src/lsplit.js` (styles cell / stretch / drip / jelly / off, Settings > Animation). Turning sideways plays the split (`#app.lrot`); the landscape player hides after `set.barSplit.hide` s (miniIdleArm / miniHide / miniShow in main.js). Browser checks: `tests/lyrics-open-speed-check.py`, `tests/landscape-split-check.py`, `tests/landscape-rotate-hide-check.py`, `tests/tab-lit-check.py`.
+
 ## Session: landscape third pass (Settings, Stats) - version stays 0.208.0
 Settings uses `.setcols` (CSS columns), Stats / View All use `.lsw > .lshd + .lsbd` (grid, sticky left column), stats details reuse `.dwrap`; long sheets (4+ `.row` children) are 2 columns; `.animdock` pages are left preview / right sliders. All in the last blocks of `app.css` (`v222 (third pass)`), landscape media queries only. New: `tests/landscape-settings-stats-v222.test.mjs`; `tests/screenshots_landscape.py` seeds fake listening history. Details and DO NOT REDO in HANDOFF_STATUS.md.
 

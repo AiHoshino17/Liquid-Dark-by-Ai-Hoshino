@@ -1,7 +1,7 @@
 // v256 (owner: "eye colours are not picked up" on 3 animated pictures). tintPaletteEyeRescue: ANIMATED pictures only. (a) a WebP of close-up green eyes (a different place in every shot, 3 x bigger than the 17 px eye window) must get a green / yellow-green eye colour, (b) a dark night GIF whose iris has chroma .015-.07 must get its violet eye colour, ON the eye, (c) a still (1 frame) and a plain animation with no eye get nothing from it, (d) wiring.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto, tintPaletteEyeRescue };')(detailFromFrames, HI);
 const load = (n, k) => { const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/' + n + '.b64', import.meta.url), 'utf8'), 'base64'), P = 192 * 192 * 3;

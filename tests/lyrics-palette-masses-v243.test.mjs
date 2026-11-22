@@ -2,7 +2,7 @@
 // (1) tintPaletteAddMasses adds a big plain colour the vivid-first pick dropped; (2) a mostly dark palette gets ONE big dark glow sized by its share;
 // (3) silver / light grey is drawn on top (an accent); (4) a corner glow's size follows the colour's share.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAddMasses, tintPaletteGrad, tintPaletteAuto, mixToLab, PALMAX };')();
 const dist = (p, q) => Math.hypot((p.L - q.L) * .6, (p.a - q.a) * 1.6, (p.b - q.b) * 1.6);

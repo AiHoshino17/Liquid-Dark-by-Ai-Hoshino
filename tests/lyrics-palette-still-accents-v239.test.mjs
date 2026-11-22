@@ -1,7 +1,7 @@
 // v239: a STILL cover picture now also gets the small real accents (blush, iris) of tintdetail.js's detail grid, appended into free palette slots (tintPaletteAddAccents). Before, only GIFs / videos did, so a dark still with 2-3 big colours (skin + black hair) lost its eye colour and its blush.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteFromPixels, tintPaletteFromDetail, tintPaletteAddAccents, tintPaletteAuto, mixToLab, PALN };')();
 const hi = fn => { const d = new Uint8ClampedArray(HI * HI * 4); for (let y = 0; y < HI; y++) for (let x = 0; x < HI; x++) d.set([...fn(x, y), 255], (y * HI + x) * 4); return d; };

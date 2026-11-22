@@ -1,7 +1,7 @@
 // v208 palette-hues (Fix A + B): an animated GIF / WebP (hi.frames = [] + detail grid) now also carries up to 24 sampled 96x96 frames (hi.hueFrames) so the hue pass (tintPaletteAddHues) finds a small colour (brown hair) the detail grid alone missed. Fixes C-F are still TODO (see palette_fix_plan.txt).
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAuto, tintPaletteAddHues, tintPaletteFreeSlot, tintPaletteIsBlush, tintPaletteGrad, mixToLab, PALN };')();
 const hi = fn => { const d = new Uint8ClampedArray(HI * HI * 4); for (let y = 0; y < HI; y++) for (let x = 0; x < HI; x++) d.set([...fn(x, y), 255], (y * HI + x) * 4); return d; };

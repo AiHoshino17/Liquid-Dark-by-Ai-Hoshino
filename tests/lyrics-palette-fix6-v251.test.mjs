@@ -1,7 +1,7 @@
 // palette fix session 4, item 11: the owner's REAL dark-haired portrait (tests/fixtures/yuki-192.b64, the anime girl with purple eyes). MEASURED: black hair 51 % (L .165) and a second dark tone, olive near-black strands 20 % (L .286), both kept; purple eye kept. Guard: never go back to ONE dark blob.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto };')(detailFromFrames, HI);
 const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/yuki-192.b64', import.meta.url), 'utf8'), 'base64');

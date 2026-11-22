@@ -1,13 +1,13 @@
 // v238: the Cover colour palette (tintPaletteFromPixels / tintPaletteGrad) used to read ONLY a 32x32 pixel grab. A faint accent (a blush, an iris) that tintdetail.js's detail pass (v225/v231) already finds in the 96x96 read never reached the palette, because nothing fed detailFromFrames' output into it. tintPaletteFromDetail (and tintPaletteAuto, which coverTint() now calls instead of tintPaletteFromPixels directly) close that gap.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteFromPixels, tintPaletteFromDetail, tintPaletteAuto, tintPaletteGrad, mixToLab };')();
 const hi = fn => { const d = new Uint8ClampedArray(HI * HI * 4); for (let y = 0; y < HI; y++) for (let x = 0; x < HI; x++) d.set([...fn(x, y), 255], (y * HI + x) * 4); return d; };
 
 test('v238: coverTint now calls tintPaletteAuto, not tintPaletteFromPixels directly', () => {
-  assert.match(M, /pl = tintPaletteAuto\(d\)/);
+  assert.match(M, /pal = tintPaletteAuto\(d\)/); assert.match(M, /const r = await palAsync\(d\); pl = r\.pal;/);   // v290: through palAsync (Web Worker), same function
 });
 
 test('v238: a faint, small blush (same picture as tintdetail.js\'s own v225 test: 0.17% of the picture, 16 pixels) is kept as its own swatch via the 96x96 detail grid, where the old 32x32-grab palette lost it', () => {

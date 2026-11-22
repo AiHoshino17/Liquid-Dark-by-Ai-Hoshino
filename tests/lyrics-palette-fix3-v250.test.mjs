@@ -1,6 +1,6 @@
 // v250 palette fix session 3: item 8, both eyes of a pair carry the eye colour (2nd spot x2 / y2) and both get a glow.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 test('v250: the eye-ring step remembers the other eye of a level same-hue pair as x2 / y2 (all three ways an eye colour is made)', () => {
   assert.match(blk, /setMate = q => \{ if \(mate\) \{ q\.x2 = /);

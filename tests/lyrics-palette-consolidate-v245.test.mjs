@@ -1,6 +1,6 @@
 // v245 (owner: "Starboy only has yellow, red, blue, light blue and black"; "it takes the skin colour so many times and misses the black hair"): the last palette step merges same-family shades only when the picture stays as well represented, keeps small different-hue details, and makes the biggest plain colour the primary.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteConsolidate, mixToLab };')();
 const lab = rgb => { const [L, a, b] = F.mixToLab(...rgb); return { L, a, b }; };

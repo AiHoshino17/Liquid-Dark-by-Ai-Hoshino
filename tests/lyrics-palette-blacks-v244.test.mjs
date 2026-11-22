@@ -1,6 +1,6 @@
 // v244 (owner: "Take My Breath: the black face is small so it still looks light"; "Blinding Lights: black ~5 % of the background vs 28 % in the cover"; "copper on Gasoline still reads red"): (1) a small dark-neutral colour (the face shade) gets its own visible dark glow, (2) the big dark mass falls off more flatly so the black keeps its strength, (3) a mid-tone colour stays on top of the big dark mass (copper was buried under it), (4) the thin-tint step accepts a warm metal up to 5 % of the picture.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteGrad, mixToLab };')();
 const lab = rgb => { const [L, a, b] = F.mixToLab(...rgb); return { L, a, b }; };

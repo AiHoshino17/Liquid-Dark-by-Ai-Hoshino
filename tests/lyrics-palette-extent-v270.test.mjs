@@ -1,6 +1,6 @@
 // v270 (owner, Starboy screenshot: "the gradient is showing up wrong" - a purple / magenta smear, the yellow title only in a corner, a teal glow at the bottom). tintPaletteExtent measures where each colour's pixels really are (mean place + spread, and both sides for a background around a centred figure); tintPaletteGrad draws a big chromatic colour at that place and size. Palette colours / shares are NOT changed.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteExtent, tintPaletteGrad, mixToLab };')();
 const lab = rgb => { const [L, a, b] = F.mixToLab(...rgb); return { L, a, b }; };

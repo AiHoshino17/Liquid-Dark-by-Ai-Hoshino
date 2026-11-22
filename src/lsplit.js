@@ -1,94 +1,144 @@
-/* v288 (owner picked "Water split" from 5 previews): LANDSCAPE only. When music starts, the mini player is pulled out of the left end of the wide glass bar:
-   the bar's left edge slides right (CSS width transition, v281), the mini player shows only where the bar has left it, and a thin water neck joins
-   the two, gets thinner, then snaps; two little tips pull back into the ends. When music stops it runs backwards: the bar flows back over the
-   mini player (kept on screen as a "leaving" ghost until the bar is wide again), two tips reach out, touch, the neck thickens and they merge.
-   Pure geometry here (neckGeom, tested in Node); the small DOM driver (makeSplit) only reads rectangles and writes styles. */
+/* v289 (owner: "it's not like splitting and merging, it looks like it's just appearing"): LANDSCAPE glass bar <-> mini player, rebuilt.
+   The whole move is now driven here, frame by frame (the CSS width slide is switched off while it runs), so the two pieces really come out of ONE shape:
+   at the start the mini player and the bar touch and a full-height water bridge fills the space between them (it looks like the one wide bar),
+   then they pull apart, the bridge thins to a neck, stretches and SNAPS, and the two ends spring back. Merging is the same backwards: two tips reach out,
+   touch, the neck fattens until it is one bar again. Four styles (owner chooses): cell, stretch, drip, jelly.
+   Pure parts (bridgePath, tipPath, timeline) are tested in Node; makeSplit only reads rectangles and writes styles. */
 
-export const SNAP = 14;       // px of gap at which the neck snaps (the resting gap between player and bar is 16 px, so at rest there is no neck)
-export const TIP = 9;         // px: how far a tip sticks out right after the snap / right before touching
+export const STYLES = ['cell', 'stretch', 'drip', 'jelly'];
+export const SPLIT_NAMES = { cell: 'Cell split: pulls apart, a water neck snaps', stretch: 'Long stretch: a long water neck, then a big snap', drip: 'Drip: a drop swells out of the bar and lets go', jelly: 'Jelly pop: no water, a springy squish and pop', off: 'Off: a plain slide' };
+/** Settings > Animation > Landscape mini player: { style, stretch 50..200 %, speed 50..200 % }. Anything broken falls back to the default. */
+export const BS_DEF = { style: 'cell', stretch: 100, speed: 100, hide: 8 };
+export const HIDE_OPTS = [0, 5, 8, 15];   // v291: seconds without a touch on the landscape mini player before it merges back into the bar (0 = never)
+export function cleanBarSplit(o) {
+  const v = o && typeof o === 'object' ? o : {}, num = (x, d) => { const n = Math.round(+x); return Number.isFinite(n) ? Math.max(50, Math.min(200, n)) : d; };
+  return { style: STYLES.includes(v.style) || v.style === 'off' ? v.style : BS_DEF.style, stretch: num(v.stretch, 100), speed: num(v.speed, 100), hide: HIDE_OPTS.includes(+v.hide) ? +v.hide : BS_DEF.hide };
+}
+export const REST_GAP = 16;                                   // px between player and bar at rest (CSS: 50% - 8 px each)
+const K = .5523;                                              // cubic Bezier circle constant
 const cl = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
 const r1 = v => Math.round(v * 10) / 10;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const back = t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const bump = (p, end) => Math.pow(Math.sin(Math.PI * cl(p / end)), 2);
 
-/** xL = right edge of the mini player, xR = left edge of the bar, cy = shared centre line, rL / rR = half heights. tip = 0..1 (tips after a snap / before touching).
- *  Returns null (nothing to draw) or { x, y, w, h, d, rim }: a box in the same coordinates and two SVG paths in box coordinates:
- *  d = the filled water shape, rim = just its two outer curves (the glass rim line). */
-export function neckGeom(xL, xR, cy, rL, rR, tip = 0, snap = SNAP) {
-  if (![xL, xR, cy, rL, rR].every(Number.isFinite) || rL <= 0 || rR <= 0) return null;
-  const gap = xR - xL, rm = Math.min(rL, rR), cxL = xL - rL, cxR = xR + rR, top = cy - Math.max(rL, rR), H = 2 * Math.max(rL, rR);
-  const box = { x: r1(cxL), y: r1(top), w: r1(cxR - cxL), h: r1(H) }, X = v => r1(v - box.x), Y = v => r1(v - box.y);
-  if (gap >= 0 && gap < snap) {                                     // joined: a waist that gets thinner as the gap grows
-    const k = gap / snap, waist = 2 * rm * .9 * Math.pow(1 - k, .75), th = (68 - 38 * k) * Math.PI / 180;
-    const lt = [cxL + rL * Math.cos(th), cy - rL * Math.sin(th)], lb = [lt[0], cy + rL * Math.sin(th)];
-    const rt = [cxR - rR * Math.cos(th), cy - rR * Math.sin(th)], rb = [rt[0], cy + rR * Math.sin(th)];
-    const mx = (lt[0] + rt[0]) / 2, ct = (4 * (cy - waist / 2) - lt[1] - rt[1]) / 2, cb = (4 * (cy + waist / 2) - lb[1] - rb[1]) / 2;
-    const P = p => `${X(p[0])} ${Y(p[1])}`;
-    const d = `M${P(lt)}Q${X(mx)} ${Y(ct)} ${P(rt)}A${r1(rR)} ${r1(rR)} 0 0 0 ${P(rb)}Q${X(mx)} ${Y(cb)} ${P(lb)}A${r1(rL)} ${r1(rL)} 0 0 0 ${P(lt)}Z`;
-    const rim = `M${P(lt)}Q${X(mx)} ${Y(ct)} ${P(rt)}M${P(rb)}Q${X(mx)} ${Y(cb)} ${P(lb)}`;
-    return { ...box, d, rim, gap, joined: true };
+/** The water bridge between the player's right end (xa, half height ra) and the bar's left end (xb, half height rb), centre line cy.
+ *  wn = 1: a full-height bridge (with both round ends hidden it reads as one bar); wn -> 0: the ends become round again and the neck between them thins to nothing.
+ *  Returns { d: filled shape, rim: top and bottom outline } in page coordinates. */
+export function bridgePath(xa, xb, cy, ra, rb, wn) {
+  const s = 1 - cl(wn), cxa = xa - ra, cxb = xb + rb, mx = (xa + xb) / 2, w = cl(wn) * Math.min(ra, rb) * 2;
+  const half = sg => {   // sg = -1 top, +1 bottom
+    const ya = cy + sg * ra, yb = cy + sg * rb, ym = cy + sg * w / 2;
+    const c1 = [lerp(cxa + (mx - cxa) / 3, cxa + K * ra, s), ya], c2 = [lerp(cxa + 2 * (mx - cxa) / 3, xa, s), lerp(ya, cy + sg * K * ra, s)];
+    const c3 = [lerp(cxb - 2 * (cxb - mx) / 3, xb, s), lerp(yb, cy + sg * K * rb, s)], c4 = [lerp(cxb - (cxb - mx) / 3, cxb - K * rb, s), yb];
+    return { a: [cxa, ya], b: [cxb, yb], seg: `C${r1(c1[0])} ${r1(c1[1])} ${r1(c2[0])} ${r1(c2[1])} ${r1(mx)} ${r1(ym)}C${r1(c3[0])} ${r1(c3[1])} ${r1(c4[0])} ${r1(c4[1])} ${r1(cxb)} ${r1(yb)}`,
+      rev: `C${r1(c4[0])} ${r1(c4[1])} ${r1(c3[0])} ${r1(c3[1])} ${r1(mx)} ${r1(ym)}C${r1(c2[0])} ${r1(c2[1])} ${r1(c1[0])} ${r1(c1[1])} ${r1(cxa)} ${r1(ya)}` };
+  };
+  const T = half(-1), B = half(1), P = p => `${r1(p[0])} ${r1(p[1])}`;
+  return { d: `M${P(T.a)}${T.seg}L${P(B.b)}${B.rev}Z`, rim: `M${P(T.a)}${T.seg}M${P(B.b)}${B.rev}` };
+}
+
+/** Two little tips sticking out of the round ends (len px each): right after a snap they pull back, before touching they reach out. */
+export function tipPath(xa, xb, cy, ra, rb, len) {
+  if (!(len > .3)) return null;
+  const ph = 34 * Math.PI / 180, P = (x, y) => `${r1(x)} ${r1(y)}`;
+  const ax = xa - ra + ra * Math.cos(ph), at = cy - ra * Math.sin(ph), ab = cy + ra * Math.sin(ph);
+  const bx = xb + rb - rb * Math.cos(ph), bt = cy - rb * Math.sin(ph), bb = cy + rb * Math.sin(ph);
+  const L = `M${P(ax, at)}Q${P(xa + 2 * len, cy)} ${P(ax, ab)}`, R = `M${P(bx, bb)}Q${P(xb - 2 * len, cy)} ${P(bx, bt)}`;
+  return { d: `${L}A${r1(ra)} ${r1(ra)} 0 0 0 ${P(ax, at)}Z${R}A${r1(rb)} ${r1(rb)} 0 0 0 ${P(bx, bb)}Z`, rim: L + R };
+}
+
+/** One frame of a style. p = 0..1 through the move, dir = +1 split (music starts), -1 merge (music stops).
+ *  Returns { g: gap between player and bar (px), bl: bar left override (px from xL) or null, mdx, msx, msy (player transform), op (player content), wn (bridge, null = apart), tip (px), bsy (bar squash) }. */
+export function timeline(style, p, dir, wide, sk = 1) {
+  p = cl(p);
+  if (style === 'jelly') {                                    // no water: the bar springs short with a jelly squish, the player pops in
+    const e = dir > 0 ? back(p) : 1 - easeInOut(p);
+    const w = Math.sin(Math.PI * 3 * p) * (1 - p) * .1;
+    return { g: REST_GAP, bl: lerp(-wide, REST_GAP, e), mdx: 0, msx: cl(e, 0, 1.04), msy: cl(e, 0, 1.06), op: cl((e - .5) / .4), wn: null, tip: 0, bsy: 1 + w };
   }
-  const t = cl(tip); if (gap < 0 || t <= .02) return null;          // overlapping (the bar covers the player) or apart with no tips
-  const len = TIP * t, ph = 32 * Math.PI / 180, P = (x, y) => `${X(x)} ${Y(y)}`;
-  const la = [cxL + rL * Math.cos(ph), cy - rL * Math.sin(ph)], ra = [cxR - rR * Math.cos(ph), cy - rR * Math.sin(ph)];
-  const tipL = `M${P(la[0], la[1])}Q${P(xL + len * 1.25, cy)} ${P(la[0], cy + rL * Math.sin(ph))}A${r1(rL)} ${r1(rL)} 0 0 0 ${P(la[0], la[1])}Z`;
-  const tipR = `M${P(ra[0], ra[1])}A${r1(rR)} ${r1(rR)} 0 0 0 ${P(ra[0], cy + rR * Math.sin(ph))}Q${P(xR - len * 1.25, cy)} ${P(ra[0], ra[1])}Z`;
-  const rim = `M${P(la[0], la[1])}Q${P(xL + len * 1.25, cy)} ${P(la[0], cy + rL * Math.sin(ph))}M${P(ra[0], cy + rR * Math.sin(ph))}Q${P(xR - len * 1.25, cy)} ${P(ra[0], ra[1])}`;
-  return { ...box, d: tipL + tipR, rim, gap, joined: false };
+  const c0 = style === 'stretch' ? { pk: 48, snap: 40, end: .8 } : style === 'drip' ? { pk: 22, snap: 20, end: .75 } : { pk: 20, snap: 22, end: .72 };
+  const cfg = { ...c0, pk: c0.pk * sk, snap: Math.max(REST_GAP + 3, c0.snap * sk) };   // Stretch slider: a longer / shorter neck
+  if (dir > 0) {
+    if (style === 'drip') {                                   // a drop forms at the bar's left end as the bar slides back, swells into the player, then lets go
+      const a = cl(p / .4), b = cl((p - .4) / .6), sx = a < 1 ? lerp(.14, .5, easeOut(a)) : lerp(.5, 1, back(b) > 1 ? 1 + (back(b) - 1) * .5 : back(b));
+      const g = a < 1 ? 0 : REST_GAP * easeOut(b) + cfg.pk * bump(b, cfg.end);
+      return { g, bl: a < 1 ? lerp(-wide, 0, easeInOut(a)) : null, mdx: 0, msx: sx, msy: lerp(.78, 1, cl(sx)), op: cl((b - .35) / .4), wn: b > .6 && g < cfg.snap ? -1 : Math.min(.6, 1 - g / cfg.snap), snap: cfg.snap, tip: 0, bsy: 1 };
+    }
+    const g = REST_GAP * easeInOut(p) + cfg.pk * bump(p, cfg.end) + 1.5 * Math.sin(Math.PI * 4 * p) * (p > cfg.end ? (1 - p) * 4 : 0);
+    return { g, bl: null, mdx: style === 'stretch' ? -.25 * cfg.pk * bump(p, cfg.end) : 0, msx: 1, msy: 1, op: cl((p - .3) / .45), wn: p >= cfg.end * .7 && g < cfg.snap && g >= REST_GAP * .9 && p > .5 ? -1 : 1 - g / cfg.snap, snap: cfg.snap, tip: 0, bsy: 1 };
+  }
+  // merge: tips reach out, touch, the neck fattens into one bar
+  const a = cl(p / .45), b = cl((p - .45) / .55), g = REST_GAP * (1 - easeInOut(a));
+  return { g, bl: null, mdx: 0, msx: 1, msy: 1, op: cl(1 - p / .3), wn: a < 1 ? null : lerp(.06, 1, easeOut(b)), tip: a < 1 ? Math.min(g / 2, 5) * easeInOut(a) : 0, bsy: 1, snap: 0 };
 }
 
-/** How much of the mini player is uncovered by the bar (0..1) -> how visible its cover / title / buttons are (they appear late, like the preview). */
-export const contentOpacity = (miniLeft, miniWidth, barLeft) => { const v = cl((barLeft - miniLeft) / Math.max(1, miniWidth)); return r1(cl((v - .55) / .45)) };
-
-/** Tips: after a snap they pull back over `ms`; while merging they grow as the gap closes to SNAP. */
-export function tipAmount(gap, dir, msSinceSnap, ms) {
-  if (gap < SNAP) return 0;
-  if (dir > 0) return msSinceSnap < ms ? cl(1 - msSinceSnap / ms) : 0;   // splitting
-  return cl(1 - (gap - SNAP) / 14);                                      // merging: reach out over the last 14 px
-}
-
-/** DOM driver. env: { app, bar: () => element, host: #mini, land: () => bool, reduced: () => bool, durK: () => number } */
+/** DOM driver. env: { app, bar: () => element, host: #mini, land: () => bool, reduced: () => bool, durK: () => number, cfg: () => cleanBarSplit(...) } */
 export function makeSplit(env) {
   const NS = 'http://www.w3.org/2000/svg';
-  let svg = null, fill = null, rim = null, raf = 0, until = 0, dir = 0, lastGap = null, snapAt = -1e9;
+  let svg = null, fill = null, rim = null, raf = 0, job = null;
   const ensure = () => {
     if (svg && svg.isConnected) return;
     svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'lneck'); svg.setAttribute('aria-hidden', 'true');
-    fill = document.createElementNS(NS, 'path'); fill.setAttribute('class', 'lneck-f');
-    rim = document.createElementNS(NS, 'path'); rim.setAttribute('class', 'lneck-r');
+    fill = document.createElementNS(NS, 'path'); fill.setAttribute('class', 'lneck-f'); rim = document.createElementNS(NS, 'path'); rim.setAttribute('class', 'lneck-r');
     svg.append(fill, rim); env.app.appendChild(svg);
   };
-  const clear = () => {
+  const reset = () => {
     if (svg) svg.style.display = 'none';
-    env.host.querySelectorAll('.mini').forEach(m => { m.style.clipPath = ''; m.style.removeProperty('--lsop'); m.classList.remove('lsplit'); });
+    const bar = env.bar(); if (bar) ['transition', 'width', 'clipPath', 'transform'].forEach(k => { bar.style[k] = ''; });
+    env.host.querySelectorAll('.mini').forEach(m => { ['clipPath', 'transform', 'transformOrigin', 'transition'].forEach(k => { m.style[k] = ''; }); m.style.removeProperty('--lsop'); m.classList.remove('lsplit'); });
   };
   const frame = now => {
-    raf = 0;
-    const bar = env.bar(), mini = env.host.querySelector('.mini');
-    if (!bar || !mini || !env.land()) { clear(); env.app.classList.remove('lmerge'); return; }
-    const a = env.app.getBoundingClientRect(), b = bar.getBoundingClientRect(), m = mini.getBoundingClientRect();
-    const xL = m.right - a.left, xR = b.left - a.left, cy = (m.top + m.bottom) / 2 - a.top, gap = xR - xL;
-    if (lastGap != null && lastGap < SNAP && gap >= SNAP && dir > 0) snapAt = now;
-    lastGap = gap;
-    mini.classList.add('lsplit');
-    const cover = Math.max(0, m.right - b.left);
-    mini.style.clipPath = cover > 0 ? `inset(-12px ${Math.min(m.width, cover)}px -12px -12px)` : '';
-    mini.style.setProperty('--lsop', contentOpacity(m.left, m.width, b.left));
-    const g = neckGeom(xL, xR, cy, m.height / 2, b.height / 2, tipAmount(gap, dir, now - snapAt, 260 * env.durK()));
+    raf = 0; const j = job; if (!j) return;
+    if (j.first) { const f = j.first; j.first = null; try { f(); } catch {} }   // v291: e.g. drop the "just turned sideways" hold class in the same frame the first shape is drawn
+    const bar = env.bar(), mini = env.host.querySelector('.mini:not(.away)');
+    if (!bar || !mini || !env.land()) { const done = j.done; job = null; reset(); if (done) { try { done(); } catch {} } return; }
+    const p = cl((now - j.t0) / j.ms), f = timeline(j.style, p, j.dir, j.wide, j.sk);
+    const { xL, barR, cy, rL, rR, a } = j;
+    // the bar: its left edge (the gap after the player, or an override), its squash
+    const bl = xL + (f.bl != null ? f.bl : f.g);
+    bar.style.transition = 'none'; bar.style.width = Math.max(2 * rR, barR - bl) + 'px'; bar.style.transform = f.bsy !== 1 ? `scaleY(${r1(f.bsy * 100) / 100})` : '';
+    // the player: grows / moves from its right end
+    mini.classList.add('lsplit'); mini.style.transition = 'none'; mini.style.transformOrigin = j.style === 'jelly' ? '50% 50%' : '100% 50%';
+    const mdx = f.bl != null && j.style === 'drip' ? bl - xL : f.mdx;
+    mini.style.transform = `translateX(${r1(mdx)}px) scale(${r1(f.msx * 1000) / 1000},${r1(f.msy * 1000) / 1000})`;
+    mini.style.setProperty('--lsop', r1(f.op));
+    // water: joined (a bridge) until the gap reaches the snap distance; then two tips spring back
+    const xa = xL + mdx, xb = bl, ra = rL * f.msy, rb = rR;
+    let joined = f.wn != null && f.wn > 0 && !(j.dir > 0 && j.snapped);
+    if (j.dir > 0 && f.wn != null && f.wn <= 0 && !j.snapped) { j.snapped = now; j.snapGap = f.g; }
+    if (j.dir > 0 && j.snapped) joined = false;
+    let shape = null;
+    if (joined) shape = bridgePath(xa, xb, cy, ra, rb, f.wn);
+    else { const len = j.dir > 0 && j.snapped ? (j.snapGap / 3.2) * Math.pow(Math.max(0, 1 - (now - j.snapped) / (200 * j.k)), 1.5) : f.tip; shape = tipPath(xa, xb, cy, ra, rb, len); }
+    mini.style.clipPath = joined ? `inset(-14px ${r1(rL)}px -14px -14px)` : '';
+    bar.style.clipPath = joined ? `inset(-60px -60px -60px ${r1(rR)}px)` : '';
     ensure();
-    if (g) {
-      svg.style.display = ''; svg.style.left = g.x + 'px'; svg.style.top = g.y + 'px'; svg.style.width = g.w + 'px'; svg.style.height = g.h + 'px';   /* style, not attributes: the app's global svg rule (24 x 24) would win over attributes */
-      svg.setAttribute('viewBox', `0 0 ${g.w} ${g.h}`); fill.setAttribute('d', g.d); rim.setAttribute('d', g.rim);
+    if (shape) {
+      svg.style.display = ''; svg.style.left = (-a.left) + 'px'; svg.style.top = (-a.top) + 'px'; svg.style.width = innerWidth + 'px'; svg.style.height = innerHeight + 'px';   // style, not attributes: the app's global svg rule (24 x 24) would win
+      svg.setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`); fill.setAttribute('d', shape.d); rim.setAttribute('d', shape.rim);
     } else svg.style.display = 'none';
-    if (now < until) raf = requestAnimationFrame(frame); else { clear(); lastGap = null; env.app.classList.remove('lmerge'); }
+    if (p < 1) raf = requestAnimationFrame(frame);
+    else { const done = j.done; job = null; reset(); if (done) done(); }
   };
   return {
-    /** d = +1 music started (split), -1 music stopped (merge). */
-    run(d) {
-      if (!env.land() || env.reduced()) { clear(); return false; }
-      dir = d; snapAt = -1e9; env.app.classList.toggle('lmerge', d < 0); /* merging: the bar starts slowly so the tips and the neck have time to show */ lastGap = null; until = performance.now() + (450 * env.durK() + 380);
-      if (!raf) raf = requestAnimationFrame(frame);
+    /** d = +1 music started (split), -1 music stopped (merge). done() runs at the end (merge: remove the ghost). Returns false when there is no animation. */
+    run(d, done, opts = {}) {
+      const c = cleanBarSplit(env.cfg && env.cfg());
+      if (job && job.done) { const f = job.done; job.done = null; try { f(); } catch {} }
+      if (raf) cancelAnimationFrame(raf); raf = 0; job = null; reset();
+      if (!env.land() || env.reduced() || c.style === 'off') { if (opts.first) { try { opts.first(); } catch {} } return false; }
+      const bar = env.bar(), mini = env.host.querySelector('.mini:not(.away)'); if (!bar || !mini) { if (opts.first) { try { opts.first(); } catch {} } return false; }
+      const a = env.app.getBoundingClientRect(), m = mini.getBoundingClientRect(), b = bar.getBoundingClientRect(), k = env.durK() * 100 / c.speed;
+      bar.style.transition = 'none'; bar.style.width = b.width + 'px';   // hold the bar where it is: from here on this code moves it, not the CSS slide
+      const xL = m.right - a.left, wide = m.width;   // the bar starts / ends at the player's left edge (the wide bar)
+      job = { first: opts.first || null, dir: d, style: c.style, sk: c.stretch / 100, t0: performance.now() + (+opts.delay || 0), ms: (c.style === 'stretch' ? 1300 : c.style === 'jelly' ? 700 : 1050) * k, k, xL, barR: b.right - a.left, cy: (m.top + m.bottom) / 2 - a.top, rL: m.height / 2, rR: b.height / 2, a: { left: 0, top: 0 }, wide, snapped: 0, done };
+      raf = requestAnimationFrame(frame);
       return true;
     },
-    ms: () => 450 * env.durK() + 60,
-    stop() { if (raf) cancelAnimationFrame(raf); raf = 0; until = 0; clear(); env.app.classList.remove('lmerge'); },
+    ms: () => job ? job.ms + 80 : 0,
+    stop() { if (raf) cancelAnimationFrame(raf); raf = 0; job = null; reset(); },
   };
 }

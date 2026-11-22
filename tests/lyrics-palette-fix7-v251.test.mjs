@@ -1,7 +1,7 @@
 // session 6: star-shaped violet / magenta eyes (Ai, c62 = p4) must be an eye colour with BOTH eyes circled. Before: no eye colour at all (pink-lavender skin, tinted eye white and a pale pink iris were all taken for skin).
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto };')(detailFromFrames, HI);
 const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/ai-star-eyes-192.b64', import.meta.url), 'utf8'), 'base64');

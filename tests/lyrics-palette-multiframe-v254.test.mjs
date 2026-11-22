@@ -1,7 +1,7 @@
 // v254: tintPaletteMultiFrame, the last step for ANIMATED pictures. A two-scene animation (navy wall + olive jacket + pale-blue shirt + white pillow in scene A; olive jacket + brown plaid + white wall in scene B) must keep every big colour (olive, navy, pale blue, white, brown), shares add up to ~100 %, every colour remembers the frame it came from, and a STILL picture is untouched.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto, tintPaletteMultiFrame, mixToLab };')(detailFromFrames, HI);
 const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];

@@ -1,6 +1,6 @@
 // v249 palette fix session 2: DropBlends (Starboy's orange edge colour) and the face check of the eye-ring step.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteDropBlends };')(() => null, 96);
 const lab = (L, a, b, share, x = {}) => ({ L, a, b, share, ...x });

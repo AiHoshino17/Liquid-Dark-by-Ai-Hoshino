@@ -1,6 +1,6 @@
 // v247: tintPaletteAddMissing (any colour the palette does not represent: a faint blush, a silver sheen, a copper tone, lit skin next to black hair) and tintPaletteTrueTone (an over-vivid accent swatch goes back to the real colour). Pure functions, run on small synthetic 96x96 pictures.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function(blk + ';return { tintPaletteAddMissing, tintPaletteTrueTone, tintPaletteAuto, mixToLab };')();
 const HI = 96;

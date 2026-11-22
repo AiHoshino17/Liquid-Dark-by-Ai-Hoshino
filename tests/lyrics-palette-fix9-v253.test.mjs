@@ -1,7 +1,7 @@
 // session 8 (owner: "eye colour missing" on blonde_bed and two_girls). The irises are dull olive (chroma .04-.07) on a pale face: little dark pupil, a small hue bin. Now a WEAK spot (dark pupil 4-10 % or a dull bin) counts when it has a level-ish partner (pair); a warm eye is only "a shade of a big colour" when its lightness is within .15 (was .25) of that colour, so a darker olive iris is kept while the pale gold hair spot is still not an eye.
 import { test } from 'node:test'; import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { detailFromFrames, HI } from '../src/tintdetail.js';
-const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8');
 const blk = M.slice(M.indexOf('/* v223+: COVER COLOUR MIX'), M.indexOf('/* v223+ end */'));
 const F = new Function('detailFromFrames', 'DET_HI', blk + ';return { tintPaletteAuto };')(detailFromFrames, HI);
 const load = n => { const rgb = Buffer.from(fs.readFileSync(new URL('./fixtures/' + n + '-192.b64', import.meta.url), 'utf8'), 'base64');
