@@ -1,3 +1,4 @@
+/* v291c (owner: "make a change so it builds a new APK"): build marker, no behaviour change. The app fingerprint (scripts/app-fingerprint.py) hashes src/, so this line gives GitHub a new app code and a fresh APK. */
 import { makeSplit, cleanBarSplit, SPLIT_NAMES, HIDE_OPTS } from './lsplit.js';
 import { tintPaletteAuto, tintPaletteFlat, tintPaletteGrad } from './palcore.js';
 import { applyA11y, rowLabel } from './a11y.js';

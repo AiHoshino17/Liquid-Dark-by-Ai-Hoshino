@@ -7,6 +7,10 @@
 
 
 
+## v291c new APK requested (owner) - no behaviour change, version stays 0.208.0
+The v291b zip changed only tests / docs, so the plan job (app fingerprint = published one) skipped test + apk. Owner asked for a new APK: a one-line build-marker comment at the top of `src/main.js` changes the fingerprint, so the next push builds and publishes. (Alternative next time: Actions > Run workflow > tick "Force a new APK".) `npm test` = 1048 pass.
+
+
 ## v291b split / merge settings export check (owner: "u sure?") - no app change, version stays 0.208.0
 NEW `tests/split-settings-export-v291b.test.mjs`: every Split and merge style (cell, stretch, drip, jelly, off) x Speed / Stretch / Hide after values goes Export -> Import (checked against the real DEF) unchanged, nothing dropped, still the same after cleanBarSplit; the 10 liquid glass sliders + Glass bar size too; the import preview names "Landscape mini player". Also checked by hand in Chromium: imported values show on Settings > Animation. `npm test` = 1048 pass.
 
