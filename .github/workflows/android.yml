@@ -159,6 +159,8 @@ jobs:
             if [ -d stats-banner-gif-pic ]; then rm -rf "$SRC/stats-banner-gif-pic"; fi
             rm -rf "$SRC/update"   # update/latest.json is written by the build, never by a zip
             cp -a "$SRC"/. ./
+            # v281: only ONE READ_ME_FIRST_BEFORE_MAKING_ANY_CHANGES.md, in the project root (owner's order). The picture folders kept above (and any older copy) can still hold one: delete those.
+            find . -mindepth 2 -type f -name 'READ_ME_FIRST_BEFORE_MAKING_ANY_CHANGES.md' -not -path './.git/*' -not -path './.github/*' -print -delete
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
@@ -511,7 +513,7 @@ jobs:
     needs: [unpack, plan]
     if: needs.unpack.outputs.ready == 'true' && needs.plan.outputs.build == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20   # v281: was 10; the two browser checks below add about 5 minutes
     concurrency: { group: "test-${{ github.ref }}", cancel-in-progress: true }
     steps:
       - uses: actions/checkout@v7
@@ -540,6 +542,16 @@ jobs:
             grep -E 'SKIP|skipped [1-9]' "$RUNNER_TEMP/test.log" || true
             exit 1
           fi
+      # v281: two real-UI browser checks (Python Playwright, same 1.63.0 as above, same Chromium): landscape (glass bar size, the wide bar / mini player,
+      # the Animation settings reaching the bar, Settings pages, Now Playing and lyrics on screen) and synced lyrics never blinking. A FAIL line stops the release.
+      # (tests/lyrics-bg-sources.py needs pictures that are not in the project, so it is run by hand only.)
+      - name: Browser checks (landscape, lyrics never blink)
+        run: |
+          set -o pipefail
+          pip install --quiet playwright==1.63.0
+          python -m playwright install --with-deps chromium
+          python tests/landscape-check.py 2>&1 | tee "$RUNNER_TEMP/landscape.log"
+          python tests/lyrics-blink-check.py 2>&1 | tee "$RUNNER_TEMP/blink.log"
 
   apk:
     needs: [unpack, plan, test]
