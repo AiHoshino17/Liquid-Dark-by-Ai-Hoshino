@@ -8,7 +8,7 @@ import { cleanBarSplit } from '../src/lsplit.js';
 const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const DEF = new Function(M.split('\n').find(l => l.startsWith('const DEF = ')).replace(/;\s*(\/\/.*)?$/, '') + '; return DEF;')();
 test('v291b: every split / merge choice round-trips through Export -> Import unchanged', () => {
-  for (const style of ['cell', 'stretch', 'drip', 'jelly', 'off']) for (const [speed, stretch, hide] of [[50, 200, 0], [140, 170, 15], [200, 50, 5], [100, 100, 8]]) {
+  for (const style of ['cell', 'stretch', 'drip', 'jelly', 'off']) for (const [speed, stretch, hide] of [[50, 200, 0], [140, 170, 15], [200, 50, 5], [100, 100, 8], [100, 100, 97], [120, 80, 600], [100, 100, 3]]) {
     const mine = { style, speed, stretch, hide };
     const r = SIO.parseImport(SIO.exportText(SIO.buildExport({ ...DEF, barSplit: mine }, {}, '0.208.0')), DEF);
     assert.deepEqual(r.dropped, []);

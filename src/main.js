@@ -1,5 +1,5 @@
 /* v291c (owner: "make a change so it builds a new APK"): build marker, no behaviour change. The app fingerprint (scripts/app-fingerprint.py) hashes src/, so this line gives GitHub a new app code and a fresh APK. */
-import { makeSplit, cleanBarSplit, SPLIT_NAMES, HIDE_OPTS } from './lsplit.js';
+import { makeSplit, cleanBarSplit, SPLIT_NAMES, HIDE_OPTS, HIDE_STEPS, hideStepOf, fmtHide } from './lsplit.js';
 import { tintPaletteAuto, tintPaletteFlat, tintPaletteGrad } from './palcore.js';
 import { applyA11y, rowLabel } from './a11y.js';
 import { logLine, buildReport, copyText } from './log.js';
@@ -11,12 +11,12 @@ import { Native, on, store } from './native.js';
 import { restoreSession } from './session.js';
 import { I } from './icons.js';
 import { glide } from './glidebar.js';
-import { TAB_DEFS, cleanTabs, visibleTabs, toggleTab, cleanTabOrder, moveTab, DEF_ORDER } from './tabbar.js';
+import { TAB_DEFS, cleanTabs, visibleTabs, toggleTab, cleanTabOrder, moveTab, DEF_ORDER, DEF_TABS, reorderShown, dropSlot } from './tabbar.js';
 import { HI as DET_HI, detailFromFrames, detailAccumulator } from './tintdetail.js';   // v225: detail pass (faint blush, small accents) + smart GIF frame picking   // v224: customizable tab bar
 import { packBlob, unpackBlob, isLegacy } from './blobsafe.js';
 import { useMirror, mirrorPut, mirrorGet, mirrorHas, mirrorDel, mirrorKeys, mirrorUrlSync, mirrorSyncKeys, mirrorForget, mirrorSync, mirrorPathSync, mirrorTombed, mirrorUntomb } from './picmirror.js';
 import { isPicFile, picType, describe as picDescribe, newPicId, isGif, fmtSize, idbBackend } from './plpics.js';
-import { parseLrc, currentIndex } from './lrc.js';
+import { parseLrc, currentIndex, fillWords } from './lrc.js';
 import { isPicFile as isBgFile, cleanDim, cleanFit, bgVars, idbBackend as bgBackend, BG_DIM_MIN, BG_DIM_MAX } from './bgmedia.js';   // v134: your own picture / GIF as the app background
 import { buildSongInfo } from './songinfo.js';
 import { buildExport, exportText, freeName, norm, nameKey } from './plexport.js';
@@ -142,7 +142,7 @@ const APP_VERSION = pkg.version;
 const APP_BUILD = String(pkg.version).split('.')[1] || pkg.version;   // 0.208.0 -> 208, the number the README, UPDATES and the workflow use
 /* ---------- settings (persisted) ---------- */
 const TAB_MIN = 40, TAB_MAX = 220, NPC_MIN = 40, NPC_MAX = 100;
-const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
+const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyWordSpeed: 100, lyricApple: false, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
 let set = { ...DEF };
 try { set = { ...DEF, ...JSON.parse(localStorage.getItem('lf.settings') || '{}') }; } catch {}
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);   // v148: free lyrics size (an older Small / Medium / Large keeps its size)
@@ -164,7 +164,8 @@ function applySettings(lazy) {
   { const lv = lyaVars(set.lyAnim); for (const k in lv) h.style.setProperty(k, lv[k]); h.dataset.lyblur = cleanLya(set.lyAnim).blur > 0 ? '1' : '0'; }   // v119: Lyrics animation
   { const bv = bgVars(set.bgDim, set.bgFit); for (const k in bv) h.style.setProperty(k, bv[k]); h.dataset.bgfit = cleanFit(set.bgFit); }   // v134: background picture dim + fit
   h.dataset.lyblur = set.lyricStyle === 'cover' && set.lyricBlur === true ? '1' : '0';   // Cover blur = style 'cover' + this flag (data-lyrstyle keeps only classic / cover)
-  h.dataset.lypal = set.lyricStyle === 'cover' && set.lyricPal === true && set.lyricBlur !== true && !set.lyricBg ? '1' : '0';
+  h.dataset.lyapple = set.lyricStyle === 'cover' && set.lyricApple === true && set.lyricBlur !== true && !set.lyricBg ? '1' : '0';   // v294: Apple gradient
+  h.dataset.lypal = set.lyricStyle === 'cover' && set.lyricApple !== true && set.lyricPal === true && set.lyricBlur !== true && !set.lyricBg ? '1' : '0';
   h.dataset.lyink = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   // v278: lyrics text colour, any background style
   h.dataset.lywf = set.lyWordFade === false ? '0' : '1';   // v286: Apple Music style word fade-in (Settings > Lyrics animation), on by default
   h.dataset.lybg = set.lyricStyle === 'cover' && set.lyricBlur !== true && set.lyricBg ? set.lyricBg : '';   // v277: 'home' = the Home background picture / GIF (or black); a Canvas shows instead when the song has one (v285: the 'custom' style was removed)   // Cover colour palette = style 'cover' + this flag
@@ -176,6 +177,7 @@ set.lyAnim = cleanLya(set.lyAnim);
 set.bgDim = cleanDim(set.bgDim); set.bgFit = cleanFit(set.bgFit);
 if (!['classic', 'cover'].includes(set.lyricStyle)) set.lyricStyle = DEF.lyricStyle;
 delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
+set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+set.lyWordSpeed) || 100));   // v299
 set.barSplit = cleanBarSplit(set.barSplit);   // v289: Settings > Animation > Landscape mini player
 set.timeStyle = cleanTimeStyle(set.timeStyle);   // Settings > Playing bar time: a missing or corrupt saved value falls back to 'left'
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize;   // Bug 14: a corrupt saved value must not become "undefined"
@@ -711,14 +713,52 @@ const sub = {
       <div class="setrow">${seg('bgfit', [['fill', 'Fill screen'], ['fit', 'Fit whole picture']], cleanFit(set.bgFit))}</div>
       <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Darken<span style="float:right;color:var(--text-2)" data-bgdimv>${set.bgDim}%</span></b><span>Makes text and buttons easier to read on a bright picture.</span><input type="range" data-bgdim min="${BG_DIM_MIN}" max="${BG_DIM_MAX}" step="1" value="${set.bgDim}" aria-label="Darken the background" style="width:100%;margin:10px 0 2px;accent-color:var(--accent);touch-action:pan-y"></div></div></div>` : ''}`;
   },
+  widgets: () => {   // v296: moved off the main Settings page (it was 15 rows)
+    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Widgets</b><span style="width:44px"></span></div><div class="setcard">
+      <button class="setrow" data-act="addwidget" data-kind="" style="width:100%;text-align:left"><span class="tx"><b>Add Now Playing widget</b><span>Song, artist and play / pause / next / previous</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="albums" style="width:100%;text-align:left"><span class="tx"><b>Add Albums widget</b><span>Album covers, tap to open Albums</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="artists" style="width:100%;text-align:left"><span class="tx"><b>Add Artists widget</b><span>Artist covers, tap to open Artists</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="shuffle" style="width:100%;text-align:left"><span class="tx"><b>Add Shuffle all widget</b><span>One tap shuffles your whole library</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="search" style="width:100%;text-align:left"><span class="tx"><b>Add Search widget</b><span>Jump straight to Search</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="favorites" style="width:100%;text-align:left"><span class="tx"><b>Add Favorites widget</b><span>Open your favorite songs</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="recent" style="width:100%;text-align:left"><span class="tx"><b>Add Recently Played widget</b><span>Open your recently played songs</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="playlists" style="width:100%;text-align:left"><span class="tx"><b>Add Playlists widget</b><span>Open your playlists</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="statsday" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Today widget</b><span>Small: time listened today, songs, top artist, day / night</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="statsweek" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: This week widget</b><span>Wide: week total, songs, top artist and song, day / night</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="statsmonth" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: This month widget</b><span>Wide: month total, songs, top artist and song, day / night</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="nowplaying" style="width:100%;text-align:left"><span class="tx"><b>Add Now Playing (large) widget</b><span>Album cover, song, artist, album and play / pause / next / previous</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="genres" style="width:100%;text-align:left"><span class="tx"><b>Add Genres widget</b><span>Your top genres, tap one to open it</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="statsdaily" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Daily widget</b><span>Large: today hour by hour, time vs yesterday, songs, top artist and song, day / night</span></span></button>
+      <button class="setrow" data-act="addwidget" data-kind="statsall" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Everything widget</b><span>Large: today, week, month, all time, streak, top song / artist / album, chart</span></span></button></div>`;
+  },
+  phoneinfo: () => {   // v296: Performance + Diagnostics, moved off the main Settings page
+    const row = (t, d, c = '') => `<div class="setrow"><div class="tx"><b>${t}</b>${d ? `<span>${d}</span>` : ''}</div>${c}</div>`;
+    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Phone info</b><span style="width:44px"></span></div>
+    <div class="sethead">This phone</div><div class="setcard">${dev && (dev.cores || dev.ramMb) ? `${row('Processor', escH(dev.processor || 'Unknown') + (dev.abi ? ' · ' + escH(dev.abi) : ''))}${row('CPU threads', '<em id="lf-cpu" style="font-style:normal">' + cpuText(dev) + '</em>')}${row('Memory (RAM)', '<em id="lf-ram" style="font-style:normal">' + ramText(dev) + '</em>')}` : row('Reading this phone…', '')}</div>
+    <div class="sethead">Diagnostics</div><div class="setcard">
+      <button class="setrow" data-act="notiftest" style="width:100%;text-align:left"><span class="tx"><b>Notification test</b><span>Sends a sample media notification</span></span></button>
+      <button class="setrow" data-act="copylog" style="width:100%;text-align:left"><span class="tx"><b>Copy log</b><span>Copies recent errors so you can paste them to an AI</span></span></button></div>`;
+  },
+  navcustom: () => {   // v295 (owner): drag-to-reorder icons, show / hide each, reset. Short, simple wording.
+    const lab = Object.fromEntries(TAB_DEFS), c = cleanTabs(set.tabs), order = cleanTabOrder(set.tabOrder), shown = order.filter(k => c[k]);
+    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><div style="flex:1;min-width:0;margin-left:12px"><b style="font-size:1.25rem">Customize navigation</b><div style="color:var(--text-2);font-size:.9rem">Hold an icon, then drag it</div></div></div>
+    <div class="nvbar tabbar-look" role="list" aria-label="Glass bar preview: hold an icon and drag it left or right">${shown.map((k, i) => `<button class="nvi" role="listitem" data-k="${k}" data-i="${i}" aria-label="${lab[k]}, position ${i + 1} of ${shown.length}. Arrow keys move it">${I[k]}<span>${lab[k]}</span></button>`).join('')}</div>
+    <div class="setcard"><div class="setrow"><span class="tabico" aria-hidden="true">ⓘ</span><div class="tx"><span>Hold an icon until it lifts, slide it left or right, then let go. It saves by itself.</span></div></div></div>
+    <div class="sethead">Icons</div><div class="setcard">
+      ${order.map(k => `<div class="setrow"><span class="tabico" aria-hidden="true">${I[k]}</span><div class="tx"><b>${lab[k]}</b>${k === 'settings' ? '<span>The Settings button on each page stays either way.</span>' : ''}</div><button class="toggle ${c[k] ? 'on' : ''}" data-act="tabtg" data-k="${k}" aria-label="Show ${lab[k]} in the glass bar"></button></div>`).join('')}</div>
+    <button class="setrow nvreset" data-act="navreset" style="width:100%;justify-content:center;margin-top:16px"><b>Reset to default</b></button>`;
+  },
   animation: () => {
     const tg = (k, on) => `<button class="toggle ${on ? 'on' : ''}" data-act="tg" data-k="${k}"></button>`;
-    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Animation</b><span style="width:44px"></span></div>
+    return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Liquid glass &amp; animation</b><span style="width:44px"></span></div>
     <div class="animdock"><div class="demostage"><nav class="tabbar demobar" id="demobar" aria-label="Test bar">${tabsHtml('data-demo')}</nav></div>
       <div class="animdock-r"><span>Test bar: same glass and pill as the real one.</span>${tg('redHover', set.redHover !== false)}</div>
       <div class="animchips"><button class="chip" data-act="anim-preset" data-p="default">Default</button><button class="chip" data-act="anim-preset" data-p="watery">Watery</button><button class="chip" data-act="anim-preset" data-p="max">Max liquid</button><button class="chip" data-act="anim-preset" data-p="calm">Calm</button></div>
       <div class="animdock-s"><b>Glass bar size<em data-tabv>${set.tabPct}%</em></b><input type="range" data-tabpct min="${TAB_MIN}" max="${TAB_MAX}" step="1" value="${set.tabPct}" aria-label="Glass bar size"><span>The test bar above and the real glass bars keep this size.</span><button class="chip" data-act="tabreset" style="margin-top:8px">Reset</button></div></div>
     <div class="setcard">${ANIM_DEFS.map(d => `<div class="animrow"><b>${d.label}<em data-av="${d.k}">${Math.round(set.anim[d.k])}%</em></b><input type="range" data-ak="${d.k}" min="${d.min}" max="${d.max}" step="5" value="${set.anim[d.k]}" aria-label="${d.label}"></div>`).join('')}</div>
+    <div class="sethead">Glass bar</div><div class="setcard">
+      <button class="setrow" data-act="navcustom" style="width:100%;text-align:left"><span class="tabico" aria-hidden="true">${I.home}</span><span class="tx"><b>Customize navigation</b><span>Choose the glass bar icons and drag them into any order.</span></span>${I.chev}</button>
+      <div class="setrow"><div class="tx"><b>Lens refraction</b><span>The tab bubble bends the picture behind its rim, like thick glass. Turn off if the bar feels slow.</span></div>${tg('refract', set.refract)}</div></div>
     <div class="sethead">Landscape mini player</div><div class="setcard" id="bsplit">${bsplitRows()}</div>`;
   },
   lysize: () => `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Lyrics size</b><span style="width:44px"></span></div>
@@ -731,7 +771,7 @@ const sub = {
     <div class="animdock"><div class="lyr lyprev"><div class="lyprevbody" aria-hidden="true">${sample.map((t, i) => `<p class="ln tap${i === 0 ? ' cur' : ''}" data-li="${i}" style="--d:${Math.min(5, i)}">${t}</p>`).join('')}</div></div>
       <div class="animdock-r"><span>Live preview: it uses your Background style and moves like the real lyrics.</span></div>
       <div class="animchips"><button class="chip" data-act="lya-preset" data-p="default">Default</button><button class="chip" data-act="lya-preset" data-p="smooth">Smooth</button><button class="chip" data-act="lya-preset" data-p="snappy">Snappy</button><button class="chip" data-act="lya-preset" data-p="blurry">Blurry</button><button class="chip" data-act="lya-preset" data-p="still">Minimal</button></div></div>
-    <div class="setcard"><div class="setrow"><div class="tx"><b>Word fade-in</b><span>Each word lights up as it is sung, smoothly from left to right (Apple Music style). Off = the whole playing line lights up at once. Only for lyrics with word timings.</span></div><button class="toggle ${set.lyWordFade !== false ? 'on' : ''}" data-act="tg" data-k="lyWordFade" aria-label="Word fade-in"></button></div></div>
+    <div class="setcard"><div class="setrow"><div class="tx"><b>Word fade-in</b><span>Each word lights up as it is sung, smoothly from left to right (Apple Music style). Off = normal lyrics: the whole playing line lights up at once. Works with every text colour and background.</span></div><button class="toggle ${set.lyWordFade !== false ? 'on' : ''}" data-act="tg" data-k="lyWordFade" aria-label="Word fade-in"></button></div>${set.lyWordFade !== false ? `<div class="animrow"><b>Fade-in speed<em data-lwsv>${set.lyWordSpeed || 100}%</em></b><input type="range" data-lwspeed min="50" max="200" step="5" value="${set.lyWordSpeed || 100}" aria-label="Word fade-in speed"><span style="color:var(--text-2);font-size:.85rem">Higher = the words light up faster. For lyrics timed per word, their own timing is kept.</span></div>` : ''}</div>
     <div class="setcard">${LYA_DEFS.map(d => `<div class="animrow"><b>${d.label}<em data-lyv="${d.k}">${Math.round(set.lyAnim[d.k])}%</em></b><input type="range" data-lyk="${d.k}" min="${d.min}" max="${d.max}" step="1" value="${set.lyAnim[d.k]}" aria-label="${d.label}"><span style="display:block;color:var(--text-2);font-size:0.8125rem;margin-top:2px">${d.hint}</span></div>`).join('')}</div>`;
   },
   settings: (id) => {   // v287 (owner: "give settings a separate page"): id 'page' = Settings opened as its OWN page from the glass bar: no back arrow, a big title like Home / Albums; otherwise the usual screen with a back arrow
@@ -741,14 +781,12 @@ const sub = {
     <div class="setcols"><div class="profile"><button class="pfmain" data-act="pfpick" aria-label="Choose profile picture, GIF or video"><span class="avatar">${pfHtml() || '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c.9-4 4-6 7.5-6s6.6 2 7.5 6"/></svg>'}</span></button>
       ${set.userName && !nameEdit ? `<button class="tx pfnamebtn" data-act="nameedit" aria-label="Your name is ${escH(set.userName)}. Tap to change it"><b>${escH(set.userName)}</b><span>Tap your name to change it</span></button>`
         : `<span class="tx"><b>${set.userName ? 'Change your name' : 'Your name'}</b><span>Shown in the Home greeting. Tap the circle for a photo, GIF or video.</span><input class="pfname" id="pfname" type="text" maxlength="24" value="${escH(set.userName || '')}" placeholder="Type your name" autocomplete="given-name" autocapitalize="words" aria-label="Your name, shown in the Home greeting"><span class="pfbtns"><button class="chip sel" data-act="name-save">Save</button>${set.userName ? '<button class="chip" data-act="name-cancel">Cancel</button><button class="chip" data-act="name-rm">Remove name</button>' : ''}</span></span>`}${pfHtml() ? '<button class="chip" data-act="pfrm">Remove</button>' : ''}</div>
-    <div class="sethead">Display</div><div class="setcard">
-      ${row('Motion', 'Reduce Motion turns glide and jelly into plain fades.', tg('motion', set.motion))}
+    <div class="sethead">Look</div><div class="setcard">
+      <button class="setrow" data-act="bgopen" style="width:100%;text-align:left"><span class="tx"><b>Background picture or GIF</b><span>${bgUrl ? 'Your picture is on every screen.' : 'Use any picture or GIF, of any size, behind the whole app.'}</span></span>${I.chev}</button>
       ${row('Bigger album covers', 'Larger covers in album grids, the Home rows and Now Playing.', tg('bigCovers', set.bigCovers))}
-      ${row('Increase Contrast', 'Increase color contrast between app foreground and background colors.', tg('contrast', set.contrast))}
-      <button class="setrow" data-act="bgopen" style="width:100%;text-align:left"><span class="tx"><b>Background picture or GIF</b><span>${bgUrl ? 'Your picture is on every screen.' : 'Use any picture or GIF, of any size, behind the whole app.'}</span></span>${I.chev}</button></div>
-    <div class="sethead">Tab bar</div><div class="setcard">
-      <div class="setrow"><div class="tx"><span>Choose which icons the glass bar at the bottom shows and their order (▲ = further left, ▼ = further right). Add Settings as a fifth icon, then slide the glass bubble onto it and let go to open Settings. At least one of Home, Albums, Library or Search stays on.</span></div></div>
-      ${cleanTabOrder(set.tabOrder).map((k, oi, oa) => [k, Object.fromEntries(TAB_DEFS)[k], oi, oa.length]).map(([k, l, oi, on]) => `<div class="setrow"><span class="tabmv" style="display:flex;flex-direction:column;gap:2px;margin-right:6px"><button class="gbtn sm" data-act="tabmv" data-k="${k}" data-dir="-1" aria-label="Move ${l} left" ${oi === 0 ? 'disabled' : ''} style="width:30px;height:24px;font-size:.75rem">▲</button><button class="gbtn sm" data-act="tabmv" data-k="${k}" data-dir="1" aria-label="Move ${l} right" ${oi === on - 1 ? 'disabled' : ''} style="width:30px;height:24px;font-size:.75rem">▼</button></span><span class="tabico" aria-hidden="true">${I[k]}</span><div class="tx"><b>${l}</b>${k === 'settings' ? '<span>Off by default. The Settings button at the top of each page stays either way.</span>' : ''}</div><button class="toggle ${set.tabs[k] ? 'on' : ''}" data-act="tabtg" data-k="${k}" aria-label="Show ${l} in the tab bar"></button></div>`).join('')}</div>
+      <button class="setrow" data-act="animopen" style="width:100%;text-align:left"><span class="tx"><b>Liquid glass &amp; animation</b><span>Everything for the glass bar and the animations: icons and their order, glass bar size, wobble, lens, landscape mini player.</span></span>${I.chev}</button></div>
+    <div class="sethead">Home</div><div class="setcard">
+      <button class="setrow" data-act="homeopen" style="width:100%;text-align:left"><span class="tx"><b>Home screen</b><span>Choose which sections show, their order, card size and the greeting.</span></span>${I.chev}</button></div>
     <div class="sethead">Now Playing</div><div class="setcard">
       <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Now Playing cover size<span style="float:right;color:var(--text-2)"><input type="number" data-npnum min="${NPC_MIN}" max="${NPC_MAX}" value="${set.npCover || 100}" inputmode="numeric" aria-label="Cover size in percent" style="width:58px;background:transparent;border:0;border-bottom:1px solid var(--text-2);color:inherit;text-align:right;font:inherit"> %</span></b><span>Size of the album cover while a song plays. ${set.npCover ? '' : 'Now: automatic.'}</span>
         <div class="npprev" aria-hidden="true"><div class="npprev-art"><span class="cover blk" style="--g:${(Native.current() ? gOfT(Native.current()) : 'linear-gradient(135deg,#3a4a5a,#10161c)')}"></span></div><i></i><i class="s"></i></div>
@@ -767,16 +805,13 @@ const sub = {
       <button class="setrow" data-act="lyricink" style="width:100%;text-align:left"><span class="tx"><b>Lyrics text colour</b><span>${LYINK[set.lyricInk] || LYINK.auto}</span></span>${I.chev}</button>
       <button class="setrow" data-act="lyricsize" style="width:100%;text-align:left"><span class="tx"><b>Text size</b><span>Text size: ${lyName(cleanLyPx(set.lyricPx, set.lyricSize))}</span></span>${I.chev}</button>
       <button class="setrow" data-act="lyranimopen" style="width:100%;text-align:left"><span class="tx"><b>Lyrics animation</b><span>Glide, fade, size, brightness and blur of the lyric lines.</span></span>${I.chev}</button></div>
-    <div class="sethead">Home</div><div class="setcard">
-      <button class="setrow" data-act="homeopen" style="width:100%;text-align:left"><span class="tx"><b>Home screen</b><span>Choose which sections show, their order, card size and the greeting.</span></span>${I.chev}</button></div>
-    <div class="sethead">Animation</div><div class="setcard">
-      ${row('Lens refraction', 'The tab bubble bends the picture behind its rim, like thick glass. Turn off if the bar feels slow.', tg('refract', set.refract))}
-      <button class="setrow" data-act="animopen" style="width:100%;text-align:left"><span class="tx"><b>Liquid glass &amp; wobble</b><span>Open the animation studio: Glass bar size, liquid wobble and presets. The test bar stays pinned while you change them.</span></span>${I.chev}</button></div>
     <div class="sethead">Playback</div><div class="setcard">${row('Autoplay', 'Add similar songs from your library when the queue runs out.', tg('autoplay', set.autoplay))}
-      <button class="setrow" data-act="eqopen" style="width:100%;text-align:left"><span class="tx"><b>Equalizer</b><span>Opens your phone's own equalizer: Dirac Audio Tuner on OnePlus, Real Sound Technology on OPPO and Realme, and the phone's own sound effects page on other phones (Samsung, Vivo...). Any sound effect changes the sound, so it is no longer bit-perfect.</span></span>${I.chev}</button></div>
-    <div class="sethead">Bluetooth</div><div class="setcard">
+      <button class="setrow" data-act="eqopen" style="width:100%;text-align:left"><span class="tx"><b>Equalizer</b><span>Opens your phone's own equalizer: Dirac Audio Tuner on OnePlus, Real Sound Technology on OPPO and Realme, and the phone's own sound effects page on other phones (Samsung, Vivo...). Any sound effect changes the sound, so it is no longer bit-perfect.</span></span>${I.chev}</button>
       <button class="setrow" data-act="btopen" style="width:100%;text-align:left"><span class="tx"><b>Bluetooth devices</b><span>Opens Bluetooth settings. A device that connects shows up here.</span></span>${I.chev}</button>
       ${bt.length ? bt.map(d => row(escH(d.name), 'Connected' + (typeof d.battery === 'number' ? ' · Battery ' + d.battery + '%' : ''))).join('') : row('No device connected', '')}</div>
+    <div class="sethead">Accessibility</div><div class="setcard">
+      ${row('Motion', 'Reduce Motion turns glide and jelly into plain fades.', tg('motion', set.motion))}
+      ${row('Increase Contrast', 'Increase color contrast between app foreground and background colors.', tg('contrast', set.contrast))}</div>
     <div class="sethead">Library</div><div class="setcard">
       ${row('Album details', 'Show the artist and song count under each album name. Turn off to see only covers and album names.', tg('albumInfo', set.albumInfo !== false))}
       ${row('Smart artist grouping', 'Merges different spellings of one artist (Lily Rose Depp / Lily-Rose Depp, The Weeknd / Weeknd) and lists each artist of a collab or feat. song on their own page instead of a combined name. Turn off to see artists exactly as tagged.', tg('smartArtists', set.smartArtists !== false))}${row('Check for new music automatically', 'Looks for added or removed songs when the app opens or comes back (at most every 10 minutes).', tg('autoCheck', set.autoCheck))}
@@ -791,33 +826,16 @@ const sub = {
       <button class="setrow" data-act="lsimport" style="width:100%;text-align:left"><span class="tx"><b>Import listening data</b><span>Liquid or Tempo backup, Last.fm, ListenBrainz, Spotify, YouTube Music, Apple Music, Maloja, .scrobbler.log, CSV; .zip files too. Adds to your history; nothing is counted twice.</span></span>${I.chev}</button>
       <button class="setrow" data-act="setexport" style="width:100%;text-align:left"><span class="tx"><b>Export settings</b><span>Every setting: lyric size and animation, liquid glass, tab bar, Home layout, background look, profile photo and the rest, in one file. Big pictures, GIFs and videos are not in it.</span></span>${I.chev}</button>
       <button class="setrow" data-act="setimport" style="width:100%;text-align:left"><span class="tx"><b>Import settings</b><span>Put a saved settings file back, e.g. after reinstalling the app.</span></span>${I.chev}</button></div>
-    <div class="sethead">Performance</div><div class="setcard">${dev && (dev.cores || dev.ramMb) ? `${row('Processor', escH(dev.processor || 'Unknown') + (dev.abi ? ' · ' + escH(dev.abi) : ''))}${row('CPU threads', '<em id="lf-cpu" style="font-style:normal">' + cpuText(dev) + '</em>')}${row('Memory (RAM)', '<em id="lf-ram" style="font-style:normal">' + ramText(dev) + '</em>')}` : row('Reading this phone…', '')}</div>
-    <div class="sethead">Widgets</div><div class="setcard">
-      <button class="setrow" data-act="addwidget" data-kind="" style="width:100%;text-align:left"><span class="tx"><b>Add Now Playing widget</b><span>Song, artist and play / pause / next / previous</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="albums" style="width:100%;text-align:left"><span class="tx"><b>Add Albums widget</b><span>Album covers, tap to open Albums</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="artists" style="width:100%;text-align:left"><span class="tx"><b>Add Artists widget</b><span>Artist covers, tap to open Artists</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="shuffle" style="width:100%;text-align:left"><span class="tx"><b>Add Shuffle all widget</b><span>One tap shuffles your whole library</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="search" style="width:100%;text-align:left"><span class="tx"><b>Add Search widget</b><span>Jump straight to Search</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="favorites" style="width:100%;text-align:left"><span class="tx"><b>Add Favorites widget</b><span>Open your favorite songs</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="recent" style="width:100%;text-align:left"><span class="tx"><b>Add Recently Played widget</b><span>Open your recently played songs</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="playlists" style="width:100%;text-align:left"><span class="tx"><b>Add Playlists widget</b><span>Open your playlists</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="statsday" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Today widget</b><span>Small: time listened today, songs, top artist, day / night</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="statsweek" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: This week widget</b><span>Wide: week total, songs, top artist and song, day / night</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="statsmonth" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: This month widget</b><span>Wide: month total, songs, top artist and song, day / night</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="nowplaying" style="width:100%;text-align:left"><span class="tx"><b>Add Now Playing (large) widget</b><span>Album cover, song, artist, album and play / pause / next / previous</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="genres" style="width:100%;text-align:left"><span class="tx"><b>Add Genres widget</b><span>Your top genres, tap one to open it</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="statsdaily" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Daily widget</b><span>Large: today hour by hour, time vs yesterday, songs, top artist and song, day / night</span></span></button>
-      <button class="setrow" data-act="addwidget" data-kind="statsall" style="width:100%;text-align:left"><span class="tx"><b>Add Listening: Everything widget</b><span>Large: today, week, month, all time, streak, top song / artist / album, chart</span></span></button></div>
-    <div class="sethead">Diagnostics</div><div class="setcard">
-      <button class="setrow" data-act="notiftest" style="width:100%;text-align:left"><span class="tx"><b>Notification test</b><span>Sends a sample media notification</span></span></button>
-      <button class="setrow" data-act="copylog" style="width:100%;text-align:left"><span class="tx"><b>Copy log</b><span>Copies recent errors so you can paste them to an AI</span></span></button></div>
+    <div class="sethead">More</div><div class="setcard">
+      <button class="setrow" data-act="setsub" data-sub="widgets" style="width:100%;text-align:left"><span class="tx"><b>Widgets</b><span>Add a Liquid Dark widget to your home screen.</span></span>${I.chev}</button>
+      <button class="setrow" data-act="setsub" data-sub="phoneinfo" style="width:100%;text-align:left"><span class="tx"><b>Phone info and diagnostics</b><span>Processor, memory, notification test, copy log.</span></span>${I.chev}</button></div>
     <div class="sethead">About</div><div class="setcard"><div class="setrow" style="display:flex;align-items:center;gap:14px"><img id="lf-about-logo" alt="Liquid Dark app logo"${appLogoSrc() ? ` src="${appLogoSrc()}"` : ''} style="display:${appLogoSrc() ? 'block' : 'none'};width:48px;height:48px;object-fit:contain;border-radius:12px"><span class="tx"><b>Liquid Dark</b><span>Version ${APP_BUILD} (${APP_VERSION}) · code ${MY_CODE_ID || 'n/a'}</span></span></div><button class="setrow" data-act="updcheck" style="width:100%;text-align:left"><span class="tx"><b>Check for updates</b><span>Look for a newer build on GitHub now.</span></span>${I.chev}</button>${row('Credits', '♥︎★ Ai Hoshino <span class="credheart" aria-hidden="true">♥️</span><img class="credstar" alt="" aria-hidden="true" src="data:image/png;base64,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">')}<div class="setrow lf-credit-box" style="flex-direction:column;align-items:stretch;justify-content:center;min-height:120px;border-radius:12px;margin:10px 14px;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.03)"><span id="lf-credit-empty" style="display:${creditPic.src ? 'none' : 'block'};text-align:center;opacity:.6;font-size:0.8125rem">Your picture or GIF appears here</span><img id="lf-credit-gif-pic" alt="" src="${creditPic.src}" style="display:${creditPic.src ? 'block' : 'none'};width:100%;max-height:260px;object-fit:contain;border-radius:12px"></div></div></div>`;   // v222: .setcols = two columns sideways, display:contents in portrait
   },
 };
 
 /* v77: Bluetooth audio devices (connected list + a toast when one connects / leaves) */
 let bt = [];
-const btRefresh = () => { const top = stack[stack.length - 1]; if (top && top.t === 'settings') renderSub(true); };
+const btRefresh = () => { const top = stack[stack.length - 1]; if (top && (top.t === 'settings' || top.t === 'phoneinfo')) renderSub(true); };
 const escH = x => String(x ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const btPct = d => (d && typeof d.battery === 'number' ? d.battery : null);
 const btBatHtml = p => (p == null ? '' : `<span class="btbat${p <= 20 ? ' low' : ''}" style="--p:${p}"><i></i></span><em>${p}%</em>`);
@@ -848,7 +866,7 @@ let cpuPct = null, cpuPrev = null;   // cpuMs = CPU time this app has used (all 
 const cpuUpdate = d => { const now = performance.now(); if (d && d.cpuMs != null) { if (cpuPrev && now > cpuPrev.t) cpuPct = Math.max(0, Math.min(100, (d.cpuMs - cpuPrev.ms) / ((now - cpuPrev.t) * Math.max(1, d.cores || 1)) * 100)); cpuPrev = { t: now, ms: d.cpuMs }; } };
 const cpuText = d => !d || d.cpuMs == null ? 'Not available here' : cpuPct == null ? 'Reading…' : (cpuPct < 10 ? cpuPct.toFixed(1) : Math.round(cpuPct)) + '%' + (d.threads ? ' · ' + d.threads + ' threads' : '');
 let ramBusy = false;
-setInterval(() => { if (document.hidden || ramBusy) return; const top = stack[stack.length - 1]; if (!top || top.t !== 'settings' || !document.getElementById('lf-ram')) return; ramBusy = true; Native.getDeviceInfo().then(d => { if (d) { dev = { ...dev, ...d }; cpuUpdate(dev); const r = document.getElementById('lf-ram'), c = document.getElementById('lf-cpu'), t = ramText(dev), u = cpuText(dev); if (r && r.textContent !== t) r.textContent = t; if (c && c.textContent !== u) c.textContent = u; } }).catch(() => {}).finally(() => { ramBusy = false; }); }, 1000);
+setInterval(() => { if (document.hidden || ramBusy) return; const top = stack[stack.length - 1]; if (!top || (top.t !== 'settings' && top.t !== 'phoneinfo') || !document.getElementById('lf-ram')) return; ramBusy = true; Native.getDeviceInfo().then(d => { if (d) { dev = { ...dev, ...d }; cpuUpdate(dev); const r = document.getElementById('lf-ram'), c = document.getElementById('lf-cpu'), t = ramText(dev), u = cpuText(dev); if (r && r.textContent !== t) r.textContent = t; if (c && c.textContent !== u) c.textContent = u; } }).catch(() => {}).finally(() => { ramBusy = false; }); }, 1000);
 
 /* ---------- render ---------- */
 function renderMain() { const m = $('#main'); m.innerHTML = screens[tab](); m.scrollTop = 0; m.style.display = stack.length ? 'none' : ''; if (tab === 'search') { results(); const q = $('#q'); q.value = query; } }
@@ -1208,7 +1226,7 @@ function renderMini() {
   miniIdleArm();
 }
 /* v291 (owner: "in landscape the mini player should disappear after 8 seconds if there is no touch on it, otherwise our animation is never used"):
-   landscape only, Settings > Animation > Landscape mini player > Hide after (Never / 5 / 8 / 15 s, default 8). No touch on the player for that long = it merges
+   landscape only, Settings > Animation > Landscape mini player > Hide after (v292: Never or any time from 3 s to 10 min, default 8 s). No touch on the player for that long = it merges
    back into the glass bar (music keeps playing; the bar is wide). It comes back (splits out again) on a new song, play / pause, or a swipe UP on the glass bar.
    Turning the phone to portrait shows it again at once (portrait never hides it). */
 const isLand = () => { try { return matchMedia(LAND_Q).matches; } catch { return false; } };
@@ -1253,9 +1271,9 @@ try { matchMedia(LAND_Q).addEventListener('change', e => {
 }); } catch {}
 const tokenColour = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();   // colours live only in tokens.css
 const hex6 = c => { c = String(c || '').trim(); const m = /^#([0-9a-f]{3})$/i.exec(c); if (m) c = '#' + [...m[1]].map(x => x + x).join(''); return /^#[0-9a-f]{6}$/i.test(c) ? c : '#000000'; };   // Bug 16: "#000" + "cc" = "#000cc" is not a colour: always 6 digits before the alpha is appended
-const LYSTYLE = { classic: 'Black background, red lyrics (default)', palette: 'Cover colour palette: a colour gradient from the picture or GIF you set for the song or album, else its original cover, white lyrics', blur: 'Cover blur: a blurred version of the picture you set for the song or album (a GIF shows one still frame), else its original embedded cover, white lyrics', pic: 'Song picture: the picture or GIF you set for the song or album (else its cover), white lyrics', home: 'Home screen background: your Home picture / GIF (or plain black), white lyrics' };
+const LYSTYLE = { classic: 'Black background, red lyrics (default)', apple: 'Apple gradient: soft, slowly moving colours taken from the picture or GIF you set for the song or album, else its original cover, white lyrics', palette: 'Cover colour palette: a colour gradient from the picture or GIF you set for the song or album, else its original cover, white lyrics', blur: 'Cover blur: a blurred version of the picture you set for the song or album (a GIF shows one still frame), else its original embedded cover, white lyrics', pic: 'Song picture: the picture or GIF you set for the song or album (else its cover), white lyrics', home: 'Home screen background: your Home picture / GIF (or plain black), white lyrics' };
 const LYINK = { auto: 'Automatic: red on the black style, white on the others', white: 'White lyrics (with a soft dark shadow)', black: 'Black lyrics (with a soft light glow)' };   // v278
-const lyStyleKey = () => set.lyricStyle === 'cover' ? (set.lyricBlur === true ? 'blur' : set.lyricBg || 'palette') : 'classic';   // 'blur' is not a data-lyrstyle value, it is 'cover' plus set.lyricBlur   // only two styles: classic (black, red lyrics) and palette ('cover' + lyricPal)
+const lyStyleKey = () => set.lyricStyle === 'cover' ? (set.lyricBlur === true ? 'blur' : set.lyricBg || (set.lyricApple === true ? 'apple' : 'palette')) : 'classic';   // 'blur' is not a data-lyrstyle value, it is 'cover' plus set.lyricBlur   // only two styles: classic (black, red lyrics) and palette ('cover' + lyricPal)
 const hexA = (g, n, al) => hex6((String(g).match(/#[0-9a-f]{6}/gi) || [tokenColour('--accent'), tokenColour('--bg')])[n]) + al;
 let npLate = false;
 /* v163: while a finger is down anywhere the player is not rebuilt (the cover tap and the long press for lyrics need the same element).
@@ -2235,8 +2253,10 @@ function applyImportedSettings() {
     delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
     set.timeStyle = cleanTimeStyle(set.timeStyle);
     set.barSplit = cleanBarSplit(set.barSplit);
+    set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+set.lyWordSpeed) || 100));   // v299
     if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);
     if (useExtras) for (const [k, v] of Object.entries(setPending.extras)) { try { localStorage.setItem(k, v); } catch {} }
+    if (useExtras) { try { soCache = new Set(Object.keys(soMap())); } catch {} }   // v296: 'keep original cover' choices take effect at once
     applySettings();   // writes lf.settings; the reload below re-runs the start-up checks on every value
     let wrote = false; try { wrote = localStorage.getItem('lf.settings') === JSON.stringify(set); } catch {}   // v208: read back: the settings are in the app's own storage, the import file is not needed afterwards
     if (!wrote) { saveSettingsNow(); try { wrote = localStorage.getItem('lf.settings') === JSON.stringify(set); } catch {} }
@@ -2460,6 +2480,7 @@ function trackAction(act, d) {
 
 /* ---------- T8 (part 1): Up Next queue sheet ---------- */
 function queueSheet() {   // v210: Spotify style Up Next: a now-playing card, where it plays from, and a summary of what is coming up
+  try { const st = Native.state; lyPrefetchList((st.queue || []).slice(st.index + 3)); } catch {}   // v293c: a jump from Up Next is prepared too
   const st = Native.state, q = st.queue, n = q.length, cur = q[st.index];
   const upList = q.slice(st.index + 1), secs = upList.reduce((x, t) => x + (t.dur || 0), 0);
   const qTime = v => { v = Math.round(v); const h = Math.floor(v / 3600), m = Math.floor((v % 3600) / 60); return h ? `${h} hr ${m} min` : `${Math.max(1, m)} min`; };
@@ -2541,6 +2562,12 @@ function lyCenter(el, smooth, body = $('#lyrbody')) {   // scrolls ONLY the lyri
   const inflight = win.map(([n]) => parseFloat((getComputedStyle(n).translate || '').split(' ')[1]) || 0);   // a glide that is still running carries on from where it is
   body.scrollTop = top;
   const moved = body.scrollTop - prev; if (!moved) return;
+  /* v300 (owner: "tapping a line far away, the lyrics jump over each other"): a long jump (more than about half the screen) no longer slides every line
+     across thousands of pixels (the staggered lines flew over each other). The lines come in from a short distance and fade in, as one block. */
+  if (Math.abs(moved) > 150) {   // far (more than about 3 lines, e.g. a tapped line): every line is put in place at once and the WHOLE block glides in a short way and fades in (one piece: nothing can cross)
+    lyStop(); body.style.setProperty('--lyj', (Math.sign(moved) * 28) + 'px'); body.classList.remove('lyjump'); void body.offsetWidth; body.classList.add('lyjump');
+    clearTimeout(body._lj); body._lj = setTimeout(() => body.classList.remove('lyjump'), 480); return;
+  }
   win.forEach(([n], j) => { n.style.setProperty('--tt', '0s'); n.style.setProperty('--ty', (moved + inflight[j]).toFixed(1) + 'px'); });   // v236: the start position is set with a 0 s slide (--tt) and NO other transition is touched, so the class change just made (new playing line: fade, size) still animates in the same style pass
   void body.offsetHeight;   // the start position must be drawn once before the glide is released
   win.forEach(([n]) => { n.style.removeProperty('--tt'); n.style.setProperty('--ty', '0px'); });
@@ -2668,16 +2695,17 @@ function tintFromPixels(d) {
     if (x2) { const [h2, s2, l2] = rgb2hsl(...[1, 3, 5].map(o => parseInt(x2.slice(o, o + 2), 16))); p.b = l2 < .34 && s2 > .3 ? hsl2hex(h2, s2, .34) : x2; } }   // v209: the second colour (the glow in the lyrics background) is lifted a little when it is dark but vivid (Blinding Lights: the red jacket) so it shows   // the cover's own second colour
   return p;
 }
-function coverTint(a, t) {
+function coverTint(a, t, onEarly) {   // v293: onEarly(c) = the song's main colours as soon as the pixels are read (the palette follows from the Web Worker)
   const S = tintSource(a, t), ck = S.ck, key = S.key;
   if (covTint.has(key)) return Promise.resolve(covTint.get(key));
-  if (covTintPend.has(key)) return covTintPend.get(key);
+  if (covTintPend.has(key)) { const pp = covTintPend.get(key); if (onEarly) { if (pp.early) { try { onEarly(pp.early); } catch {} } else (pp.ear || (pp.ear = [])).push(onEarly); } return pp; }
   const gs = String(a.g0 || a.g), vr = gs.match(/var\((--[\w-]+)\)/), hx = (gs.match(/#[0-9a-f]{6}/gi) || [vr && getComputedStyle(document.documentElement).getPropertyValue(vr[1]).trim().match(/^#[0-9a-f]{6}$/i)?.[0] || '#c8102e'])[0], n = parseInt(hx.slice(1), 16), fh = rgb2hsl(n >> 16, (n >> 8) & 255, n & 255), fb = palFrom(fh[0], fh[1], fh[1] < .12, fh[2]);
   const pr = new Promise(res => {
     const done = (c, pl, g) => { c.ck = ck; if (!c.pal) c.pal = pl || []; if (g && pl && c.pal === pl && !c.palGrad) c.palGrad = g;  let same = true; try { const N = tintSource(a, t); same = N.key === key && N.src === S.src; } catch {} if (same) covTint.set(key, c); covTintPend.delete(key); res(c); };   // the picture / Canvas changed while this was being read: it answers its caller but is not kept
     S.stale = () => { try { const N = tintSource(a, t); return N.key !== key || N.src !== S.src; } catch { return false; } };   // v230: a long GIF / video read stops when the song or picture has changed
-    tintPixels(S).then(async d => { let p = null, pl = null, g = ''; if (d) { try { p = tintFromPixels(d); } catch {} try { const r = await palAsync(d); pl = r.pal; g = r.grad; } catch {} } done(p || fb, pl, g); }, () => done(fb));   // v290: the palette is worked out in a Web Worker (palAsync): the app no longer freezes while it is read
+    tintPixels(S).then(async d => { let p = null, pl = null, g = ''; if (d) { try { p = tintFromPixels(d); } catch {} if (p) { pr.early = p; for (const f of pr.ear || []) { try { f(p); } catch {} } pr.ear = null; } try { const r = await palAsync(d); pl = r.pal; g = r.grad; } catch {} } done(p || fb, pl, g); }, () => done(fb));   // v290: the palette is worked out in a Web Worker (palAsync): the app no longer freezes while it is read
   });
+  if (onEarly) pr.ear = [onEarly];
   covTintPend.set(key, pr); return pr;
 }
 /* v290 (owner: "tapping lyrics freezes the app / lyrics don't even open with Cover colour palette on"): tintPaletteAuto + tintPaletteGrad took 1-4 s of
@@ -2715,7 +2743,8 @@ const bsplitRows = () => { const c = cleanBarSplit(set.barSplit), noW = c.style 
   return `<button class="setrow" data-act="bsplit" style="width:100%;text-align:left"><span class="tx"><b>Split and merge</b><span>${SPLIT_NAMES[c.style]}</span></span>${I.chev}</button>
     ${c.style === 'off' ? '' : `<div class="animrow"><b>Speed<em data-bsv="speed">${c.speed}%</em></b><input type="range" data-bsk="speed" min="50" max="200" step="5" value="${c.speed}" aria-label="Split and merge speed"></div>`}
     ${noW ? '' : `<div class="animrow"><b>Stretch<em data-bsv="stretch">${c.stretch}%</em></b><input type="range" data-bsk="stretch" min="50" max="200" step="5" value="${c.stretch}" aria-label="How far the water neck stretches before it snaps"></div>`}
-    <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Hide after</b><span>No touch on the mini player for this long and it merges back into the glass bar. Swipe up on the bar (or a new song, play or pause) brings it back.</span><div class="hsseg">${HIDE_OPTS.map(v => `<button class="chip ${c.hide === v ? 'sel' : ''}" data-act="bshide" data-v="${v}">${v ? v + ' s' : 'Never'}</button>`).join('')}</div></div></div>
+    <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Hide after<em data-bsv="hide" style="float:right;font-style:normal;color:var(--accent)">${fmtHide(c.hide)}</em></b><span>Landscape: no touch on the mini player for this long and it merges back into the glass bar. Swipe up on the bar (or a new song, play or pause) brings it back.</span><div class="hsseg">${HIDE_OPTS.map(v => `<button class="chip ${c.hide === v ? 'sel' : ''}" data-act="bshide" data-v="${v}">${fmtHide(v)}</button>`).join('')}</div></div></div>
+    ${c.hide ? `<div class="animrow"><b>Custom time<em data-bsv="hide2">${fmtHide(c.hide)}</em></b><input type="range" data-bsh="1" min="0" max="${HIDE_STEPS.length - 1}" step="1" value="${hideStepOf(c.hide)}" aria-label="Hide the landscape mini player after" aria-valuetext="${fmtHide(c.hide)}"></div>` : ''}
     <div class="setrow"><span class="tx"><span>Turn the phone sideways with a song playing to see it. Reduce Motion turns the animation off.</span></span></div>`; };
 function bsplitSheet() {
   const c = cleanBarSplit(set.barSplit);
@@ -2741,8 +2770,29 @@ async function lySample(img) {   // no ImageDecoder (older phone browser / WebVi
   for (let i = 0; i < 12; i++) { await new Promise(r => setTimeout(r, 250)); try { const s = window.lyScore(img); if (s > bs) { bs = s; best = lyStill(img, img.naturalWidth, img.naturalHeight); } } catch {} }
   return best;
 }
+/* v293 (owner: "switching song, the previous song's palette / blur stays 0.4-0.8 s, make it almost no time"): the still frame of a GIF / animated WebP is picked
+   ONCE per picture and remembered (lyStillMem: address -> still data URL, '' = not animated). The next and previous songs are picked ahead (lyPrefetch), so the
+   blur layer of the new song can be drawn already frozen, in the same frame as the song change. */
+const lyStillMem = new Map(), lyStillRun = new Map();
+function lyStillFromSrc(src) {   // -> data URL of the best frame, '' (not animated), or null (cannot tell here: no ImageDecoder) ; never throws
+  if (!src) return Promise.resolve(null); if (lyStillMem.has(src)) return Promise.resolve(lyStillMem.get(src)); if (lyStillRun.has(src)) return lyStillRun.get(src);
+  const pr = (async () => {
+    try {
+      const buf = await (await fetch(src)).arrayBuffer(), u = new Uint8Array(buf, 0, Math.min(buf.byteLength, 64)), gif = u[0] === 71 && u[1] === 73 && u[2] === 70;
+      const anim = gif || (u[8] === 87 && u[9] === 69 && u[10] === 66 && u[11] === 80 && String.fromCharCode(...u).includes('ANIM'));
+      if (!anim) { lyStillMem.set(src, ''); return ''; }
+      if (!window.ImageDecoder) return null;
+      const d = new ImageDecoder({ data: buf, type: gif ? 'image/gif' : 'image/webp' }); await d.tracks.ready; const n = d.tracks.selectedTrack.frameCount || 1, k = Math.min(24, n);
+      let best = 0, bs = -1e9; for (const i of new Set(Array.from({ length: k }, (_, j) => Math.floor(j * n / k)))) { const f = (await d.decode({ frameIndex: i })).image; const sc = window.lyScore(f); f.close(); if (sc > bs) { bs = sc; best = i; } }
+      const fr = (await d.decode({ frameIndex: best })).image, url = lyStill(fr, fr.displayWidth, fr.displayHeight); fr.close(); d.close();
+      if (lyStillMem.size > 40) lyStillMem.delete(lyStillMem.keys().next().value); lyStillMem.set(src, url); return url;
+    } catch { return null; } finally { lyStillRun.delete(src); }
+  })();
+  lyStillRun.set(src, pr); return pr;
+}
 async function lyPickStill(img) {
   const par = img.parentElement; let anim = par.classList.contains('lb-anim'), buf = null, gif = false;
+  try { const m = await lyStillFromSrc(par.dataset.src || img.currentSrc || img.src); if (m) { par.classList.add('lb-anim'); return m; } if (m === '') return ''; } catch {}   // v293: the remembered / shared pick
   try { const r = await fetch(img.currentSrc || img.src); buf = await r.arrayBuffer(); const u = new Uint8Array(buf, 0, Math.min(buf.byteLength, 64)); gif = u[0] === 71 && u[1] === 73 && u[2] === 70; anim = gif || (u[8] === 87 && u[9] === 69 && u[10] === 66 && u[11] === 80 && String.fromCharCode(...u).includes('ANIM')); if (anim) par.classList.add('lb-anim'); } catch {}   // by content, not by name: a still JPEG / PNG / still WebP is left alone
   if (!anim) return '';
   if (buf && window.ImageDecoder) { try {
@@ -2756,6 +2806,21 @@ window.lyFreeze = async img => {   // both layers (base + detail) get the SAME s
   if (img.dataset.fz) return; img.dataset.fz = '1'; const par = img.parentElement;
   try { par._st = par._st || lyPickStill(img); const u = await par._st; if (u) img.src = u; } catch {} img.style.opacity = '';
 };
+/* v293c (owner: "do all 3"): Cover blur + Canvas video: the best moment (same 8-moment pick as lyFreezeV) is found AHEAD for the next / previous songs on a
+   hidden video and kept as a still picture (lyStillMem, by video address), so the blur layer of the new song is drawn already frozen in the same frame. */
+const lyVidRun = new Map();
+function lyVidStillFromSrc(src) {
+  if (!src) return Promise.resolve(null); if (lyStillMem.has(src)) return Promise.resolve(lyStillMem.get(src)); if (lyVidRun.has(src)) return lyVidRun.get(src);
+  const pr = (async () => { const v = document.createElement('video'); try {
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.crossOrigin = /^(blob:|data:)/.test(src) ? null : 'anonymous'; v.src = src;
+    await new Promise((r, j) => { v.addEventListener('loadeddata', r, { once: true }); v.addEventListener('error', j, { once: true }); setTimeout(j, 15000); });
+    const d = v.duration; if (!isFinite(d) || d <= 0) return null; let best = 0, bs = -1e9;
+    for (let i = 0; i < 8; i++) { const t = d * (i + .5) / 8; await new Promise(r => { v.addEventListener('seeked', r, { once: true }); v.currentTime = t; setTimeout(r, 3000); }); await new Promise(r => requestAnimationFrame(r)); const sc = window.lyScore(v);   /* exactly as lyFreezeV: wait one frame after the seek */ if (sc > bs) { bs = sc; best = t; } }
+    await new Promise(r => { v.addEventListener('seeked', r, { once: true }); v.currentTime = best; setTimeout(r, 3000); });
+    const url = lyStill(v, v.videoWidth, v.videoHeight); if (lyStillMem.size > 40) lyStillMem.delete(lyStillMem.keys().next().value); lyStillMem.set(src, url); return url;
+  } catch { return null; } finally { try { v.removeAttribute('src'); v.load(); } catch {} lyVidRun.delete(src); } })();
+  lyVidRun.set(src, pr); return pr;
+}
 window.lyFreezeV = async v => {   // Canvas video: stops (no autoplay / loop), 8 moments are looked at, it rests on the best one; both layers rest on the same moment
   v.pause(); const par = v.parentElement; try {
     par._vt = par._vt || (async () => { const d = v.duration; if (!isFinite(d) || d <= 0) return 0; let best = 0, bs = -1e9;
@@ -2775,16 +2840,33 @@ function lyBgHtml(t) {
   const s = lyBgSrc(t); if (!s) return ''; const e = E(s.src);
   return `<div class="lyr-bgl${s.cv ? ' lb-cv' : ''}" data-src="${e}" aria-hidden="true">${s.vid ? `<video src="${e}" autoplay loop muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback preload="auto"></video>` : `<img src="${e}" alt="" decoding="async">`}</div>`;
 }
+/* v293c: Home / Song picture + Canvas video: the next / previous song's Canvas is loaded ahead on a hidden <video>; when that song comes, that very
+   element (already showing its first frame) is moved into the lyrics layer, so the video is there in the same frame. */
+const lyVidPre = new Map();
+function lyVidPreload(src) {
+  if (!src || lyVidPre.has(src)) return; try {
+    const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('disablepictureinpicture', ''); v.setAttribute('disableremoteplayback', ''); v.src = src; v.load();
+    if (lyVidPre.size > 4) { const k = lyVidPre.keys().next().value, o = lyVidPre.get(k); lyVidPre.delete(k); if (o && !o.isConnected) { try { o.removeAttribute('src'); o.load(); } catch {} } }
+    lyVidPre.set(src, v);
+  } catch {}
+}
+function lyBgAdopt(el) {   // swap the freshly written Canvas <video> for the one loaded ahead (same address), and play it
+  const L = el && el.querySelector('.lyr-bgl'); const nv = L && L.querySelector('video'); if (!nv) return;
+  const pv = lyVidPre.get(L.dataset.src || ''); if (!pv || pv === nv || pv.readyState < 2) return;
+  pv.autoplay = true; nv.replaceWith(pv); lyVidPre.delete(L.dataset.src); try { pv.play().catch(() => {}); } catch {}
+}
 function lyBgSync(el, t) {   // adds, swaps or removes the Home / Custom picture layer so it always matches the style, the Canvas and the picture
   const cur = el.querySelector('.lyr-bgl'), s = lyBgSrc(t);
   if (!s) { if (cur) cur.remove(); return; } if (cur && cur.dataset.src === s.src) return;
-  if (cur) cur.remove(); el.insertAdjacentHTML('afterbegin', lyBgHtml(t));
+  if (cur) cur.remove(); el.insertAdjacentHTML('afterbegin', lyBgHtml(t)); lyBgAdopt(el);
 }
 function lyBlurHtml(t) {
   if (set.lyricStyle !== 'cover' || set.lyricBlur !== true) return '';
   const s = lyBlurSrc(t); if (!s) return '<div class="lyr-blur" aria-hidden="true"></div>';
   const anim = s.vid || /\.(gif|webp|apng)(\?|#|$)/i.test(s.src), e = E(s.src);
   const vid = c => `<video${c} src="${e}" muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback preload="auto" onloadeddata="lyFreezeV(this)"></video>`;   // no autoplay / loop: it stops, on its best moment
+  const st = lyStillMem.get(s.src);   // v293: picked ahead (GIF, or v293c Canvas video): drawn frozen at once (no animated flash, no wait)
+  if (st) return `<div class="lyr-blur lb-anim" data-src="${e}" aria-hidden="true"><img src="${st}" alt="" decoding="sync" data-fz="1"><img class="lb-d" src="${st}" alt="" decoding="sync" data-fz="1"></div>`;
   const img = c => `<img${c} src="${e}" alt="" decoding="async"${anim || /^blob:/i.test(s.src) ? ' onload="lyFreeze(this)"' : ''}>`;   // a picture you set can arrive as blob: (no .gif ending), so it is checked by its first bytes in lyFreeze
   return `<div class="lyr-blur${anim ? ' lb-anim' : ''}" data-src="${e}" aria-hidden="true">${s.vid ? vid('') + vid(' class="lb-d"') : img('') + img(' class="lb-d"')}</div>`;   // v208+: a second, lighter-blurred copy (.lb-d) sits on top of the heavy one so the cover's shapes / small details show
 }
@@ -2794,27 +2876,76 @@ function lyBlurSync(el, t) {   // adds, swaps or removes the blur layer so it al
   const s = lyBlurSrc(t); if (cur && (cur.dataset.src || '') === (s ? s.src : '')) return;
   if (cur) cur.remove(); el.insertAdjacentHTML('afterbegin', lyBlurHtml(t));
 }
+const lyBlank = el => { el.style.removeProperty('--lyr-pal'); for (const n of ['--lyr-bg', '--lyr-bg2', '--lyr-bg3']) el.style.setProperty(n, '#000'); for (const n of ['--ap1', '--ap2', '--ap3', '--ap4']) el.style.removeProperty(n); };   // v293: between songs (new colours not read yet): plain black, never the old song's colours and never the default red
+/* v294 (owner): Apple gradient: Apple Music's lyrics background: a few big, very soft blobs of the picture's main colours, slowly drifting. Colours = the 4
+   biggest colours of the same palette read (picture / GIF you set > original cover), brought to a mid lightness so white lyrics stay readable. */
+const lyApOn = () => set.lyricStyle === 'cover' && set.lyricApple === true && set.lyricBlur !== true && !set.lyricBg;
+const lyApHtml = () => lyApOn() ? '<div class="lyr-apl" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' : '';
+function lyApSync(el) { const cur = el.querySelector('.lyr-apl'); if (!lyApOn()) { if (cur) cur.remove(); return; } if (!cur) el.insertAdjacentHTML('afterbegin', lyApHtml()); }
+const labHex = (L, a, b) => { const l = (L + .3963377774 * a + .2158037573 * b) ** 3, m = (L - .1055613458 * a - .0638541728 * b) ** 3, s = (L - .0894841775 * a - 1.291485548 * b) ** 3;
+  const g = x => { x = Math.max(0, Math.min(1, x)); return Math.round(255 * (x <= .0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - .055)); };
+  return '#' + [4.0767416621 * l - 3.3077115913 * m + .2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s, -.0041960863 * l - .7034186147 * m + 1.707614701 * s].map(g).map(v => v.toString(16).padStart(2, '0')).join(''); };
+function lyApColours(c) {   // -> 4 hex colours, biggest first
+  const P = (c.pal || []).filter(q => q && Number.isFinite(q.L)).slice().sort((x, y) => (y.share || 0) - (x.share || 0)), out = [];
+  for (const q of P) { if (out.length >= 4) break; const C = Math.hypot(q.a, q.b), k = C > .02 ? Math.min(1.25, .2 / C + 1) : 1; const L = Math.max(.38, Math.min(.7, q.L)); out.push(labHex(L, q.a * k, q.b * k)); }
+  const base = [c.a, c.b, c.c].filter(Boolean); while (out.length < 4 && base.length) out.push(base[out.length % base.length]);
+  return out.length ? out : ['#3a3a44', '#26262e', '#4a4a56', '#1c1c22'];
+}
+function lyPaint(el, c) {   // the cover colours of one song onto the lyrics page (--lyr-bg*, and --lyr-pal for Cover colour palette)
+  setTintVars(el, c, '--lyr-bg');
+  if (lyApOn()) { lyApColours(c).forEach((h, i) => el.style.setProperty('--ap' + (i + 1), h)); } let q = '';
+  if (set.lyricBlur !== true && set.lyricPal === true) { try { q = c.palGrad || (c.palGrad = tintPaletteGrad(c.pal && c.pal.length ? c.pal : tintPaletteFlat(c.a))); } catch {} }   // v236: --lyr-pal = the palette gradient
+  if (q) el.style.setProperty('--lyr-pal', q); else el.style.removeProperty('--lyr-pal');
+}
+/* v293: the colours already worked out for this song's picture (song change / reopen: no wait at all), or null. */
+function coverTintNow(t) { try { const S = tintSource(trackAlbum(t), t); return covTint.get(S.key) || null; } catch { return null; } }
 async function lyApplyTint(t) {
   const el = $('#lyr'); if (!el) return; const my = ++lyTintSeq;
-  lyBlurSync(el, t); lyBgSync(el, t);
+  lyBlurSync(el, t); lyBgSync(el, t); lyApSync(el);
   if (set.lyricStyle === 'cover' && set.lyricBlur !== true && set.lyricBg) { el.style.removeProperty('--lyr-pal'); return; }   // v277: Home / Custom style: no cover colours to read
   if (set.lyricStyle !== 'cover') { clearTintVars(el, '--lyr-bg'); el.style.removeProperty('--lyr-pal'); return; }
-  const c = await coverTint(trackAlbum(t), t);
-  if (my === lyTintSeq && $('#lyr') && Native.current()?.id === t.id) {
-    setTintVars($('#lyr'), c, '--lyr-bg'); let q = '';
-    if (set.lyricBlur !== true && set.lyricPal === true) { try { q = c.palGrad || (c.palGrad = tintPaletteGrad(c.pal && c.pal.length ? c.pal : tintPaletteFlat(c.a))); } catch {} }   // v236: --lyr-pal = the 5-colour palette gradient
-    if (q) $('#lyr').style.setProperty('--lyr-pal', q); else $('#lyr').style.removeProperty('--lyr-pal');
-  }
+  const now = coverTintNow(t); if (now) { lyPaint(el, now); return; }   // v293: ready: painted in this same frame
+  if (el.dataset.lyTid !== String(t.id)) lyBlank(el);   // v293: never keep the PREVIOUS song's colours while the new ones are read
+  const c = await coverTint(trackAlbum(t), t, p => { if (my === lyTintSeq && $('#lyr') && Native.current()?.id === t.id && !$('#lyr').style.getPropertyValue('--lyr-pal')) setTintVars($('#lyr'), p, '--lyr-bg'); });   // v293: the song's main colour first (a fraction of a second), the full palette right after
+  if (my === lyTintSeq && $('#lyr') && Native.current()?.id === t.id) lyPaint($('#lyr'), c);
+}
+/* v293: the next and the previous song (play order) are read ahead a moment after a song starts, for Cover colour palette and Cover blur: their colours
+   (Web Worker, cached) and their GIF still frame. So Next / Previous shows the new song's background in the same frame. */
+let lyPreT2 = 0;
+/* v293c (owner: "do all 3"): what is read ahead: the CURRENT song first (so lyrics opened after a jump are ready too), then the next two and the previous one
+   (play order; Repeat All wraps). Opening Up Next also prepares the first songs listed there (a jump from that list). */
+function lyNear(extra = 0) {
+  const st = Native.state, q = st.queue || [], i = st.index; if (!q.length || i < 0) return [];
+  const at = k => q[k] || (st.repeat === 'all' && q.length ? q[((k % q.length) + q.length) % q.length] : null);
+  const out = [q[i], at(i + 1), at(i + 2), q[i - 1]]; for (let k = 3; k < 3 + extra; k++) out.push(at(i + k));
+  return [...new Set(out.filter(Boolean))];
+}
+function lyPrepOne(n) {   // one song, for the lyrics style in use: colours (+ GIF / Canvas still for Cover blur), or its picture / Canvas (Song picture, Home)
+  if (!n || set.lyricStyle !== 'cover') return;
+  if (set.lyricBg && set.lyricBlur !== true) { const b = lyBgSrc(n); if (!b) return; if (b.vid) { lyVidPreload(b.src); return; } if (lyPicMem.has(b.src)) return;
+    try { const im = new Image(); im.decoding = 'async'; im.src = b.src; if (im.decode) im.decode().catch(() => {}); if (lyPicMem.size > 12) lyPicMem.delete(lyPicMem.keys().next().value); lyPicMem.set(b.src, im); } catch {} return; }
+  try { coverTint(trackAlbum(n), n).catch(() => {}); } catch {}
+  if (set.lyricBlur === true) { const b = lyBlurSrc(n); if (b) (b.vid ? lyVidStillFromSrc : lyStillFromSrc)(b.src); }
+}
+let lyPreQ = 0;
+function lyPrefetchList(list) { clearTimeout(lyPreQ); if (set.lyricStyle !== 'cover') return; lyPreQ = setTimeout(() => list.slice(0, 6).forEach((n, k) => setTimeout(() => lyPrepOne(n), k * 400)), 600); }   // Up Next: the songs you can jump to from there
+const lyPicMem = new Map();   // v293b: Song picture style: the next / previous song's own picture, loaded and decoded ahead (kept referenced so it stays ready)
+function lyPrefetch() {   // v293 / v293b / v293c: after a song starts (and when the lyrics open): see lyNear / lyPrepOne. Home style without a Canvas has nothing to prepare.
+  clearTimeout(lyPreT2); if (set.lyricStyle !== 'cover') return;
+  lyPreT2 = setTimeout(() => lyNear().forEach((n, k) => setTimeout(() => lyPrepOne(n), k * 300)), 250);
 }
 async function lyricsLoad() {
   const my = ++lyrSeq, t = Native.current(), el = $('#lyr'); if (!t || !el) return;
-  lyr = null; lyrIdx = -1; lyrTid = t.id; lyLast = { v: 0, pl: false }; lyStop(); lyFollow(true); requestAnimationFrame(() => requestAnimationFrame(() => { if (my === lyrSeq) lyApplyTint(t); }));   // v290: the lyrics screen opens and draws FIRST, then the background is read
-    el.innerHTML = `${lyBlurHtml(t)}${lyBgHtml(t)}<div class="lyr-top"><button class="gbtn" data-act="lyr-close">${I.back}</button><div class="lyr-t"><b>${t.title}</b><span>${t.trackArtist || trackAlbum(t).artist}</span></div><span style="width:44px"></span></div><div class="lyr-body" id="lyrbody"><div class="empty">Loading lyrics…</div></div><button class="lyr-now" data-act="lyr-follow" aria-label="Follow the song">${I.lyrics}<span>Now</span></button>`;
+  lyr = null; lyrIdx = -1; lyrTid = t.id; lyLast = { v: 0, pl: false }; lyStop(); lyFollow(true); const lyReady = set.lyricStyle === 'cover' && !(set.lyricBg && set.lyricBlur !== true) && coverTintNow(t);
+  if (lyReady) lyPaint(el, lyReady); else requestAnimationFrame(() => requestAnimationFrame(() => { if (my === lyrSeq) lyApplyTint(t); }));   // v290: the lyrics screen opens and draws FIRST, then the background is read; v293: colours already known = painted now, same frame
+  if (!lyReady && el.dataset.lyTid !== String(t.id) && set.lyricStyle === 'cover' && !(set.lyricBg && set.lyricBlur !== true)) lyBlank(el);   // v293: the previous song's colours never stay
+  el.dataset.lyTid = t.id; lyPrefetch();
+    el.innerHTML = `${lyApHtml()}${lyBlurHtml(t)}${lyBgHtml(t)}<div class="lyr-top"><button class="gbtn" data-act="lyr-close">${I.back}</button><div class="lyr-t"><b>${t.title}</b><span>${t.trackArtist || trackAlbum(t).artist}</span></div><span style="width:44px"></span></div><div class="lyr-body" id="lyrbody"><div class="empty">Loading lyrics…</div></div><button class="lyr-now" data-act="lyr-follow" aria-label="Follow the song">${I.lyrics}<span>Now</span></button>`; lyBgAdopt(el);   // v293c: a Canvas loaded ahead is used as it is
   let text = '';
   let lyFail = false;
   try { text = (await Native.getLyrics(t)).text || ''; } catch (e) { lyFail = true; try { console.warn('lyrics read failed', e); } catch {} }   // BUG-15
   if (my !== lyrSeq) return;
-  lyr = parseLrc(text);
+  lyr = parseLrc(text); if (lyr.synced && set.lyWordFade !== false) lyr = { ...lyr, lines: fillWords(lyr.lines, set.lyWordSpeed) };   // v298: line-timed lyrics get word timings, so the Apple word fade-in works for every synced song
   const body = $('#lyrbody'); if (!body) return;
   if (!lyr.lines.length) { body.innerHTML = lyFail ? '<div class="empty">Could not read the lyrics for this song.</div>' : '<div class="empty">No lyrics for this song.</div>'; return; }
   body.innerHTML = lyr.lines.map((l, i) => {
@@ -2823,6 +2954,7 @@ async function lyricsLoad() {
   }).join('');
   syncLyrics(lyNow()); lyStart();
 }
+let lwT = 0;   // v299: re-read the lyrics shortly after the fade-in speed changes
 let lyWords = null, lyWd = -1, lyWp = null;   // v286: lyWp = the last --wp written per word of the playing line
 function syncLyrics(pos) {
   if (!lyr || !lyr.synced || !$('#lyrbody')) return;
@@ -2855,7 +2987,7 @@ function lyricsAction(act, d) {
       $('#lyr').classList.add('open'); lyricsLoad(); break;
     case 'lyr-close': closeLyrics(); break;
     case 'lyr-follow': { lyFollow(true); const el = document.querySelector(`#lyrbody [data-li="${lyrIdx}"]`); if (el) lyCenter(el, true); break; }
-    /* v224: tapping a line is a real seek: lyLast is reset so the hold does not keep the old, later time */ case 'lyr-seek': { const l = lyr && lyr.lines[+d.li]; if (l && l.t != null) { lyFollow(true); lyClock = { pos: l.t, at: performance.now(), pl: !!Native.state.playing }; lyLast = { v: l.t, pl: false }; Native.seek(l.t); const le = document.querySelector(`#lyrbody [data-li="${+d.li}"]`); if (le) lyCenter(le, true); } break; }
+    /* v224: tapping a line is a real seek: lyLast is reset so the hold does not keep the old, later time */ case 'lyr-seek': { const l = lyr && lyr.lines[+d.li]; if (l && l.t != null) { lyFollow(true); lyClock = { pos: l.t, at: performance.now(), pl: !!Native.state.playing }; lyLast = { v: l.t, pl: false }; Native.seek(l.t); const le = document.querySelector(`#lyrbody [data-li="${+d.li}"]`), bd = $('#lyrbody'); if (le && bd) { bd.classList.add('lysnap'); lyStop(); lyCenter(le, false); syncLyrics(l.t); requestAnimationFrame(() => requestAnimationFrame(() => bd.classList.remove('lysnap'))); } } break; }   // v301 (owner): a tapped line is shown AT ONCE: no slide, no fade, no press wobble
     default: return false;
   }
   return true;
@@ -2864,7 +2996,7 @@ on('onProgress', e => { if ($('#lyr')?.classList.contains('open') && !lyRaf) syn
 on('onSeek', ({ pos }) => { const p = +pos || 0; lyClock = { pos: p, at: performance.now(), pl: !!Native.state.playing }; lyLast = { v: p, pl: false }; });   // v280: a real seek (scrub bar, notification, headset) is never held back by the no-step-back clock
 on('onTrackChanged', () => { if ($('#lyr')?.classList.contains('open') && Native.current()?.id !== lyrTid) lyricsLoad(); });
 /* v290: with Cover colour palette / Cover blur on, the new song's colours are read a moment after it starts (in the Web Worker, cached), so tapping Lyrics shows them at once. */
-let lyPreT = 0; on('onTrackChanged', () => { clearTimeout(lyPreT); if (set.lyricStyle !== 'cover' || (set.lyricBg && set.lyricBlur !== true)) return; lyPreT = setTimeout(() => { const t = Native.current(); if (t) { try { coverTint(trackAlbum(t), t).catch(() => {}); } catch {} } }, 1200); });
+on('onTrackChanged', () => { lyPrefetch(); });   // v293: this song + the next and previous ones (colours + GIF still), see lyPrefetch
 
 /* v210: cover shortcuts. Three gestures on Now Playing (tap, press and hold, double tap), each with its own action. Defaults: tap = full-screen cover, hold = lyrics, double tap = album. Settings > Shortcuts. */
 const GEST_LBL = { cover: 'Full-screen cover', lyrics: 'Lyrics', album: 'Go to the album', artist: 'Go to the artist', queue: 'Up Next queue', none: 'Off' };
@@ -3199,7 +3331,7 @@ document.addEventListener('click', e => {
     case 'shuf': Native.setShuffle(!Native.state.shuffle).catch(playFail); break;
     case 'rep': Native.setRepeat({ off: 'all', all: 'one', one: 'off' }[Native.state.repeat] || 'all').catch(playFail); break;
     case 'anim-preset': { set.anim = { ...(PRESETS[d.p] || PRESETS.default) }; applySettings(); for (const i of document.querySelectorAll('input[data-ak]')) { i.value = set.anim[i.dataset.ak]; const em = document.querySelector(`[data-av="${i.dataset.ak}"]`); if (em) em.textContent = Math.round(set.anim[i.dataset.ak]) + '%'; } break; }
-    case 'tabtg': { const r = toggleTab(set.tabs, d.k); if (!r.ok) { toast('Keep at least one of Home, Albums, Library or Search'); break; } set.tabs = r.tabs; applySettings(); applyTabs(); b.classList.toggle('on', !!set.tabs[d.k]); b.setAttribute('aria-checked', set.tabs[d.k] ? 'true' : 'false'); break; }   // v224: Settings > Tab bar
+    case 'tabtg': { const r = toggleTab(set.tabs, d.k); if (!r.ok) { toast('Keep at least one of Home, Albums, Library or Search'); break; } set.tabs = r.tabs; applySettings(); applyTabs(); if (document.querySelector('.nvbar')) { renderSub(true); break; } b.classList.toggle('on', !!set.tabs[d.k]); b.setAttribute('aria-checked', set.tabs[d.k] ? 'true' : 'false'); break; }   // v224: Settings > Tab bar
     case 'tg': { const dflt = d.k === 'lyWordFade' || d.k === 'albumInfo' || d.k === 'smartArtists' || d.k === 'npTapOrig' || d.k === 'coverDouble'; set[d.k] = dflt ? set[d.k] === false : !set[d.k]; applySettings(); if (d.k === 'npImmersive') npApplyTint(Native.current()); b.classList.toggle('on', dflt ? set[d.k] !== false : !!set[d.k]); if (d.k === 'smartArtists') { stack = stack.filter(s => s.t !== 'artist' || artistInfo(s.id).count > 0); stack.forEach(s => { if (s.t === 'artist') s.id = unesc(artistName(E(s.id)) || E(s.id)); }); repaintAll(); toast(set.smartArtists !== false ? 'Smart artist grouping on' : 'Smart artist grouping off'); } break; }
     case 'abloop': abAction(); break;
     case 'apic-edit': apicEdit(d.id); break;
@@ -3265,12 +3397,15 @@ document.addEventListener('click', e => {
     case 'bsplitset': set.barSplit = cleanBarSplit({ ...set.barSplit, style: b.dataset.v }); applySettings(); closeSheet(); { const el = document.getElementById('bsplit'); if (el) el.innerHTML = bsplitRows(); } break;   // v289
     case 'timestyle': timeStyleSheet(); break;
     case 'timestyleset': set.timeStyle = cleanTimeStyle(b.dataset.v); applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="timestyle"] .tx span'); if (sp) sp.textContent = TIME_STYLES[set.timeStyle]; } { const el = $('#tl'), er = $('#tr'), t = Native.current(); if (el && er) { const z = timeTexts(0, 0, set.timeStyle); el.textContent = z.tl; er.textContent = z.tr; scr.tl = scr.tr = ''; scr.sec = -1; if (t) paintScrub(scrubPos(), t.dur); } } break;
-    case 'lystyleset': set.lyricStyle = b.dataset.v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = b.dataset.v === 'blur'; set.lyricPal = b.dataset.v === 'palette'; set.lyricBg = ['home', 'pic'].includes(b.dataset.v) ? b.dataset.v : ''; applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricstyle"] .tx span'); if (sp) sp.textContent = LYSTYLE[lyStyleKey()]; } lyApplyTint(Native.current() || {}); npApplyTint(Native.current()); break;
+    case 'lystyleset': set.lyricStyle = b.dataset.v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = b.dataset.v === 'blur'; set.lyricPal = b.dataset.v === 'palette'; set.lyricApple = b.dataset.v === 'apple'; set.lyricBg = ['home', 'pic'].includes(b.dataset.v) ? b.dataset.v : ''; applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricstyle"] .tx span'); if (sp) sp.textContent = LYSTYLE[lyStyleKey()]; } lyApplyTint(Native.current() || {}); npApplyTint(Native.current()); break;
     case 'nameedit': nameEdit = true; renderSub(true); nameFocus(); break;
     case 'name-save': nameSave(); break;
     case 'name-cancel': nameEdit = false; renderSub(true); break;
     case 'name-rm': set.userName = ''; nameEdit = false; applySettings(); refreshGreet(); renderSub(true); toast('Name removed'); break;
     case 'npreset': setNpCover(0, true); break;
+    case 'navcustom': push('navcustom'); break;
+    case 'setsub': push(d.sub); break;   // v296: Widgets / Phone info pages   // v295
+    case 'navreset': set.tabs = { ...DEF_TABS }; set.tabOrder = DEF_ORDER.slice(); applySettings(); applyTabs(); renderSub(true); toast('Glass bar reset'); break;   // v295
     case 'tabmv': { const r = moveTab(set.tabOrder, d.k, +d.dir); if (!r.ok) break; set.tabOrder = r.order; applySettings(); applyTabs(); renderSub(true); break; }   // v284: icon order
     case 'tabreset': setTabPct(100); { const i = document.querySelector('input[data-tabpct]'); if (i) i.value = 100; } break;
     case 'lyricsize': push('lysize'); break;   // v148: the size is a slider on its own screen
@@ -3316,7 +3451,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'pfname') { nameSave(); return; } if (e.key === 'Enter' && e.target.id === 'hsren') { homeRenSave(); return; } if (e.key === 'Enter' && e.target.id === 'q') { set.recent = addRecent(set.recent, e.target.value); applySettings(); e.target.blur(); } });
 document.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.npnum !== undefined) { setNpCover(+e.target.value); return; } if (e.target.dataset && e.target.dataset.tabnum !== undefined) { setTabPct(+e.target.value); e.target.value = set.tabPct; } });
-document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.bgdim !== undefined) { set.bgDim = cleanDim(e.target.value); applySettings(true); const v = document.querySelector('[data-bgdimv]'); if (v) v.textContent = set.bgDim + '%'; } else if (e.target.dataset && e.target.dataset.nprange !== undefined) setNpCover(+e.target.value); else if (e.target.dataset && e.target.dataset.tabpct !== undefined) setTabPct(+e.target.value); else if (e.target.id === 'hscq') { homeCQ = e.target.value; const top = stack[stack.length - 1], pn = top && set.home.pins.find(x => x.id === top.id && x.type === 'custom'), box = $('#hscres'); if (pn && box) box.innerHTML = custResults(pn); } else if (e.target.dataset && e.target.dataset.lypx !== undefined) { set.lyricPx = cleanLyPx(e.target.value, 'Medium'); applySettings(true); const v = document.querySelector('[data-lypxv]'); if (v) v.textContent = lyName(set.lyricPx); } else if (e.target.dataset && e.target.dataset.lyk) { set.lyAnim[e.target.dataset.lyk] = +e.target.value; set.lyAnim = cleanLya(set.lyAnim); applySettings(true); const em = document.querySelector(`[data-lyv="${e.target.dataset.lyk}"]`); if (em) em.textContent = Math.round(+e.target.value) + '%'; } else if (e.target.dataset && e.target.dataset.bsk) { set.barSplit = cleanBarSplit({ ...set.barSplit, [e.target.dataset.bsk]: +e.target.value }); applySettings(true); const em = document.querySelector(`[data-bsv="${e.target.dataset.bsk}"]`); if (em) em.textContent = set.barSplit[e.target.dataset.bsk] + '%'; } else if (e.target.dataset && e.target.dataset.ak) { set.anim[e.target.dataset.ak] = +e.target.value; applySettings(true); const em = document.querySelector(`[data-av="${e.target.dataset.ak}"]`); if (em) em.textContent = Math.round(+e.target.value) + '%'; } else if (e.target.id === 'q') { query = e.target.value; results(); clearTimeout(window.__rq); window.__rq = setTimeout(() => { if (query.trim().length >= 2) { set.recent = addRecent(set.recent, query); applySettings(); } }, 1500); } else if (e.target.id === 'pq') { pickN = 60; pickList(); } });
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.bgdim !== undefined) { set.bgDim = cleanDim(e.target.value); applySettings(true); const v = document.querySelector('[data-bgdimv]'); if (v) v.textContent = set.bgDim + '%'; } else if (e.target.dataset && e.target.dataset.nprange !== undefined) setNpCover(+e.target.value); else if (e.target.dataset && e.target.dataset.tabpct !== undefined) setTabPct(+e.target.value); else if (e.target.id === 'hscq') { homeCQ = e.target.value; const top = stack[stack.length - 1], pn = top && set.home.pins.find(x => x.id === top.id && x.type === 'custom'), box = $('#hscres'); if (pn && box) box.innerHTML = custResults(pn); } else if (e.target.dataset && e.target.dataset.lypx !== undefined) { set.lyricPx = cleanLyPx(e.target.value, 'Medium'); applySettings(true); const v = document.querySelector('[data-lypxv]'); if (v) v.textContent = lyName(set.lyricPx); } else if (e.target.dataset && e.target.dataset.lyk) { set.lyAnim[e.target.dataset.lyk] = +e.target.value; set.lyAnim = cleanLya(set.lyAnim); applySettings(true); const em = document.querySelector(`[data-lyv="${e.target.dataset.lyk}"]`); if (em) em.textContent = Math.round(+e.target.value) + '%'; } else if (e.target.dataset && e.target.dataset.lwspeed != null) { set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+e.target.value / 5) * 5 || 100)); applySettings(true); const em = document.querySelector('[data-lwsv]'); if (em) em.textContent = set.lyWordSpeed + '%'; clearTimeout(lwT); lwT = setTimeout(() => { if ($('#lyr.open')) lyricsLoad(); }, 350); }   /* v299: word fade-in speed */ else if (e.target.dataset && e.target.dataset.bsh) { const sec = HIDE_STEPS[+e.target.value] || 8; set.barSplit = cleanBarSplit({ ...set.barSplit, hide: sec }); applySettings(true); e.target.setAttribute('aria-valuetext', fmtHide(sec)); document.querySelectorAll('[data-bsv="hide"], [data-bsv="hide2"]').forEach(em => { em.textContent = fmtHide(sec); }); document.querySelectorAll('#bsplit [data-act="bshide"]').forEach(ch => ch.classList.toggle('sel', +ch.dataset.v === sec)); miniIdleArm(); }   /* v292: custom time slider */ else if (e.target.dataset && e.target.dataset.bsk) { set.barSplit = cleanBarSplit({ ...set.barSplit, [e.target.dataset.bsk]: +e.target.value }); applySettings(true); const em = document.querySelector(`[data-bsv="${e.target.dataset.bsk}"]`); if (em) em.textContent = set.barSplit[e.target.dataset.bsk] + '%'; } else if (e.target.dataset && e.target.dataset.ak) { set.anim[e.target.dataset.ak] = +e.target.value; applySettings(true); const em = document.querySelector(`[data-av="${e.target.dataset.ak}"]`); if (em) em.textContent = Math.round(+e.target.value) + '%'; } else if (e.target.id === 'q') { query = e.target.value; results(); clearTimeout(window.__rq); window.__rq = setTimeout(() => { if (query.trim().length >= 2) { set.recent = addRecent(set.recent, query); applySettings(); } }, 1500); } else if (e.target.id === 'pq') { pickN = 60; pickList(); } });
 
 /* scrubber drag (v56): the knob follows the finger and the song jumps ONCE, on release (no seek storm, no stale reports pulling the knob back) */
 document.addEventListener('pointerdown', e => {
@@ -3383,6 +3518,28 @@ function buildBar() {
   if (barIdx() < 0) bar.set(-1, false);   // a page that has no icon in the bar (opened from a widget): no icon is lit
 }
 /** Settings > Tab bar changed (or an import): rebuild the bar; if the page on screen lost its icon, show the first icon's page. */
+/* v295 (owner): Customize navigation drag: hold an icon (350 ms) -> it lifts (bigger, glowing glass), slide left / right -> the others slide aside,
+   let go -> it drops there and the order is saved (set.tabOrder, exported). Arrow keys move a focused icon too. */
+{ let nv = null;
+  const end = save => { if (!nv) return; const { el, bar, items, from, to } = nv; clearTimeout(nv.t); nv = null;
+    bar.classList.remove('nvdrag'); items.forEach(x => { x.style.transform = ''; x.classList.remove('lift'); });
+    if (save && to !== from) { set.tabOrder = reorderShown(set.tabOrder, set.tabs, from, to); applySettings(); applyTabs(); renderSub(true); try { navigator.vibrate && navigator.vibrate(8); } catch {} } };
+  document.addEventListener('pointerdown', e => { const el = e.target.closest && e.target.closest('.nvbar .nvi'); if (!el || e.button > 0) return;
+    const bar = el.parentElement, items = [...bar.querySelectorAll('.nvi')], r0 = items[0].getBoundingClientRect(), slotW = items.length > 1 ? items[1].getBoundingClientRect().left - r0.left : r0.width;
+    nv = { el, bar, items, from: +el.dataset.i, to: +el.dataset.i, x0: e.clientX, y0: e.clientY, left: r0.left, slotW, on: false, id: e.pointerId };
+    nv.t = setTimeout(() => { if (!nv) return; nv.on = true; el.classList.add('lift'); bar.classList.add('nvdrag'); try { el.setPointerCapture(nv.id); } catch {} try { navigator.vibrate && navigator.vibrate(12); } catch {} }, 350); }, true);
+  document.addEventListener('pointermove', e => { if (!nv) return; const dx = e.clientX - nv.x0;
+    if (!nv.on) { if (Math.hypot(dx, e.clientY - nv.y0) > 10) end(false); return; }
+    e.preventDefault(); const { el, items, from, slotW, left } = nv, n = items.length;
+    const to = dropSlot(left + from * slotW + slotW / 2 + dx - left, slotW, n); nv.to = to;
+    const v = Math.max(-1, Math.min(1, (e.clientX - (nv.lx ?? e.clientX)) / 14)); nv.lx = e.clientX; nv.sq = (nv.sq || 0) * .6 + Math.abs(v) * .4;   // v297: liquid stretch with speed
+    el.style.transform = `translate(${dx}px,-12px) scale(${(1.14 + nv.sq * .12).toFixed(3)},${(1.14 - nv.sq * .08).toFixed(3)})`;
+    items.forEach((x, i) => { if (x === el) return; let sh = 0; if (from < to && i > from && i <= to) sh = -slotW; if (from > to && i < from && i >= to) sh = slotW; x.style.transform = sh ? `translateX(${sh}px)` : ''; }); }, { passive: false, capture: true });
+  document.addEventListener('pointerup', () => end(true), true); document.addEventListener('pointercancel', () => end(false), true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.nvbar')) e.preventDefault(); }, true);
+  document.addEventListener('keydown', e => { const el = e.target.closest && e.target.closest('.nvbar .nvi'); if (!el || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const n = el.parentElement.querySelectorAll('.nvi').length, i = +el.dataset.i, j = i + (e.key === 'ArrowLeft' ? -1 : 1); if (j < 0 || j >= n) return; e.preventDefault();
+    set.tabOrder = reorderShown(set.tabOrder, set.tabs, i, j); applySettings(); applyTabs(); renderSub(true); const nb = document.querySelector(`.nvbar .nvi[data-i="${j}"]`); if (nb) nb.focus(); }); }
 function applyTabs() {
   TABS = visibleTabs(set.tabs, set.tabOrder);
   if (!TABS.some(t => t[0] === tab)) { tab = TABS[0][0]; renderMain(); }
@@ -3453,14 +3610,15 @@ document.addEventListener('keydown', e => {
   run();
 }
 // test hooks for screenshots / debugging (harmless)
-if (!Native.isNative) window.__lf = { Native, renderMini, miniHide, miniShow, palMainOnly: () => { palWBad = true; }, palWorkerOn: () => !!palW, demoPlay: () => Native.play(albumTracks('a5'), 0), demoStop: async () => { await Native.pause(); Native.state.index = -1; renderMini(); }, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
-    style: v => { set.lyricStyle = v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = v === 'blur'; set.lyricPal = v === 'palette'; set.lyricBg = ['home', 'pic'].includes(v) ? v : ''; applySettings(); lyApplyTint(Native.current() || {}); },
+if (!Native.isNative) window.__lf = { Native, renderMini, queueSheet, miniHide, miniShow, hideSteps: HIDE_STEPS, palMainOnly: () => { palWBad = true; }, palWorkerOn: () => !!palW, demoPlay: () => Native.play(albumTracks('a5'), 0), demoStop: async () => { await Native.pause(); Native.state.index = -1; renderMini(); }, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
+    style: v => { set.lyricStyle = v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = v === 'blur'; set.lyricPal = v === 'palette'; set.lyricApple = v === 'apple'; set.lyricBg = ['home', 'pic'].includes(v) ? v : ''; applySettings(); lyApplyTint(Native.current() || {}); },
     ink: v => { set.lyricInk = v; applySettings(); }, homeBg: u => { if (u) bgSetUrl(u); else bgSetMedia(null); },   // v277
     albumCover: u => { const t = Native.current(); if (t) { trackAlbum(t).cover = u || undefined; covTint.clear(); } },   // the cover read from the music file (embedded / album art)
     albumPic: (id, u) => { if (u) alpUrls.set(id, u); else alpUrls.delete(id); covTint.clear(); },
     songPic: (id, u) => { if (u) spUrls.set(id, u); else spUrls.delete(id); covTint.clear(); },
     canvas: (t, u) => { const p = '/demo/canvas/' + t.id + (/\.(mp4|webm)(\?|$)/i.test(u) ? '.mp4' : '.gif'); if (u) { canvasMap['t:' + t.id] = p; cvWeb.set(p, u); canvasOn = true; } else { delete canvasMap['t:' + t.id]; canvasOn = false; } covTint.clear(); },
     pal: () => [...covTint.values()].map(c => (c.pal || []).map(q => ({ L: +q.L.toFixed(3), C: +Math.hypot(q.a, q.b).toFixed(3), share: +(q.share || 0).toFixed(4), solid: q.solid == null ? null : +q.solid.toFixed(2), flags: Object.keys(q).filter(k => q[k] === true).join(',') }))),
+    ready: id => { const t = (Native.state.queue || []).find(x => x.id === id); return !!(t && coverTintNow(t)); },   // v293: are this song's colours read ahead?
     apply: () => lyApplyTint(Native.current() || {}), source: () => { const t = Native.current(); return t ? tintSource(trackAlbum(t), t) : null; } } };
 
 /* liquid glass press: wobble + a light spot at the touch point, on every glass control */

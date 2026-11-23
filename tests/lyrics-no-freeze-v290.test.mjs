@@ -31,9 +31,9 @@ test('v290: palAsync falls back to the old main-thread call (no worker, worker e
   assert.match(M, /w\.postMessage\(\{ id, px: d, hi: d\.hi \|\| null, fw: d\.fw \|\| null \}\)/, 'hi / fw sent apart (a typed array loses extra fields when copied)');
   assert.match(M, /if \(g && pl && c\.pal === pl && !c\.palGrad\) c\.palGrad = g;/, 'the gradient comes back ready too');
 });
-test('v290: the lyrics screen opens and draws before the background is read; the next song is read ahead', () => {
-  assert.match(M, /requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => \{ if \(my === lyrSeq\) lyApplyTint\(t\); \}\)\);/);
-  assert.match(M, /lyPreT = setTimeout\(\(\) => \{ const t = Native\.current\(\); if \(t\) \{ try \{ coverTint\(trackAlbum\(t\), t\)/);
+test('v290 / v293: the lyrics screen opens and draws before the background is read (unless it is ready: then painted at once); neighbours are read ahead', () => {
+  assert.match(M, /if \(lyReady\) lyPaint\(el, lyReady\); else requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => \{ if \(my === lyrSeq\) lyApplyTint\(t\); \}\)\);/);
+  assert.match(M, /on\('onTrackChanged', \(\) => \{ lyPrefetch\(\); \}\);/);
 });
 test('v290: style texts (owner)', () => {
   assert.ok(M.includes("palette: 'Cover colour palette: a colour gradient from the picture or GIF you set for the song or album, else its original cover, white lyrics'"));

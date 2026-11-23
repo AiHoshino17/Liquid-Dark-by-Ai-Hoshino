@@ -83,6 +83,22 @@ with sync_playwright() as pw:
     ctx, p, e = page_with(PORT, {}); p.evaluate("__lf.push('animation')"); p.wait_for_selector('#bsplit [data-act="bshide"]')
     check(p.inner_text('#bsplit [data-act="bshide"].sel') == '8 s', 'Settings: Hide after = 8 s by default')
     p.click('#bsplit [data-act="bshide"][data-v="15"]'); p.wait_for_timeout(200)
-    check(p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.hide") == 15, 'Settings: Hide after 15 s saves'); p.screenshot(path=str(OUT / 'settings.png')); ctx.close()
+    check(p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.hide") == 15, 'Settings: Hide after 15 s saves')
+    # v292: custom time slider (3 s - 10 min) and Never
+    def slide_to(sec):
+        p.eval_on_selector('#bsplit input[data-bsh]', "(el, sec) => { el.value = __lf.hideSteps.indexOf(sec); el.dispatchEvent(new Event('input', {bubbles: true})); }", sec)
+        p.wait_for_timeout(700)
+    for sec, txt in [(95, '1 min 35 s'), (600, '10 min'), (3, '3 s'), (45, '45 s')]:
+        slide_to(sec); got = p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.hide"); shown = p.inner_text('#bsplit [data-bsv="hide2"]')
+        check(got == sec and shown == txt, f'Settings: custom time {txt} saves ({got}) and shows ({shown})')
+    p.screenshot(path=str(OUT / 'settings.png'))
+    p.click('#bsplit [data-act="bshide"][data-v="0"]'); p.wait_for_timeout(300)
+    check(p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.hide") == 0 and not p.locator('#bsplit input[data-bsh]').count(), 'Settings: Never saves and hides the custom slider')
+    ctx.close()
+    # v292: a custom time is really used: 12 s -> still there at 10 s, gone by 13.5 s
+    ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 12}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(1500)
+    p.wait_for_timeout(8700); s = p.evaluate(ST); check(s['mini'] and not s['away'], 'custom 12 s: still there after 10 s')
+    p.wait_for_timeout(3800); s = p.evaluate(ST); check(s['away'], 'custom 12 s: merged back by 14 s')
+    check(not e, f'no page errors {e[:2]}'); ctx.close()
     br.close()
 print('ALL PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

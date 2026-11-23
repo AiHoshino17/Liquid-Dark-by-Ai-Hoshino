@@ -91,7 +91,7 @@ test('v284: icon order: cleaned, moved left / right, used by visibleTabs, saved 
   assert.deepEqual(visibleTabs({ settings: true }, ['settings', 'search', 'home']).map(t => t[0]), ['settings', 'search', 'home', 'albums', 'library']);
   assert.match(M, /tabOrder: \['home', 'albums', 'library', 'search', 'settings'\]/, 'a default, so import type-checks it (array)');
   assert.equal((M.match(/set\.tabOrder = cleanTabOrder\(set\.tabOrder\)/g) || []).length, 2, 'cleaned at start-up and on import');
-  assert.match(M, /case 'tabmv':/); assert.match(M, /data-act="tabmv"/);
+  assert.match(M, /case 'tabmv':/); assert.match(M, /data-act="navcustom"/, 'v295: the order is now changed by dragging on Customize navigation');
 });
 test('v284: the lit icon follows the screen (Settings open + a Settings icon = that icon is lit)', () => {
   assert.match(M, /const barIdx = \(\) => \{ const top = stack\[stack\.length - 1\], si = TABS\.findIndex\(t => t\[0\] === 'settings'\); return top && top\.t === 'settings' && si >= 0 \? si : tabIdx\(\); \};/);

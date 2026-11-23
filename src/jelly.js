@@ -35,7 +35,7 @@ export function initJelly(doc = document) {
   let cur = null;   // the element under the finger
   doc.addEventListener('pointerdown', e => {
     if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0) || reduced()) return;
-    const el = e.target.closest && e.target.closest(SEL); if (!el || el.disabled || e.target.closest('input,.toggle,.scrub,.tabbar,.lens') || el.closest('[data-liquid]') || el.closest('.tabbar,.lens,.toggle,.scrub')) return;   // rows with the liquid pill (liquidgroups.js) do not squash
+    const el = e.target.closest && e.target.closest(SEL); if (!el || el.disabled || e.target.closest('input,.toggle,.scrub,.tabbar,.lens,.nvbar,.lyr-body .ln') || el.closest('[data-liquid]') || el.closest('.tabbar,.lens,.toggle,.scrub')) return;   // rows with the liquid pill (liquidgroups.js) do not squash
     const r = el.getBoundingClientRect(), s = live.get(el) || { sx: 1, sy: 1, ox: 0, oy: 0, vsx: 0, vsy: 0, vox: 0, voy: 0 };
     Object.assign(s, { f: (e.pointerType === 'mouse' ? 0.4 : Math.max(Math.min(1, (Math.max(e.width || 0, e.height || 0) - 12) / 42), e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0)), sp: 0, ux: 0, uy: 0, t: 0, px: undefined, py: undefined, rel: null, down: true, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, w: Math.max(1, r.width), h: Math.max(1, r.height), big: r.width > 160 || r.height > 90, pressAmt: (r.width > 160 ? 0.02 : 0.06) * (0.7 + 0.9 * (e.pointerType === 'mouse' ? 0.4 : Math.max(Math.min(1, (Math.max(e.width || 0, e.height || 0) - 12) / 42), e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0))) });
     el.style.transition = 'none'; el.style.willChange = 'transform'; el.classList.add('jy-down');

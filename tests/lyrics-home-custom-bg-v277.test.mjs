@@ -3,7 +3,7 @@ import { test } from 'node:test'; import assert from 'node:assert/strict'; impor
 const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8'), C = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
 test('v277: two new lyrics background styles in the picker', () => {
   assert.match(M, /pic: 'Song picture: [^']+', home: 'Home screen background: [^']+' \};/);   // v286: Song picture added assert.doesNotMatch(M, /Custom lyrics background/, 'v285: removed (owner)');
-  assert.match(M, /const lyStyleKey = \(\) => set\.lyricStyle === 'cover' \? \(set\.lyricBlur === true \? 'blur' : set\.lyricBg \|\| 'palette'\) : 'classic';/);
+  assert.match(M, /const lyStyleKey = \(\) => set\.lyricStyle === 'cover' \? \(set\.lyricBlur === true \? 'blur' : set\.lyricBg \|\| \(set\.lyricApple === true \? 'apple' : 'palette'\)\) : 'classic';/);   // v294: + Apple gradient
   assert.match(M, /set\.lyricBg = \['home', 'pic'\]\.includes\(b\.dataset\.v\) \? b\.dataset\.v : '';/);
 });
 test('v277: a saved value is cleaned (only home / custom, only with the cover style, never together with blur / palette)', () => {

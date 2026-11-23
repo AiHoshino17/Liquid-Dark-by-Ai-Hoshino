@@ -70,3 +70,17 @@ export function currentIndex(lines, pos) {
   }
   return ans;
 }
+/** v298 (owner: "Apple Music's word-by-word fade-in isn't working"): most lyric files are timed per LINE only, so there were no words to fade.
+ *  This gives such lines word timings: the words share the line's singing time by their length (about 75 ms a letter, at least 0.8 s, never past
+ *  the next line). Lines that already have word timings are left as they are. Returns new line objects; never mutates. */
+export function fillWords(lines, speed = 100) {   // v299: speed 50-200 % (Settings > Lyrics animation > Fade-in speed): 100 = ~75 ms a letter
+  return (lines || []).map((l, i) => {
+    if (!l || l.t == null || (l.words && l.words.length) || !String(l.text || '').trim()) return l;
+    const parts = String(l.text).match(/\S+\s*/g) || []; if (!parts.length) return l;
+    let nx = null; for (let j = i + 1; j < lines.length; j++) if (lines[j] && lines[j].t != null) { nx = lines[j].t; break; }
+    const chars = parts.reduce((n, p) => n + p.trim().length, 0) || 1;
+    const k = 100 / Math.max(50, Math.min(200, +speed || 100)); let dur = Math.max(.8 * k, chars * .075 * k); if (nx != null) dur = Math.max(.2, Math.min(dur, nx - l.t - .1));
+    let acc = 0; const words = parts.map(p => { const w = { t: +(l.t + dur * acc / chars).toFixed(3), w: p }; acc += p.trim().length; return w; });
+    return { ...l, words, autoWords: true };
+  });
+}

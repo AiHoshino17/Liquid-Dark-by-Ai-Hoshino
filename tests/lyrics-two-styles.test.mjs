@@ -3,14 +3,14 @@ import { test } from 'node:test'; import assert from 'node:assert/strict'; impor
 const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8') + '\n' + fs.readFileSync(new URL('../src/palcore.js', import.meta.url), 'utf8'), CSS = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
 test('LYSTYLE has exactly classic, palette, blur, pic and home (v277 Home, v285 Custom removed, v286 Song picture)', () => {
   const m = M.match(/const LYSTYLE = \{([^\n]*)\};/); assert.ok(m);
-  assert.deepEqual([...m[1].matchAll(/(\w+): '/g)].map(x => x[1]), ['classic', 'palette', 'blur', 'pic', 'home']);   // v285: Custom removed; v286: Song picture added
-  assert.match(M, /const lyStyleKey = \(\) => set\.lyricStyle === 'cover' \? \(set\.lyricBlur === true \? 'blur' : set\.lyricBg \|\| 'palette'\) : 'classic';/);
+  assert.deepEqual([...m[1].matchAll(/(\w+): '/g)].map(x => x[1]), ['classic', 'apple', 'palette', 'blur', 'pic', 'home']);   // v294: Apple gradient   // v285: Custom removed; v286: Song picture added
+  assert.match(M, /const lyStyleKey = \(\) => set\.lyricStyle === 'cover' \? \(set\.lyricBlur === true \? 'blur' : set\.lyricBg \|\| \(set\.lyricApple === true \? 'apple' : 'palette'\)\) : 'classic';/);   // v294: + Apple gradient
 });
 test('Cover blur is wired: the picture itself is blurred behind the lyrics (still, GIF, Canvas video)', () => {
   assert.match(M, /h\.dataset\.lyblur = set\.lyricStyle === 'cover' && set\.lyricBlur === true/);
   assert.match(M, /set\.lyricBlur = b\.dataset\.v === 'blur'/);
   assert.match(M, /function lyBlurHtml\(t\)/); assert.match(M, /s\.vid \? vid\(''\)/); assert.match(M, /<img\$\{c\} src="\$\{e\}"/);
-  assert.match(M, /el\.innerHTML = `\$\{lyBlurHtml\(t\)\}\$\{lyBgHtml\(t\)\}<div class="lyr-top">/, 'the layer is part of every lyrics render');
+  assert.match(M, /el\.innerHTML = `\$\{lyApHtml\(\)\}\$\{lyBlurHtml\(t\)\}\$\{lyBgHtml\(t\)\}<div class="lyr-top">/, 'the layer is part of every lyrics render');
   assert.match(CSS, /html\[data-lyblur="1"\] \.lyr\{/); assert.match(CSS, /\.lyr-blur>img,\.lyr-blur>video\{[^}]*object-fit:fill;filter:blur\(/);
   assert.match(fs.readFileSync(new URL('../src/settingsio.js', import.meta.url), 'utf8'), /lyricBlur: 'Lyrics: Cover blur'/);
 });

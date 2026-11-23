@@ -3,16 +3,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cleanBarSplit, HIDE_OPTS, BS_DEF } from '../src/lsplit.js';
+import { cleanBarSplit, HIDE_OPTS, BS_DEF, HIDE_MIN, HIDE_MAX, HIDE_STEPS, hideStepOf, fmtHide } from '../src/lsplit.js';
 const M = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const C = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
 const L = readFileSync(new URL('../src/lsplit.js', import.meta.url), 'utf8');
-test('v291 setting: Hide after (default 8 s, Never / 5 / 8 / 15), exported with barSplit', () => {
-  assert.deepEqual(HIDE_OPTS, [0, 5, 8, 15]); assert.equal(BS_DEF.hide, 8);
-  assert.equal(cleanBarSplit({}).hide, 8); assert.equal(cleanBarSplit({ hide: 0 }).hide, 0); assert.equal(cleanBarSplit({ hide: 99 }).hide, 8); assert.equal(cleanBarSplit({ hide: '15' }).hide, 15);
+test('v291 / v292 setting: Hide after = Never or any time 3 s - 10 min (default 8 s), quick picks + a custom slider, exported with barSplit', () => {
+  assert.deepEqual(HIDE_OPTS, [0, 5, 8, 15, 30, 60]); assert.equal(BS_DEF.hide, 8);
+  assert.equal(cleanBarSplit({}).hide, 8); assert.equal(cleanBarSplit({ hide: 0 }).hide, 0); assert.equal(cleanBarSplit({ hide: '15' }).hide, 15);
+  assert.equal(cleanBarSplit({ hide: 99 }).hide, 99, 'v292: any time, not only the quick picks'); assert.equal(cleanBarSplit({ hide: 1 }).hide, HIDE_MIN); assert.equal(cleanBarSplit({ hide: 5000 }).hide, HIDE_MAX);
+  for (const bad of ['x', null, true, -3, NaN, {}]) assert.equal(cleanBarSplit({ hide: bad }).hide, 8, `broken ${String(bad)} = the default`);
+  assert.equal(HIDE_MIN, 3); assert.equal(HIDE_MAX, 600);
+  assert.equal(HIDE_STEPS[0], 3); assert.equal(HIDE_STEPS[HIDE_STEPS.length - 1], 600); assert.ok(HIDE_STEPS.every((v, i) => !i || v > HIDE_STEPS[i - 1]), 'the slider only goes up');
+  for (const v of [3, 8, 45, 60, 90, 120, 135, 300, 330, 600]) assert.ok(HIDE_STEPS.includes(v), `${v} s is on the slider`);
+  assert.equal(HIDE_STEPS[hideStepOf(97)], 95); assert.equal(HIDE_STEPS[hideStepOf(8)], 8);
+  assert.deepEqual([0, 8, 59, 60, 90, 600].map(fmtHide), ['Never', '8 s', '59 s', '1 min', '1 min 30 s', '10 min']);
   assert.match(M, /barSplit: \{ style: 'cell', stretch: 100, speed: 100, hide: 8 \}/);
-  assert.match(M, /data-act="bshide" data-v="\$\{v\}">\$\{v \? v \+ ' s' : 'Never'\}/);
+  assert.match(M, /data-act="bshide" data-v="\$\{v\}">\$\{fmtHide\(v\)\}/);
   assert.match(M, /case 'bshide': set\.barSplit = cleanBarSplit\(\{ \.\.\.set\.barSplit, hide: \+b\.dataset\.v \}\)/);
+  assert.match(M, /\$\{c\.hide \? `<div class="animrow"><b>Custom time<em data-bsv="hide2">/, 'the custom slider shows unless Never');
+  assert.match(M, /e\.target\.dataset\.bsh\) \{ const sec = HIDE_STEPS\[\+e\.target\.value\] \|\| 8; set\.barSplit = cleanBarSplit\(\{ \.\.\.set\.barSplit, hide: sec \}\);/);
+  assert.match(M, /miniIdleArm\(\); \}   \/\* v292: custom time slider \*\//, 'a new time restarts the count at once');
 });
 test('v291 idle hide: landscape only, a touch restarts it, not while Now Playing / lyrics cover it, music keeps playing', () => {
   assert.match(M, /if \(!sec \|\| !isLand\(\) \|\| !\$\('#mini \.mini:not\(\.leaving\):not\(\.away\)'\)\) return;\n  miniIdleT = setTimeout\(miniHide, sec \* 1000\);/);

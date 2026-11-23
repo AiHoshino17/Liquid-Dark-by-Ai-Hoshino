@@ -33,3 +33,13 @@ export function toggleTab(o, k) {
   const n = { ...c, [k]: !c[k] }; if (!PAGE_TABS.some(x => n[x])) return { tabs: c, ok: false };
   return { tabs: n, ok: true };
 }
+/** v295 (owner: drag-to-reorder "Customize navigation"): move the SHOWN icon at position `from` to position `to` (positions among the shown icons only).
+ *  Hidden icons keep their places in the full order. Returns the new full order (cleaned). */
+export function reorderShown(order, tabs, from, to) {
+  const full = cleanTabOrder(order), c = cleanTabs(tabs), shown = full.filter(k => c[k]);
+  if (!(from >= 0 && from < shown.length && to >= 0 && to < shown.length) || from === to) return full;
+  const ns = shown.slice(); const [m] = ns.splice(from, 1); ns.splice(to, 0, m);
+  let j = 0; return full.map(k => (c[k] ? ns[j++] : k));
+}
+/** Where a dragged icon lands: its centre x (relative to the first slot's left edge) over the slot width, kept inside the bar. */
+export const dropSlot = (cx, slotW, n) => Math.max(0, Math.min(n - 1, Math.floor(cx / Math.max(1, slotW))));

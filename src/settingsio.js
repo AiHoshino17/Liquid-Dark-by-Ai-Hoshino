@@ -6,8 +6,8 @@ export const FILE_NAME = 'liquid-dark-settings.json';
 /** v159: a new name each day, so an older backup is never overwritten by a new export. */
 export const fileName = (now = new Date()) => `liquid-dark-settings-${stamp(now)}.json`;
 export const SETTINGS_KEY = 'lf.settings';
-const EXTRA_KEYS = ['lf.canvasOn'];                        // stored beside the settings object: the Canvas on/off switch only (v163: the profile photo is NOT exported; the owner adds it again)
-const okExtra = (k, v) => k === 'lf.canvasOn' && typeof v === 'string' && (v === '0' || v === '1');
+const EXTRA_KEYS = ['lf.canvasOn', 'lf.songorig'];   // v296: + which songs show their ORIGINAL cover instead of your picture                        // stored beside the settings object: the Canvas on/off switch only (v163: the profile photo is NOT exported; the owner adds it again)
+const okExtra = (k, v) => { if (typeof v !== 'string') return false; if (k === 'lf.canvasOn') return v === '0' || v === '1'; if (k === 'lf.songorig') { try { const o = JSON.parse(v); return !!o && typeof o === 'object' && !Array.isArray(o) && v.length < 2e6; } catch { return false; } } return false; };
 /** What a settings file does NOT hold (shown in the import / export sheets). */
 export const NOT_INCLUDED = ['Background picture or GIF', 'Profile picture, GIF or video', 'Playlist, album, artist and genre pictures and GIFs', 'Canvas videos', 'Music folder choice (Android asks again)', 'Search history', 'Favorites, playlists and play history (they have their own export)'];
 const SKIP = new Set(['recent', '__proto__', 'constructor', 'prototype']);   // recent searches are history, not settings
@@ -75,13 +75,13 @@ export function pickSettings(imported, keys) {
 /* ---------- v208: plain names for the import sheet ----------
    The groups are the settings keys. Liquid glass and the animation studio (anim), the lyrics animation (lyAnim) and the
    lens refraction (refract) are named here so they are easy to find in the sheet. Unknown keys keep the split-name label. */
-export const GROUP_LABELS = {
+export const GROUP_LABELS = { extras: 'Canvas on / off and songs set to show their original cover',
   anim: 'Liquid glass & wobble (animation studio)',
   lyAnim: 'Lyrics animation',
   refract: 'Lens refraction (tab bar)',
   tabs: 'Tab bar icons', tabOrder: 'Tab bar icon order', barSplit: 'Landscape mini player: split and merge (style, speed, stretch)',
   lyricSize: 'Lyrics size', lyricPx: 'Lyrics text size', lyricStyle: 'Lyrics style', lyricBlur: 'Lyrics: Cover blur',
-  lyricPal: 'Lyrics: Cover colour palette', lyricBg: 'Lyrics: Home screen / Song picture background', lyWordFade: 'Lyrics: word fade-in', lyricInk: 'Lyrics text colour', timeStyle: 'Playing bar time', coverLyrics: 'Cover in lyrics',
+  lyricPal: 'Lyrics: Cover colour palette', lyricApple: 'Lyrics: Apple gradient', lyricBg: 'Lyrics: Home screen / Song picture background', lyWordFade: 'Lyrics: word fade-in', lyWordSpeed: 'Lyrics: word fade-in speed', lyricInk: 'Lyrics text colour', timeStyle: 'Playing bar time', coverLyrics: 'Cover in lyrics',
   tabSize: 'Glass bar size (older Small / Medium / Large choice)', tabPct: 'Glass bar size', redHover: 'Red highlight on hover', motion: 'Reduce motion', contrast: 'Increase contrast',
   albumInfo: 'Album info', bigCovers: 'Big covers', userName: 'Your name', npCover: 'Player cover size', npImmersive: 'Immersive player', npTapOrig: 'Tap cover shows original',
   home: 'Home layout', bgDim: 'Background dim', bgFit: 'Background fit', autoplay: 'Autoplay', autoCheck: 'Check for updates',

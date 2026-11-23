@@ -5,6 +5,9 @@
 # Liquid Dark: HANDOFF [v148]  (lives at `docs/HANDOFF.md` since v45; read this first; old long notes: docs/archive/HISTORY_v25.md, incl. the full v27 / v28 / v29 / v30 notes at the end)
 
 
+## Session: v292-v302 - version stays 0.208.0
+Landscape mini player hide time = any 3 s-10 min or Never (`set.barSplit.hide`). Lyrics: background follows the song at once (lyPrefetch / lyNear / lyPrepOne: next, previous, Up Next, Canvas), NEW Apple gradient style (`set.lyricApple`, .lyr-apl), word fade-in for line-timed lyrics (lrc.js fillWords) with Fade-in speed (`set.lyWordSpeed`), a tapped line jumps at once (.lysnap), big jumps fade in as one block (.lyjump), no glow / halo on lyric text. Settings: Look / Home / Now Playing / Shortcuts / Lyrics / Playback / Accessibility / Library / Backup / More / About; all glass bar + animation settings on "Liquid glass & animation"; Customize navigation = drag-to-reorder page (tabbar.js reorderShown). Export also holds `lf.songorig`. Android: highest refresh rate (MainActivity.maxRefresh). New browser checks: lyrics-switch-check.py, landscape-rotate-hide-check.py.
+
 ## Session: lyrics never freeze, landscape split styles - version stays 0.208.0
 Cover colour palette maths = `src/palcore.js` (pure, no DOM), run in a Web Worker `src/palworker.js` through `palAsync()` in `src/main.js` (main-thread fallback). Change palette RESULTS only in palcore.js; never move it back to the main thread. Landscape mini player split / merge = `src/lsplit.js` (styles cell / stretch / drip / jelly / off, Settings > Animation). Turning sideways plays the split (`#app.lrot`); the landscape player hides after `set.barSplit.hide` s (miniIdleArm / miniHide / miniShow in main.js). Browser checks: `tests/lyrics-open-speed-check.py`, `tests/landscape-split-check.py`, `tests/landscape-rotate-hide-check.py`, `tests/tab-lit-check.py`.
 

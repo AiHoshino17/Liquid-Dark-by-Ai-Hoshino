@@ -15,7 +15,7 @@ test('tintImagePx: a failed direct read is retried from a local blob (never tain
 });
 test('coverTint: one palette function serves every source (custom pic / GIF, original cover, Canvas)', () => {
   const a = M.indexOf('function coverTint'); const b = M.indexOf('/* v290 (owner', a); const src = M.slice(a, b);
-  assert.match(src, /tintPixels\(S\)\.then\(async d => \{ let p = null, pl = null, g = ''; if \(d\) \{ try \{ p = tintFromPixels\(d\); \} catch \{\} try \{ const r = await palAsync\(d\); pl = r\.pal;/);   // v290: the palette now comes from the Web Worker (same tintPaletteAuto)
+  assert.match(src, /tintPixels\(S\)\.then\(async d => \{ let p = null, pl = null, g = ''; if \(d\) \{ try \{ p = tintFromPixels\(d\); \} catch \{\} if \(p\) \{ pr\.early = p;[^\n]*try \{ const r = await palAsync\(d\); pl = r\.pal;/);   // v290 / v293 (the main colour is handed out early, the palette is unchanged): the palette now comes from the Web Worker (same tintPaletteAuto)
   const t = M.slice(M.indexOf('async function tintPixels'), M.indexOf('function tintFromPixels'));
   assert.match(t, /tintVideoPx/); assert.match(t, /tintImagePx\(S\.still, S\.stillCustom\)/); assert.match(t, /tintImagePx\(S\.src, S\.custom\)/);
 });

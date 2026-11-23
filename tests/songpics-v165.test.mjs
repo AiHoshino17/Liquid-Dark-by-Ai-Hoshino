@@ -29,7 +29,7 @@ test('guard (needs the running app): every place a song is shown uses gOfT/covT,
 test('lock screen / notification: the song picture first, then the album picture; colours follow the song picture', () => {
   assert.ok(M.includes("Native.setCoverOverride(t => (t ? (soHas(t) ? '' : mirrorPathSync('lf-songpics:' + t.id) || mirrorPathSync('lf-albumpics:' + t.albumId)) : ''));"));   // v208: a song marked "original cover" gives the notification no override
   assert.ok(N.includes('(coverFor && coverFor(t))'));
-  assert.ok(M.includes('function coverTint(a, t)') && M.includes("sp ? t.id + '|s'"));
+  assert.ok(M.includes('function coverTint(a, t, onEarly)') && M.includes("sp ? t.id + '|s'"));   // v293: + onEarly (the main colour as soon as it is read)
   assert.ok(M.includes('coverTint(trackAlbum(t), t)'));
 });
 

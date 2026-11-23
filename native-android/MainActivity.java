@@ -32,6 +32,7 @@ public class MainActivity extends BridgeActivity {
     grabLaunch(getIntent());
     final Window w = getWindow();
     WindowCompat.setDecorFitsSystemWindows(w, false);
+    maxRefresh();   // v302: run at the screen's highest refresh rate (90 / 120 / 144 Hz ...)
     w.setStatusBarColor(Color.TRANSPARENT);
     w.setNavigationBarColor(Color.TRANSPARENT);
     if (Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
@@ -102,6 +103,7 @@ public class MainActivity extends BridgeActivity {
 
   @Override public void onResume() {
     super.onResume();
+    maxRefresh();   // v302: again after coming back (some phones reset it)
     try { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY); } catch (Throwable ignored) { }   // v151: back on top of the scheduler every time the app comes to the front
     try {   // v156: the web view is told it is in front again and redraws at once (pictures decoded again by the page: see rewarmAll in main.js)
       WebView web = getBridge() != null ? getBridge().getWebView() : null;
@@ -115,6 +117,23 @@ public class MainActivity extends BridgeActivity {
       if (web == null) return;
       final String js = "window.dispatchEvent(new CustomEvent('lf-insets',{detail:{top:" + insetTop + ",bottom:" + insetBottom + ",left:" + insetLeft + ",right:" + insetRight + "}}))";
       web.post(new Runnable() { @Override public void run() { web.evaluateJavascript(js, null); } });
+    } catch (Throwable ignored) { }
+  }
+  /* v302 (owner: "force the app to use the highest refresh rate the device has"): picks the display mode with the HIGHEST refresh rate at the
+     current resolution and asks the window for it (Android 6+). Android 11+ also gets the same rate as the preferred frame rate. A phone's
+     battery saver or its own refresh setting can still lower it; that is the phone's choice. */
+  private void maxRefresh() {
+    try {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+      final Window w = getWindow(); final android.view.Display d = w.getDecorView().getDisplay() != null ? w.getDecorView().getDisplay() : getWindowManager().getDefaultDisplay();
+      if (d == null) return;
+      final android.view.Display.Mode cur = d.getMode(); android.view.Display.Mode best = cur;
+      for (android.view.Display.Mode m : d.getSupportedModes()) {
+        if (m.getPhysicalWidth() == cur.getPhysicalWidth() && m.getPhysicalHeight() == cur.getPhysicalHeight() && m.getRefreshRate() > best.getRefreshRate() + 0.5f) best = m;
+      }
+      final WindowManager.LayoutParams lp = w.getAttributes();
+      if (lp.preferredDisplayModeId != best.getModeId()) { lp.preferredDisplayModeId = best.getModeId(); w.setAttributes(lp); }
+      if (Build.VERSION.SDK_INT >= 30) { lp.preferredRefreshRate = best.getRefreshRate(); w.setAttributes(lp); }
     } catch (Throwable ignored) { }
   }
 }

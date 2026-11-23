@@ -10,6 +10,33 @@
 
 
 
+## v300-302: Smoother lyrics taps and highest refresh rate
+- Tapping a lyric line jumps straight to it.
+- The app now runs at your screen's highest refresh rate (90, 120 Hz or more).
+
+## v298-299: Word fade-in for every synced song
+- Apple Music style word fade-in now works for normal (line-timed) lyrics too.
+- New Fade-in speed slider in Settings > Lyrics > Lyrics animation.
+
+## v296: Tidier Settings, cleaner lyrics text
+- Settings are grouped: Look, Home, Now Playing, Lyrics, Playback, Accessibility, Library, Backup, More. Widgets and phone info have their own pages.
+- Black lyrics no longer glow; white lyrics no longer have a dark shadow.
+- Export settings now also keeps which songs show their original cover.
+
+## v295: Customize navigation
+- Settings > Customize navigation: hold an icon, drag it to a new place, let go. Turn icons on or off, or reset to default.
+
+## v294: Apple gradient lyrics background
+- New lyrics background style: soft, slowly moving colours from the song's picture or GIF (or its cover), like Apple Music.
+
+## v293: Lyrics background changes with the song instantly
+- With Cover colour palette, Cover blur or Song picture, the next and previous songs are prepared while the current one plays, so the new song's background appears the moment you skip. The look is exactly the same as before.
+- If you skip very fast, the old song's colours still disappear straight away and the new ones follow a moment later.
+- Canvas videos are prepared ahead too, and so are songs you jump to from Up Next. Lyrics opened after a jump are ready straight away.
+
+## v292: Pick any time for the landscape mini player to hide
+- Settings > Animation > Landscape mini player > Hide after: Never, a quick pick (5 s to 1 min), or any time from 3 seconds to 10 minutes with the Custom time slider.
+
 ## v291: See the split when you turn the phone, and an auto-hiding landscape mini player
 - Turning the phone sideways while music plays now shows the wide glass bar first, then the mini player splits out of it.
 - In landscape the mini player merges back into the glass bar after 8 seconds without a touch (music keeps playing). Swipe up on the bar, change song, or play / pause to bring it back.

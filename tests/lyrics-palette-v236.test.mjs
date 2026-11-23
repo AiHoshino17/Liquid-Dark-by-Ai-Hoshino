@@ -39,7 +39,7 @@ test('v236: every frame of a GIF counts (a colour only in the last frames is in 
 });
 test('v236: the setting is wired (default off, switch in Background style, export label, CSS, exclusive with the mix)', () => {
   assert.match(M, /lyricStyle: 'classic', lyricBlur: false, lyricPal: false/); assert.match(M, /palette: 'Cover colour palette:/);
-  assert.match(M, /set\.lyricPal = b\.dataset\.v === 'palette'/); assert.match(M, /h\.dataset\.lypal = set\.lyricStyle === 'cover' && set\.lyricPal === true && set\.lyricBlur !== true/);
+  assert.match(M, /set\.lyricPal = b\.dataset\.v === 'palette'/); assert.match(M, /h\.dataset\.lypal = set\.lyricStyle === 'cover' && set\.lyricApple !== true && set\.lyricPal === true && set\.lyricBlur !== true/);
   assert.equal((M.match(/set\.lyricPal = set\.lyricStyle === 'cover' && !set\.lyricBlur;/g) || []).length, 2);
   assert.match(M, /set\.lyricBlur = b\.dataset\.v === 'blur'/);   // Cover blur is the third, separate choice
   assert.match(CSS, /html\[data-lypal="1"\] \.lyr\{[^}]*var\(--lyr-pal/); assert.match(fs.readFileSync(new URL('../src/settingsio.js', import.meta.url), 'utf8'), /lyricPal: 'Lyrics: Cover colour palette'/);
@@ -52,7 +52,7 @@ test('v236 BLINK: the lyrics glide never switches off the fade / size transition
   const mk = () => { const st = {}, hist = []; return { style: { setProperty: (k, v) => { st[k] = v; hist.push([k, v]); }, removeProperty: k => { delete st[k]; hist.push([k, null]); }, set transition(v) { hist.push(['transition', v]); } }, dataset: {}, classList: { contains: () => true }, st, hist, offsetTop: 0 }; };
   const lines = Array.from({ length: 12 }, (_, i) => { const n = mk(); n.dataset.li = i; n.offsetTop = i * 60; return n; }), bodyEl = { children: lines, clientHeight: 600, scrollHeight: 2000, scrollTop: 0, offsetHeight: 600 };
   const run = new Function('lines', 'bodyEl', `let lyMoved = []; const $ = () => bodyEl, set = { lyAnim: { anchor: 16 } }, document = { documentElement: { dataset: {} }, body: { offsetHeight: 1 } }, getComputedStyle = () => ({ translate: '0px 0px' });
-    const lyAnchor = () => .16; ${body.slice(0, body.indexOf('/* v148+'))} lyCenter(lines[5], true, bodyEl); return lyMoved.length;`);
+    const lyAnchor = () => .16; ${body.slice(0, body.indexOf('/* v148+'))} lyCenter(lines[3], true, bodyEl); return lyMoved.length;`);   // v300: a short move (84 px) glides line by line; long ones are the block fade-in (tests/lyrics-jump-v300.test.mjs)
   assert.ok(run(lines, bodyEl) > 0);
   for (const n of lines.slice(1, 10)) { assert.ok(!n.hist.some(h => h[0] === 'transition'), 'no inline transition on a line'); const k = n.hist.filter(h => h[0] === '--tt'); assert.deepEqual(k.map(h => h[1]), ['0s', null]); assert.equal(n.st['--ty'], '0px'); }
 });
