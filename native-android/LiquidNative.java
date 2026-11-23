@@ -2918,9 +2918,80 @@ public class LiquidNative extends Plugin {
       o.put("availMb", mi.availMem / (1024 * 1024));
       o.put("heapMb", Runtime.getRuntime().maxMemory() / (1024 * 1024));
       o.put("cpuMs", android.os.Process.getElapsedCpuTime());   // CPU time this app has used so far (all threads); the JS side turns the growth into a live %
+      /* v305 (owner: "the live RAM / CPU data is wrong, especially on Oppo / OnePlus; look how real apps do it"): the same sources device-info apps use.
+         RAM: /proc/meminfo (MemTotal, MemAvailable = what the system can still give; SwapTotal / SwapFree = zram + ColorOS / OxygenOS "RAM expansion").
+         CPU: since Android 8 apps may not read /proc/stat (whole-phone CPU %), so, like DevCheck / CPU-Z, every core's CURRENT speed is read from
+         /sys/devices/system/cpu/cpuN/cpufreq/scaling_cur_freq against its maximum; a core that is offline / asleep reads 0. */
+      try {
+        java.util.HashMap<String, Long> mm = new java.util.HashMap<>();
+        java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader("/proc/meminfo"));
+        try { String ln; while ((ln = br.readLine()) != null) { String[] a = ln.split(":\\s*"); if (a.length == 2) { String v = a[1].trim().split("\\s+")[0]; try { mm.put(a[0], Long.parseLong(v)); } catch (NumberFormatException ignored) { } } } } finally { br.close(); }
+        if (mm.containsKey("MemTotal")) o.put("memTotalKb", mm.get("MemTotal"));
+        if (mm.containsKey("MemAvailable")) o.put("memAvailKb", mm.get("MemAvailable"));
+        if (mm.containsKey("SwapTotal")) o.put("swapTotalKb", mm.get("SwapTotal"));
+        if (mm.containsKey("SwapFree")) o.put("swapFreeKb", mm.get("SwapFree"));
+      } catch (Exception ignored) { }
+      /* v306 (owner: "improve the live phone info for wide Android support"): every core with fallbacks, so more phones show it:
+         cur = cpuN/cpufreq/scaling_cur_freq -> cpuinfo_cur_freq -> its policy's scaling_cur_freq (/sys/devices/system/cpu/cpufreq/policyX, related_cpus);
+         max = cpuinfo_max_freq -> scaling_max_freq -> the policy's; online = cpuN/online (cpu0 always); cap = cpuN/cpu_capacity (core type).
+         Per policy (core cluster): the time spent at each speed (stats/time_in_state) since the last read gives the AVERAGE speed over the last
+         half second, a steadier load estimate than one instant (DevCheck-style). Any file a phone hides is simply left out. */
+      try {
+        int n = Runtime.getRuntime().availableProcessors();
+        java.io.File[] cpuDirs = new java.io.File("/sys/devices/system/cpu").listFiles(f -> f.getName().matches("cpu[0-9]+"));
+        if (cpuDirs != null && cpuDirs.length > n) n = cpuDirs.length;
+        java.util.HashMap<Integer, String> polOf = new java.util.HashMap<>(); JSArray pols = new JSArray();
+        java.io.File[] pdirs = new java.io.File("/sys/devices/system/cpu/cpufreq").listFiles(f -> f.getName().matches("policy[0-9]+"));
+        if (pdirs != null) for (java.io.File pd : pdirs) {
+          String rel = sysStr(pd.getPath() + "/related_cpus"); if (rel.isEmpty()) rel = sysStr(pd.getPath() + "/affected_cpus");
+          JSArray cs = new JSArray(); for (String t : rel.trim().split("\\s+")) { try { int c = Integer.parseInt(t); polOf.put(c, pd.getPath()); cs.put(c); } catch (NumberFormatException ignored) { } }
+          JSObject po = new JSObject(); po.put("cpus", cs); po.put("max", sysLong(pd.getPath() + "/cpuinfo_max_freq")); po.put("cur", sysLong(pd.getPath() + "/scaling_cur_freq"));
+          long[] tis = timeInState(pd.getPath() + "/stats/time_in_state");
+          if (tis != null) { long[] prev = TIS_PREV.get(pd.getPath()); TIS_PREV.put(pd.getPath(), tis); if (prev != null && tis[1] > prev[1]) po.put("avg", (tis[0] - prev[0]) / (tis[1] - prev[1])); }
+          pols.put(po);
+        }
+        JSArray cores = new JSArray();
+        for (int i = 0; i < n; i++) {
+          JSObject c = new JSObject(); String base = "/sys/devices/system/cpu/cpu" + i + "/", pol = polOf.get(i);
+          long cur = sysLong(base + "cpufreq/scaling_cur_freq"); if (cur < 0) cur = sysLong(base + "cpufreq/cpuinfo_cur_freq"); if (cur < 0 && pol != null) cur = sysLong(pol + "/scaling_cur_freq");
+          long max = sysLong(base + "cpufreq/cpuinfo_max_freq"); if (max <= 0) max = sysLong(base + "cpufreq/scaling_max_freq"); if (max <= 0 && pol != null) max = sysLong(pol + "/cpuinfo_max_freq");
+          long on = i == 0 ? 1 : sysLong(base + "online");
+          c.put("cur", cur); c.put("max", max); c.put("online", on != 0); c.put("cap", sysLong(base + "cpu_capacity")); cores.put(c);
+        }
+        o.put("coreFreq", cores); o.put("policies", pols);
+      } catch (Exception ignored) { }
+      try {   // battery + heat: public APIs every phone has
+        android.content.IntentFilter bf = new android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent bi = Build.VERSION.SDK_INT >= 33 ? getContext().registerReceiver(null, bf, Context.RECEIVER_NOT_EXPORTED) : getContext().registerReceiver(null, bf);   // a sticky read, no receiver kept
+        if (bi != null) { o.put("battTemp", bi.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, Integer.MIN_VALUE)); o.put("battMv", bi.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1)); o.put("battPct", bi.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) * 100 / Math.max(1, bi.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100))); o.put("plugged", bi.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) != 0); }
+        android.os.BatteryManager bm = (android.os.BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
+        if (bm != null) { long cn = bm.getLongProperty(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW); if (cn != Long.MIN_VALUE && cn != 0) o.put("battNow", cn); }
+        android.os.PowerManager pm = (android.os.PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        if (pm != null && Build.VERSION.SDK_INT >= 29) o.put("thermal", pm.getCurrentThermalStatus());
+        if (pm != null && Build.VERSION.SDK_INT >= 30) { float h = pm.getThermalHeadroom(10); if (!Float.isNaN(h)) o.put("headroom", h); }
+      } catch (Exception ignored) { }
+      try { if (++pssTick % 4 == 1 || lastPss <= 0) lastPss = android.os.Debug.getPss(); if (lastPss > 0) o.put("appPssKb", lastPss); } catch (Exception ignored) { }   // this app's own memory (every 2 s: it costs a little)
+      o.put("model", (Build.MANUFACTURER + " " + Build.MODEL).trim());
       try { String[] th = new java.io.File("/proc/self/task").list(); if (th != null) o.put("threads", th.length); } catch (Exception ignored) { }   // live thread count of this app
     } catch (Exception e) { Log.w("LiquidNative", "device info: " + e); }
     call.resolve(o);
+  }
+
+  /** v306: one line from a small system file, or "" when it cannot be read. */
+  private static String sysStr(String path) {
+    try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(path))) { String l = r.readLine(); return l == null ? "" : l.trim(); } catch (Exception e) { return ""; }
+  }
+  /** v306: stats/time_in_state ("speed kHz  time in 10 ms" per line) -> { sum(speed x time), sum(time) }, or null when hidden. */
+  private static long[] timeInState(String path) {
+    try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(path))) {
+      long fx = 0, tt = 0; String l; while ((l = r.readLine()) != null) { String[] a = l.trim().split("\\s+"); if (a.length >= 2) { try { long f = Long.parseLong(a[0]), t = Long.parseLong(a[1]); fx += f * t; tt += t; } catch (NumberFormatException ignored) { } } }
+      return tt > 0 ? new long[] { fx, tt } : null;
+    } catch (Exception e) { return null; }
+  }
+  private static final java.util.HashMap<String, long[]> TIS_PREV = new java.util.HashMap<>();
+  private static int pssTick = 0; private static long lastPss = 0;
+  /** v305: one number from a small system file (kHz for cpufreq), or -1 when it cannot be read (some phones hide a core while it sleeps). */
+  private static long sysLong(String path) {
+    try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(path))) { String l = r.readLine(); return l == null ? -1 : Long.parseLong(l.trim()); } catch (Exception e) { return -1; }
   }
 
   @PluginMethod

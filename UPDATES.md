@@ -10,6 +10,16 @@
 
 
 
+## v305-306: Real live phone info
+- Works on more phones: hidden or switched-off cores are handled, cores are labelled Eff / Perf / Prime, CPU load is averaged over the last half second where possible, plus battery (temperature, current, voltage), heat level and this app's memory.
+- Settings > More > Phone info now shows real live memory (used of total, free, RAM expansion) and each CPU core's current speed, refreshed twice a second.
+
+## v304: Hide the Settings button
+- Settings > Look: the Settings button at the top right can fade away after a time you choose. It comes back every time you open the app. The Settings icon in the glass bar stays.
+
+## v303: Drag and drop everywhere
+- No more up / down arrows: Home quick buttons, sections and your own sections' items are reordered by holding ☰ and dragging, like the glass bar icons.
+
 ## v300-302: Smoother lyrics taps and highest refresh rate
 - Tapping a lyric line jumps straight to it.
 - The app now runs at your screen's highest refresh rate (90, 120 Hz or more).

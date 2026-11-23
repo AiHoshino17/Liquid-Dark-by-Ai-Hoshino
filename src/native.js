@@ -19,6 +19,13 @@ const emit = (ev, d) => (L[ev] || []).forEach(f => { try { f(d); } catch (e) { c
 export const on = (ev, f) => (L[ev] = [...(L[ev] || []), f]);
 
 /** Player state. queue = songs in play order. orig = the upcoming songs in their un-shuffled order (only while shuffle is on). */
+const mockDev = (() => { let t = 0, cpuMs = 0; const max = [1804800, 1804800, 1804800, 2419200, 2419200, 2419200, 2419200, 3187200];
+  return () => { t++; cpuMs += 18 + 10 * Math.sin(t / 3); const free = 5.1e6 + 6e5 * Math.sin(t / 7);
+    return { cores: 8, scanThreads: 32, processor: 'Qualcomm SM8550', abi: 'arm64-v8a', model: 'OnePlus CPH2449 (browser sample)', ramMb: 11264, availMb: Math.round(free / 1024), heapMb: 512, cpuMs: Math.round(cpuMs), threads: 61,
+      memTotalKb: 11534336, memAvailKb: Math.round(free), swapTotalKb: 8388608, swapFreeKb: 7340032 - Math.round(2e5 * Math.sin(t / 5)),
+      coreFreq: max.map((m, i) => ({ cur: i > 5 && t % 4 < 2 ? 0 : Math.round(m * (.25 + .7 * Math.abs(Math.sin(t / (3 + i))))), max: m, online: !(i === 7 && t % 6 < 2), cap: [325, 325, 325, 822, 822, 822, 822, 1024][i] })),
+      policies: [{ cpus: [0, 1, 2], max: max[0], avg: Math.round(max[0] * (.4 + .3 * Math.sin(t / 4))) }, { cpus: [3, 4, 5, 6], max: max[3], avg: Math.round(max[3] * (.5 + .3 * Math.sin(t / 5))) }, { cpus: [7], max: max[7], avg: Math.round(max[7] * (.3 + .3 * Math.abs(Math.sin(t / 3)))) }],
+      battTemp: 312 + Math.round(6 * Math.sin(t / 9)), battMv: 4120, battPct: 76, plugged: false, battNow: -412000 - Math.round(90000 * Math.sin(t / 4)), thermal: 1, headroom: .42 + .05 * Math.sin(t / 6), appPssKb: 186000 }; }; })();
 const s = { queue: [], index: -1, playing: false, pos: 0, repeat: 'off', shuffle: false, orig: [] };
 const cur = () => s.queue[s.index];
 /** T22 sleep timer state: endsAt = ms clock time (minutes mode), endOfSong = stop after the current song. Real timer = PlaybackService.java; browser = the mock below. */
@@ -162,7 +169,7 @@ export const Native = {
   clearListens: (o = {}) => (N ? N.clearListens(o) : Promise.resolve({ removed: 0 })),
   shareImage: (data, text = '', name = '') => (N ? N.shareImage({ data, text, name }) : Promise.reject(new Error('Only on the phone'))),
   /** CPU cores, processor, RAM and heap (Settings > Performance). Browser = what the browser reports. */
-  getDeviceInfo: () => (N ? N.getDeviceInfo() : Promise.resolve({ cores: (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 0, scanThreads: 0, processor: '', abi: '', ramMb: ((typeof navigator !== 'undefined' && navigator.deviceMemory) || 0) * 1024, availMb: 0, heapMb: 0 })),
+  getDeviceInfo: () => (N ? N.getDeviceInfo() : Promise.resolve(mockDev())),   // v305: the browser demo shows a moving, phone-like sample (a real phone reads /proc/meminfo and the core speeds)
   /** T22: sleep timer. { minutes: 15|30|45|60 } or { endOfSong: true }. Rejects when nothing is playing. State: Native.sleepState(), event onSleepTimer { active, endOfSong, endsAt, fired }. */
   async setSleepTimer({ minutes = 0, endOfSong = false, ms = 0 } = {}) {   // ms (optional) = the exact time left, used to resume a timer after the app was killed; minutes stays as the whole-minute value
     if (!cur()) throw new Error('Nothing is playing');
