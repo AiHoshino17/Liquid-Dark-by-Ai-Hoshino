@@ -635,7 +635,7 @@ html[data-immersive="1"] .np .cluster,html[data-immersive="1"] .np .sbtn,html[da
 .scanv.done .pr{animation:none;opacity:0}
 .sc-fly{position:absolute;inset:0;pointer-events:none;overflow:visible}
 .sc-chip{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:10px;object-fit:cover;opacity:0;box-shadow:var(--spec-lite),0 6px 16px rgba(0,0,0,.45)}
-.sc-chip.go{animation:sc-in .95s cubic-bezier(.45,0,.75,.35) forwards}
+.sc-chip.go{animation:sc-in var(--scd,.95s) cubic-bezier(.45,0,.75,.35) forwards}
 .scanv-title{font-size:1.125rem;font-weight:700;letter-spacing:-.01em;text-shadow:0 1px 10px rgba(0,0,0,.4)}
 .scanv-count{margin-top:3px;font-size:0.875rem;font-weight:500;color:var(--text-2);font-variant-numeric:tabular-nums}
 .scanv-bar{position:relative;height:8px;margin:14px 2px 0;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.10);box-shadow:inset 0 1px 2px rgba(0,0,0,.4),var(--spec-lite)}

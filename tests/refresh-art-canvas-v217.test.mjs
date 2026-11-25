@@ -31,16 +31,16 @@ test('tiles are built after the reload (never copies of the old pictures) and th
   assert.ok(!M.includes('RF_WAVE') && !M.includes('rfWaves') && !M.includes('refreshShow'));   // v220: the old red-dot sheet is gone, Refresh art uses the library scan card
 });
 test('refreshItems counts every place: songs, albums, artists, genres, playlists, profile, background and Canvas', () => {
-  const b = body('function refreshItems()');
+  const b = body('function refreshItems(show = set.artShow)');
   for (const s of ['spUrls.get(t.id) || alpUrls.get(t.albumId)', 'alpUrls.get(a.id)', 'albumTracks(a.id)', 'Song covers', 'Album covers', 'agUrls[n]', 'gpUrls', 'ppUrl.get', 'picsOf(pl_)', 'pfMedia', 'bgUrl', 'cvPath(t)']) assert.ok(b.includes(s), s);
 });
 test('the counter shows "N / TOTAL pictures and GIFs" and Refresh finished repeats the real total', () => {
   assert.ok(S.includes('/ ${n(t)} pictures and GIFs'));
   assert.ok(M.includes('pictures and GIFs reloaded'));
 });
-test('with thousands of places the card flies a sample but the counter reaches the real total', () => {
+test('v308 (owner): with thousands of places EVERY different picture flies (feedPace) and the counter reaches the real total', () => {
   const b = body('function artFly(');
-  assert.ok(b.includes('k >= 1 ? total') && b.includes('Math.min(9000'));
+  assert.ok(b.includes('i >= uniq.length ? total') && b.includes('scanView.pace(uniq.length)'));
 });
 // v220: Refresh art and Library > Rescan use the library scan card
 test('Refresh art uses scanView (startArt / artUpdate / artFinish) and shows no toast on top of the card', () => {
@@ -49,11 +49,11 @@ test('Refresh art uses scanView (startArt / artUpdate / artFinish) and shows no 
   assert.ok(M.includes('function refreshAllPics(silent = false)') && M.includes('if (!silent) toast('));
   for (const x of ['startArt(', 'artUpdate(', 'artFinish(', 'chip(p.covers[0], true)']) assert.ok(S.includes(x), x);
 });
-test('Library > Rescan opens the card at once, keeps it 2.6 s and feeds it the covers read from the music files; first scan is untouched', () => {
+test('Library > Rescan opens the card at once, keeps it 2.6 s and feeds it every song cover; first scan is untouched', () => {
   assert.ok(M.includes("case 'rescan': loadLib(true, true, false, true)"));
   assert.ok(M.includes('{ instant: true, minMs: 2600, covers: libCovers() }'));
   assert.ok(S.includes('opts.instant ? 0 : SHOW_AFTER_MS') && S.includes('minUntil - Date.now()'));
-  assert.ok(M.includes("const c = t && t.cover") && !M.slice(M.indexOf('function libCovers'), M.indexOf('async function runScan')).includes('spUrls'));   // never a custom picture
+  assert.ok(M.slice(M.indexOf('function libCovers'), M.indexOf('async function runScan')).includes('spUrls.get(t.id)'));   // v308 (owner): song covers: custom song / album picture or GIF, else the original
 });
 
 // v219: 10,000+ places
@@ -101,7 +101,7 @@ test('landscape layout: full width, bars side by side, Now Playing in two column
 });
 
 test('Refresh art also flies the ORIGINAL covers (songs and albums without a custom picture)', () => {
-  const b = body('function refreshItems()');
+  const b = body('function refreshItems(show = set.artShow)');
   assert.ok(b.includes('c || orig(t)') && b.includes("t.cover ? Native.fileUrl(t.cover)"));
 });
 

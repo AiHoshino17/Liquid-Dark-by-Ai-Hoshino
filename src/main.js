@@ -26,7 +26,7 @@ import * as SIO from './settingsio.js';
 import * as ZR from './zipread.js';   // (PLAYLIST_WANT: playlist zips)   // open a .zip pick (Tempo backup, Spotify download)   // settings backup
 import { zipFiles, safeName, stamp as dateStamp } from './transfer.js';
 import { shouldCheck, changeText } from './autocheck.js';
-import { scanView } from './scanview.js';
+import { scanView, feedPace } from './scanview.js';
 import { FAV_FILE, cleanFavs, isFav, toggleFav, favTracks } from './favorites.js';
 import { SLEEP_MINUTES, SLEEP_MAX, cleanMinutes, parseSleepInput, pillText, setText } from './sleep.js';
 import { emptyLoop, tapLoop, jumpTo, loopState, markPct } from './abloop.js';
@@ -142,7 +142,8 @@ const APP_VERSION = pkg.version;
 const APP_BUILD = String(pkg.version).split('.')[1] || pkg.version;   // 0.208.0 -> 208, the number the README, UPDATES and the workflow use
 /* ---------- settings (persisted) ---------- */
 const TAB_MIN = 40, TAB_MAX = 220, NPC_MIN = 40, NPC_MAX = 100;
-const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyWordSpeed: 100, gearHide: 0, lyHead: true, lyHeadArt: 'custom', lyricApple: false, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
+const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyWordSpeed: 100, gearHide: 0, lyHead: true, lyHeadArt: 'custom', artShow: 'all', scanShow: 'all', lyricApple: false, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
+const SHOW_OPTS = ['all', 'original', 'custom'];   // v309 (owner): Rescan art / Rescan library show all pictures, only the original covers, or only your own pictures / GIFs
 let set = { ...DEF };
 try { set = { ...DEF, ...JSON.parse(localStorage.getItem('lf.settings') || '{}') }; } catch {}
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);   // v148: free lyrics size (an older Small / Medium / Large keeps its size)
@@ -190,6 +191,7 @@ delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur
 set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+set.lyWordSpeed) || 100));   // v299
 set.gearHide = cleanGearHide(set.gearHide); gearArm();   // v304: the count starts at every app start
 set.lyHeadArt = set.lyHeadArt === 'original' ? 'original' : 'custom';   // v307
+set.artShow = SHOW_OPTS.includes(set.artShow) ? set.artShow : 'all'; set.scanShow = SHOW_OPTS.includes(set.scanShow) ? set.scanShow : 'all';   // v309
 set.barSplit = cleanBarSplit(set.barSplit);   // v289: Settings > Animation > Landscape mini player
 set.timeStyle = cleanTimeStyle(set.timeStyle);   // Settings > Playing bar time: a missing or corrupt saved value falls back to 'left'
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize;   // Bug 14: a corrupt saved value must not become "undefined"
@@ -781,7 +783,7 @@ const sub = {
   lyranim: () => {
     const sample = ['Under the lights, I open my heart', 'One step forward, the whole room sings', 'Stage lights, stay with me tonight', 'Every smile a promise I keep', 'Ruby red across the stage', 'Stay close, the music is ours', 'Hold the beat and never look away'];
     return `<div class="top"><button class="gbtn" data-act="back">${I.back}</button><b style="font-size:1.25rem">Lyrics animation</b><span style="width:44px"></span></div>
-    <div class="animdock"><div class="lyr lyprev"><div class="lyprevbody" aria-hidden="true">${sample.map((t, i) => `<p class="ln tap${i === 0 ? ' cur' : ''}" data-li="${i}" style="--d:${Math.min(5, i)}">${t}</p>`).join('')}</div></div>
+    <div class="animdock"><div class="lyr lyprev"><div class="lyprevbody" aria-hidden="true">${sample.map((t, i) => `<p class="ln tap${i === 0 ? ' cur' : ''}" data-li="${i}" style="--d:${Math.min(5, i)}">${lyPrevWords(t)}</p>`).join('')}</div></div>
       <div class="animdock-r"><span>Live preview: it uses your Background style and moves like the real lyrics.</span></div>
       <div class="animchips"><button class="chip" data-act="lya-preset" data-p="default">Default</button><button class="chip" data-act="lya-preset" data-p="smooth">Smooth</button><button class="chip" data-act="lya-preset" data-p="snappy">Snappy</button><button class="chip" data-act="lya-preset" data-p="blurry">Blurry</button><button class="chip" data-act="lya-preset" data-p="still">Minimal</button></div></div>
     <div class="setcard"><div class="setrow"><div class="tx"><b>Word fade-in</b><span>Each word lights up as it is sung, smoothly from left to right (Apple Music style). Off = normal lyrics: the whole playing line lights up at once. Works with every text colour and background.</span></div><button class="toggle ${set.lyWordFade !== false ? 'on' : ''}" data-act="tg" data-k="lyWordFade" aria-label="Word fade-in"></button></div>${set.lyWordFade !== false ? `<div class="animrow"><b>Fade-in speed<em data-lwsv>${set.lyWordSpeed || 100}%</em></b><input type="range" data-lwspeed min="50" max="200" step="5" value="${set.lyWordSpeed || 100}" aria-label="Word fade-in speed"><span style="color:var(--text-2);font-size:.85rem">Higher = the words light up faster. For lyrics timed per word, their own timing is kept.</span></div>` : ''}</div>
@@ -832,8 +834,10 @@ const sub = {
       ${row('Album details', 'Show the artist and song count under each album name. Turn off to see only covers and album names.', tg('albumInfo', set.albumInfo !== false))}
       ${row('Smart artist grouping', 'Merges different spellings of one artist (Lily Rose Depp / Lily-Rose Depp, The Weeknd / Weeknd) and lists each artist of a collab or feat. song on their own page instead of a combined name. Turn off to see artists exactly as tagged.', tg('smartArtists', set.smartArtists !== false))}${row('Check for new music automatically', 'Looks for added or removed songs when the app opens or comes back (at most every 10 minutes).', tg('autoCheck', set.autoCheck))}
       <button class="setrow" data-act="pickfolder" style="width:100%;text-align:left"><span class="tx"><b>Music folder</b><span>Choose or change the folder with your music (FLAC, MP3, AAC)</span></span></button>
-      <button class="setrow" data-act="rescan" style="width:100%;text-align:left"><span class="tx"><b>Rescan library</b></span></button>
-      <button class="setrow" data-act="refresh-art" style="width:100%;text-align:left"><span class="tx"><b>Refresh art</b><span>Reloads every picture and GIF you set (songs, albums, artists, genres, playlists, profile, background) and re-checks the folder pictures of every song.</span></span></button>
+      <button class="setrow" data-act="rescan" style="width:100%;text-align:left"><span class="tx"><b>Rescan library</b><span>Finds new songs. Every song and album cover flies into the disc while it runs.</span></span></button>
+      <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Covers shown while rescanning</b><span>Song and album covers only. All = your picture or GIF when a song or album has one, else the original.</span><div class="hsseg gearseg" style="margin-top:8px">${[['all', 'All'], ['original', 'Original only'], ['custom', 'Yours only']].map(([v, l]) => `<button class="chip ${set.scanShow === v ? 'sel' : ''}" data-act="scanshow" data-v="${v}">${l}</button>`).join('')}</div></div></div>
+      <button class="setrow" data-act="refresh-art" style="width:100%;text-align:left"><span class="tx"><b>Rescan art</b><span>Reloads every picture and GIF you set (songs, albums, artists, genres, playlists, profile, backgrounds, Canvas) and re-checks the folder pictures of every song.</span></span></button>
+      <div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Pictures shown while rescanning art</b><span>All = everything. Original only = the covers that came with your music. Yours only = every picture or GIF you uploaded, anywhere in the app.</span><div class="hsseg gearseg" style="margin-top:8px">${[['all', 'All'], ['original', 'Original only'], ['custom', 'Yours only']].map(([v, l]) => `<button class="chip ${set.artShow === v ? 'sel' : ''}" data-act="artshow" data-v="${v}">${l}</button>`).join('')}</div></div></div>
       <button class="setrow" data-act="stats-clear" style="width:100%;text-align:left"><span class="tx"><b>Clear play history</b><span>Empties Recently Played and Most Played. Favorites and playlists stay.</span></span></button></div>
     <div class="sethead">Backup &amp; transfer</div><div class="setcard">
       <button class="setrow" data-act="plexport" style="width:100%;text-align:left"><span class="tx"><b>Export playlists</b><span>Save playlists as a backup, M3U8, XSPF or CSV. Other players and Spotify / Apple Music transfer tools can read them.</span></span>${I.chev}</button>
@@ -1209,17 +1213,31 @@ function custResults(pn) {   // the add list of a custom section: matching album
   if (!rows.length) return '<div class="setrow"><div class="tx"><span>Nothing found.</span></div></div>';
   return rows.map(([t, v, a, b]) => `<div class="setrow hsrow"><div class="tx"><b>${a}</b><span>${b}</span></div><button class="chip sel" data-act="hs-cadd" data-p="${pn.id}" data-t="${t}" data-v="${v}">Add</button></div>`).join('');
 }
-let lyPrevT = 0, lyPrevI = 0;
+let lyPrevT = 0, lyPrevI = 0, lyPrevRaf = 0;
+/* v308 (owner): the preview shows the Apple word fade-in too: each word is a .w span with its start time (fillWords, the same timing and Fade-in speed as the real lyrics) */
+const LYPREV_MS = 1800;
+function lyPrevWords(text) {
+  const [l] = fillWords([{ t: 0, text }, { t: LYPREV_MS / 1000 }], set.lyWordSpeed);
+  return l.words ? l.words.map(w => `<span class="w" data-wt="${w.t}">${w.w}</span>`).join('') : text;
+}
+function lyPrevSweep(line) {   // the playing preview line: --wp 0..1 per word, the same formula as syncLyrics
+  cancelAnimationFrame(lyPrevRaf); const ws = [...line.querySelectorAll('.w')]; if (!ws.length) return;
+  ws.forEach(w => w.style.setProperty('--wp', 0)); const t0 = performance.now(), end = LYPREV_MS / 1000 - .1;
+  const f = () => { if (!line.isConnected) return; const pos = (performance.now() - t0) / 1000;
+    ws.forEach((w, k) => { const wt = +w.dataset.wt, e = Math.min(k + 1 < ws.length ? +ws[k + 1].dataset.wt : end, wt + 1.2), v = Math.max(0, Math.min(1, (pos - wt) / Math.max(.12, e - wt))); w.style.setProperty('--wp', Math.round(v * 100) / 100); });
+    if (pos < end + .2) lyPrevRaf = requestAnimationFrame(f); };
+  lyPrevRaf = requestAnimationFrame(f);
+}
 function lyPrevStart() {   // the Lyrics animation page: a small copy of the lyrics that moves line by line with the user's settings
   if (lyPrevT) { clearInterval(lyPrevT); lyPrevT = 0; }
   if (!$('.lyprevbody')) return;
-  lyPrevI = 0;
+  lyPrevI = 0; { const f0 = $('.lyprevbody .ln'); if (f0) lyPrevSweep(f0); }
   lyPrevT = setInterval(() => {
     const b = $('.lyprevbody'); if (!b) { clearInterval(lyPrevT); lyPrevT = 0; return; }
     const ls = b.children; if (!ls.length) return; lyPrevI = (lyPrevI + 1) % ls.length;   // BUG-25
     for (let k = 0; k < ls.length; k++) { ls[k].classList.toggle('cur', k === lyPrevI); ls[k].style.setProperty('--d', Math.min(5, Math.abs(k - lyPrevI))); }
-    lyCenter(ls[lyPrevI], lyPrevI > 0, b);
-  }, 1800);
+    lyCenter(ls[lyPrevI], lyPrevI > 0, b); lyPrevSweep(ls[lyPrevI]);
+  }, LYPREV_MS);
 }
 function renderSub(keep = false, back = false) {   // keep = same screen refreshed in place: no slide-in, scroll position stays. back = returning to the screen below: no slide-in, its saved scroll is put back
   try { barSync(); } catch {}   // v284: the lit icon follows the screen (Settings open = the Settings icon, back = the page underneath)
@@ -1427,11 +1445,12 @@ on('onScanProgress', p => { if (scanning && !quietScan) scanView.update(p); }); 
 const isBusy = e => e === 'busy' || (e && e.message === 'busy');
 /* v220: Library > Rescan shows the SAME card as the first scan: it opens at once, stays at least 2.6 s, and the covers already read from the music files
    (embedded art / cover.jpg, never a picture the user set) are sucked into the disc while it runs, even when every song is unchanged and the scan itself is over in a blink. */
-function libCovers(max = 400) {
-  const seen = new Set(), out = [];
-  for (const t of tracks) { const c = t && t.cover; if (c && !seen.has(c)) { seen.add(c); try { out.push(Native.fileUrl(c)); } catch {} } }
-  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
-  return out.slice(0, max);
+/* v308 (owner): the scan shows EVERY song's and album's cover: the song's own picture / GIF, else its album's, else the original cover of the file ("show original" songs: the original). Song covers only. */
+function libCovers(show = set.scanShow) {   // v309: 'all' | 'original' (only the covers in the music files) | 'custom' (only the song / album pictures and GIFs the user set)
+  const out = [];
+  for (const t of tracks) { try { const c = show === 'original' || soHas(t) ? '' : (spUrls.get(t.id) || alpUrls.get(t.albumId)); if (c) out.push(c); else if (show !== 'custom' && t && t.cover) out.push(Native.fileUrl(t.cover)); } catch {} }
+  for (const al of albums) { try { const c = show === 'original' ? '' : alpUrls.get(al.id); if (c) out.push(c); else if (show !== 'custom') { const f = albumTracks(al.id).find(x => x.cover); if (f) out.push(Native.fileUrl(f.cover)); } } catch {} }   // v310 (owner): album covers too (yours, else the original)
+  return [...new Set(out)];
 }
 async function runScan(quiet, forceArt = false, fx = false) {   // one scan at a time (Java also refuses a second one with 'busy')
   scanning = true; quietScan = quiet;
@@ -2038,8 +2057,8 @@ let plBusy = false;   // v214: a progress sheet is open (matching or importing):
    (the same file counts again for each song / place that shows it). The tiles are built AFTER the reload, so an old picture is never shown. */
 let artRunning = false;
 /* every place that shows a custom picture / GIF / Canvas right now (after the reload): [{ u: picture address, n: what it is }] */
-function refreshItems() {
-  const out = [], add = (u, n) => { if (u) out.push({ u, n }); };
+function refreshItems(show = set.artShow) {   // v309: show = 'all' | 'original' (covers that came with the music) | 'custom' (pictures / GIFs the user uploaded)
+  const out = [], add = (u, n) => { if (!u) return; const o = n === 'Song covers' || n === 'Album covers'; if (show === 'original' ? o : show === 'custom' ? !o : true) out.push({ u, n }); };
   try {
     const orig = t => (t && t.cover ? Native.fileUrl(t.cover) : '');   // the cover that comes with the music file (embedded art / cover.jpg)
     for (const t of tracks) {   // every song: its own picture, else its album's picture (the same GIF counts again for each song), else the original cover of the file
@@ -2052,24 +2071,25 @@ function refreshItems() {
     for (const pl_ of playlists) for (const c of picsOf(pl_)) add(ppUrl.get(c.id), 'Playlist pictures');   // playlists (every picture of every playlist)
     if (pfMedia) add(pfMedia.type === 'video' ? coverOfAny() : pfMedia.url, 'Profile picture');   // profile picture (a video shows the first cover)
     if (bgUrl) add(bgUrl, 'Home background');   // background (Home and every screen)
+    if (set.lyricStyle === 'cover' && set.lyricBg === 'home' && bgUrl) add(bgUrl, 'Lyrics background');   // v308: the lyrics background (Home style shows the Home picture / GIF; Song picture style = the song pictures above)
     for (const t of tracks) { const cp = cvPath(t); if (cp) add(isVideo(cp) ? (t.cover ? Native.fileUrl(t.cover) : coverOfAny()) : Native.fileUrl(cp), 'Canvas'); }   // Canvas: one for each song that plays one (an MP4 shows the song's cover)
   } catch {}
   return out;
 }
 const coverOfAny = () => { try { const t = tracks.find(x => x.cover); return t ? Native.fileUrl(t.cover) : ''; } catch { return ''; } };
 /* Counts up to the real total while the pictures are sucked into the disc (about 14 ms per place, 3.5 s ... 9 s in all). Every ~75 ms one of the places is flown in (a fair sample when there are thousands). */
-function artFly(items) {
+function artFly(items) {   // v308 (owner): EVERY picture / GIF / cover flies in (one of each different picture, in order), not a sample; the count still counts every place
   return new Promise(res => {
     const total = items.length; if (!total) return res();
     const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const ms = Math.min(9000, Math.max(3500, total * 14)), t0 = Date.now(); let done = 0;
+    const uniq = [], seenU = new Set(); for (const it of items) if (!seenU.has(it.u)) { seenU.add(it.u); uniq.push(it); }
+    const { gap, per, ms } = scanView.pace(uniq.length), t0 = Date.now(); let i = 0;   // v310: chip speed / room set for this many
     const tick = () => {
-      const k = Math.min(1, (Date.now() - t0) / ms), want = k >= 1 ? total : Math.round(total * k), step = want - done;
-      const it = items[Math.min(total - 1, done + Math.floor(step / 2))];
-      done = want;
-      scanView.artUpdate({ done, total, covers: still || !it ? [] : [it.u], name: it && it.n });
-      if (k >= 1) return setTimeout(res, 700);
-      setTimeout(tick, 75);
+      const k = Math.min(1, (Date.now() - t0) / Math.max(1, ms)), batch = uniq.slice(i, i + per); i += batch.length;
+      const done = k >= 1 || i >= uniq.length ? total : Math.round(total * k);
+      scanView.artUpdate({ done, total, all: true, covers: still ? [] : batch.map(x => x.u), name: batch.length ? batch[batch.length - 1].n : '' });
+      if (i >= uniq.length) return scanView.idle().then(() => setTimeout(res, 400));   // v310: waits until the last queued picture is in
+      setTimeout(tick, gap);
     };
     tick();
   });
@@ -2105,9 +2125,9 @@ async function refreshArtRun() {
     scanView.artUpdate({ done: 0, total: items.length, title: 'Reloading pictures and GIFs' });
     const lib = loadLib(true, true, true);   // quiet: no library scan screen; the folder pictures are re-checked while the pictures fly in
     await Promise.all([artFly(items).then(() => scanView.artUpdate({ title: 'Checking folder pictures', done: items.length, total: items.length })), lib]);
-    scanView.artFinish({ title: 'Refresh finished', count: items.length ? `${items.length.toLocaleString('en-US')} pictures and GIFs reloaded` : 'No custom pictures or GIFs found', note: `${tracks.length.toLocaleString('en-US')} songs checked${picsMissing() ? ' · a few are still loading and will appear shortly' : ''}` });
+    scanView.artFinish({ title: 'Rescan art finished', count: items.length ? `${items.length.toLocaleString('en-US')} pictures and GIFs reloaded` : (set.artShow === 'original' ? 'No original covers found' : set.artShow === 'custom' ? 'No pictures or GIFs of yours found' : 'No pictures or GIFs found'), note: `${tracks.length.toLocaleString('en-US')} songs checked${picsMissing() ? ' · a few are still loading and will appear shortly' : ''}` });
   } catch (e) {
-    scanView.artFinish({ title: 'Refresh stopped', count: failMsg(e) });
+    scanView.artFinish({ title: 'Rescan art stopped', count: failMsg(e) });
   } finally { artRunning = false; }
 }
 const plBusySheet = (title, sub, pct) => { plBusy = true; $('#sheet').innerHTML = sheetHtml(`<b>${title}</b><p>${sub}</p><div class="plbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></div><div class="plspin" aria-hidden="true"></div>`); };
@@ -2297,7 +2317,7 @@ function applyImportedSettings() {
     set.npImmersive = set.npImmersive === true; set.npTapOrig = set.npTapOrig !== false;
     set.lyAnim = cleanLya(set.lyAnim); set.bgDim = cleanDim(set.bgDim); set.bgFit = cleanFit(set.bgFit);
     if (!['classic', 'cover'].includes(set.lyricStyle)) set.lyricStyle = DEF.lyricStyle;
-    delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
+    set.artShow = SHOW_OPTS.includes(set.artShow) ? set.artShow : 'all'; set.scanShow = SHOW_OPTS.includes(set.scanShow) ? set.scanShow : 'all';   /* v309 */ delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
     set.timeStyle = cleanTimeStyle(set.timeStyle);
     set.barSplit = cleanBarSplit(set.barSplit);
     set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+set.lyWordSpeed) || 100));   // v299
@@ -2506,8 +2526,7 @@ function trackAction(act, d) {
     case 'trackmenu': { const x = tracks.find(y => y.id === d.tm); if (x) trackMenuSheet(x); break; }
     case 'tm-fav': if (t) { closeSheet(); favToggle(t.id); } break;
     case 'fav': favToggle(d.tm); break;
-    case 'lyh-fav': { const c = Native.current(); if (c) { favToggle(c.id); b.classList.toggle('on', isFav(favs, c.id)); b.setAttribute('aria-pressed', String(isFav(favs, c.id))); } break; }   // v307
-    case 'lyheadart': set.lyHeadArt = b.dataset.v === 'original' ? 'original' : 'custom'; applySettings(); renderSub(true); break;   // v307
+    case 'lyh-fav': { const c = Native.current(); if (c) favToggle(c.id); break; }   // v307; v308: favToggle itself lights #lyr .lyh-fav (the button `b` is not in scope here)
     case 'lyh-more': { const c = Native.current(); if (c) trackMenuSheet(c); break; }   // v307: the song menu that already exists (play next, add to playlist, album, artist ...)
     case 'tm-next': if (!t) break; closeSheet(); Native.addNext(t).then(() => toast('Plays next')).catch(() => toast('Could not add song')); break;
     case 'tm-queue': if (!t) break; closeSheet(); Native.addToQueue(t).then(() => toast('Added to queue')).catch(() => toast('Could not add song')); break;
@@ -3464,6 +3483,8 @@ document.addEventListener('click', e => {
     case 'lyricstyle': lyStyleSheet(); break;
     case 'lyricink': $('#sheet').innerHTML = sheetHtml(`<b>Lyrics text colour</b><p>The colour of the lyrics on every background style.</p>${Object.entries(LYINK).map(([v, t]) => `<button class="row" data-act="lyinkset" data-v="${v}"><span class="lbl" style="font-size:1.0625rem">${t}</span>${v === (set.lyricInk || 'auto') ? '<span class="cnt" style="color:var(--accent)">✓</span>' : ''}</button>`).join('')}<div class="actions"><button data-act="sheet-close">Close</button></div>`); break;   // v278
     case 'lyinkset': set.lyricInk = ['white', 'black'].includes(b.dataset.v) ? b.dataset.v : 'auto'; applySettings(); closeSheet(); { const sp = document.querySelector('[data-act="lyricink"] .tx span'); if (sp) sp.textContent = LYINK[set.lyricInk]; } break;
+    case 'lyheadart': set.lyHeadArt = b.dataset.v === 'original' ? 'original' : 'custom'; applySettings(); renderSub(true); break;   // v307; v308: moved into the Settings click switch (it sat in the song-menu switch, which only runs for song menu buttons, so the chip did nothing)
+    case 'artshow': case 'scanshow': { const k = d.act === 'artshow' ? 'artShow' : 'scanShow'; set[k] = SHOW_OPTS.includes(d.v) ? d.v : 'all'; applySettings(); renderSub(true); break; }   // v309
     case 'gearhide': set.gearHide = cleanGearHide(+b.dataset.v); applySettings(); gearGone = false; gearArm(); { const el = document.querySelector('#gearrow .tx'); if (el) el.innerHTML = gearRows(); } break;   // v304
     case 'bsplit': bsplitSheet(); break;
     case 'bshide': set.barSplit = cleanBarSplit({ ...set.barSplit, hide: +b.dataset.v }); applySettings(); { const el = document.getElementById('bsplit'); if (el) el.innerHTML = bsplitRows(); } miniIdleArm(); break;   // v291
@@ -3683,7 +3704,7 @@ document.addEventListener('keydown', e => {
   run();
 }
 // test hooks for screenshots / debugging (harmless)
-if (!Native.isNative) window.__lf = { Native, renderMini, queueSheet, miniHide, miniShow, hideSteps: HIDE_STEPS, palMainOnly: () => { palWBad = true; }, palWorkerOn: () => !!palW, demoPlay: () => Native.play(albumTracks('a5'), 0), demoStop: async () => { await Native.pause(); Native.state.index = -1; renderMini(); }, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
+if (!Native.isNative) window.__lf = { Native, libCovers, refreshItems, trackIds: () => tracks.map(t => t.id), scanDemo: us => { scanView.start({ instant: true, minMs: 2600, covers: us || libCovers() }); setTimeout(() => scanView.finish({ tracks }), 300); }, flyDemo: async us => { scanView.startArt('Reloading pictures and GIFs', ''); await artFly(us.map(u => ({ u, n: 'Song pictures' }))); scanView.artFinish({}); }, artDemo: async () => { const it = refreshItems(); scanView.startArt('Reloading pictures and GIFs', ''); await artFly(it); scanView.artFinish({}); }, renderMini, queueSheet, miniHide, miniShow, hideSteps: HIDE_STEPS, palMainOnly: () => { palWBad = true; }, palWorkerOn: () => !!palW, demoPlay: () => Native.play(albumTracks('a5'), 0), demoStop: async () => { await Native.pause(); Native.state.index = -1; renderMini(); }, banDemo: src => { banPic = { src, stamp: 'demo' }; banShow(); }, bgAllowDemo, notifSheet, updSheet, updPicSet: src => { updPic = { ...updPic, src, stamp: 'demo' }; if (updSheetOpen()) updSheet(); }, go: k => { const i = TABS.findIndex(t => t[0] === k); bar.set(i); tab = k; stack = []; renderSub(); renderMain(); }, push, openNP: () => $('#np').classList.add('open'), setQuery: q => { query = q; const i = $('#q'); if (i) i.value = q; results(); }, lyTest: {   // v275: browser checks of the lyrics backgrounds (Cover colour palette / Cover blur) for every picture source: album cover, the song's own (embedded) picture, a picture / GIF you set for the album or the song, a Canvas video / GIF
     style: v => { set.lyricStyle = v === 'classic' ? 'classic' : 'cover'; set.lyricBlur = v === 'blur'; set.lyricPal = v === 'palette'; set.lyricApple = v === 'apple'; set.lyricBg = ['home', 'pic'].includes(v) ? v : ''; applySettings(); lyApplyTint(Native.current() || {}); },
     ink: v => { set.lyricInk = v; applySettings(); }, homeBg: u => { if (u) bgSetUrl(u); else bgSetMedia(null); },   // v277
     albumCover: u => { const t = Native.current(); if (t) { trackAlbum(t).cover = u || undefined; covTint.clear(); } },   // the cover read from the music file (embedded / album art)

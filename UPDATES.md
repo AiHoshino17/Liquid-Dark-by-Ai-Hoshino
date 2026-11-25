@@ -10,6 +10,25 @@
 
 
 
+## v311: Calmer rescans
+- The pictures now fly in at the same calm speed however big your library is. A big library just takes longer (10,000 pictures: about 2.5-3 minutes).
+
+## v310: Every picture, even 10,000+
+- Rescan art and Rescan library now show every picture flying in, even with 10,000 or more (about 45-50 seconds for 10,000; smaller libraries are much quicker).
+- Rescan library shows album covers as well as song covers (your picture or GIF, else the original).
+
+## v309: Rescan art
+- "Refresh art" is now called "Rescan art".
+- New choice for Rescan art: show All pictures, Original covers only, or Yours only (every picture or GIF you uploaded anywhere in the app).
+- New choice for Rescan library: the same three, for song covers only.
+- Both choices are saved in your settings export.
+
+## v308: Four fixes
+- Lyrics header: the "Original cover" choice now works.
+- Lyrics animation page: the live preview shows the word by word fade-in.
+- Refresh art: every picture and GIF you set (songs, albums, artists, genres, playlists, profile, Home and lyrics background, Canvas) and every original cover flies into the disc, not just a few.
+- Rescan library: every song's cover flies in (your picture or GIF if you set one, else the original).
+
 ## v307: Apple Music style lyrics header
 - The lyrics now show the cover, song and artist at the top, with a heart for Favourites and ⋯ for more options. Turn it off or pick your picture or the original cover in Settings > Lyrics.
 

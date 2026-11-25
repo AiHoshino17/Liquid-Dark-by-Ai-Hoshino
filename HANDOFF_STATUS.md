@@ -7,6 +7,31 @@
 
 
 
+## v311 Calm flight at every size (owner: "too fast") - version stays 0.208.0
+WHAT: the pictures in Rescan art / Rescan library always fly at the calm 0.95 s (v310 sped them up to 0.5 s for big libraries); at most 70 in the air. Bigger libraries just take longer: 500 ~ 20 s, 2,000 ~ 31 s, 10,000 ~ 2.6 min. Pace rounding fixed so the feed never outruns the disc.
+WHICH: src/scanview.js (feedPace).
+CHECKED: tests/scan-art-all-v308.test.mjs (life 0.95 at every size, never faster than the disc); tests/scan-art-all-check.py ALL PASS: 10,000 / 10,000 in 160 s (Rescan art) and 158 s (library scan).
+DO NOT REDO: do not shorten the flight for big libraries.
+
+## v310 Every picture flies in, even 10,000+ (owner) - version stays 0.208.0
+WHAT: Rescan art and Rescan library suck in EVERY picture with no 30 s cap: chips fly faster (0.95 s -> 0.7 -> 0.5 s) with more in the air (60 -> 120) as the count grows; a picture that finds the disc full waits in a queue (never skipped); both cards wait for the queue before "done". Rescan library now also shows album covers (yours, else the original), still nothing else.
+WHICH: src/scanview.js (feedPace life / cap, usePace, pend queue, finish waits, scanView.pace / idle), src/main.js (artFly uses pace + idle, libCovers albums, row texts, demo hooks flyDemo / scanDemo(us)), src/styles/app.css (--scd).
+CHECKED: tests/scan-art-all-v308.test.mjs (v310 test, feedPace rule); tests/scan-art-all-check.py ALL PASS: 10,000 / 10,000 pictures in Rescan art (47 s) and 10,000 / 10,000 covers in the library scan card (46 s).
+DO NOT REDO: never drop chips when the disc is full; never cap the pass by time.
+
+## v309 Rescan art + choices (owner) - version stays 0.208.0
+WHAT: "Refresh art" is renamed "Rescan art" (button + finished card). Two new choices in Settings > Library: "Pictures shown while rescanning art" (All / Original only / Yours only; yours = every picture or GIF uploaded anywhere: songs, albums, artists, genres, playlists, profile, Home / lyrics background, Canvas) and "Covers shown while rescanning" for Rescan library (same 3 choices, song covers only).
+WHICH: src/main.js (DEF artShow / scanShow 'all', SHOW_OPTS, cleaned at start-up + import, case 'artshow' / 'scanshow', refreshItems(show), libCovers(show), finish texts), src/scanview.js (default title), src/settingsio.js (labels = exported / imported).
+CHECKED: tests/scan-art-all-v308.test.mjs (+ v309 test), refresh-art-canvas-v217 updated (refreshItems signature); tests/scan-art-all-check.py ALL PASS (choices select + save, filters 20/0/20, button renamed).
+DO NOT REDO: originals = items named 'Song covers' / 'Album covers'; everything else counts as the user's own.
+
+## v308 Four fixes (owner) - version stays 0.208.0
+WHAT: (1) Settings > Lyrics > Header cover: "Original cover" could not be chosen. (2) The Lyrics animation live preview now shows the Apple word fade-in (word spans + the --wp sweep, same timing / Fade-in speed as the real lyrics). (3) Refresh art sucks in EVERY different picture / GIF / cover (song, album, artist, genre, playlist, profile, Home background, lyrics background, Canvas), not a ~35 picture sample. (4) Library Rescan sucks in EVERY song cover: the song's own picture / GIF, else its album's, else the original cover (song covers only).
+WHICH: src/main.js (case 'lyheadart' moved to the Settings click switch; lyh-fav no longer uses `b`; lyPrevWords / lyPrevSweep; artFly; libCovers; refreshItems 'Lyrics background'; demo hooks libCovers / refreshItems / trackIds / scanDemo / artDemo), src/scanview.js (feedPace, startFeed one full pass in order, artUpdate `all`, maxChips 60, rescan card stays until the pass is done).
+WHY: both chip cases sat in trackAction(act, d), which has no `b`: 'lyheadart' threw a ReferenceError (custom only looked right because it is the default). The heart still worked because favToggle runs first.
+CHECKED: NEW tests/scan-art-all-v308.test.mjs; NEW browser check tests/scan-art-all-check.py (chip selects + saves, preview words sweep, 20/20 pictures fly in both cards); refresh-art-canvas-v217 and lyrics-header-v307 updated.
+DO NOT REDO: do not put Settings cases into trackAction / plAction (no `b` there). Pace: feedPace(n) = 40...280 ms a picture, 2.6 s ... 30 s, several per tick past ~750.
+
 ## v307 Apple Music style lyrics header (owner) - version stays 0.208.0
 WHAT: the lyrics top bar is now (by default) the Apple Music header: cover (tap = close lyrics), song + artist, a heart (Favourites; kept in step with favToggle) and ⋯ (the existing song menu, trackMenuSheet: Favourites, Play Next, Queue, Playlist, Album, Artist, song picture, Canvas, Song info). Settings > Lyrics: "Apple style header" on / off (`set.lyHead`, off = the old back arrow + title) and "Header cover": your picture / GIF (gOfT) or the original cover (album .g) (`set.lyHeadArt`). Both exported. One header for every lyrics background; black lyrics text turns the header text / buttons dark. `src/main.js` lyTopHtml / lyHeadArt, `src/settingsio.js`, `src/styles/app.css` (.lyh*).
 CHECKED: NEW `tests/lyrics-header-v307.test.mjs`; lyrics-two-styles (render line) and picsync-v151 (lyHeadArt allowed beside gOf / gOfT) updated; full `npm test` 1077 pass; 7 browser checks ALL PASS one at a time (lyrics-switch-check once failed its "reopen after a jump" timing step on a tight time limit, then passed on its own). Screenshots: all 6 backgrounds, black text, original cover, header off, the ⋯ menu.
