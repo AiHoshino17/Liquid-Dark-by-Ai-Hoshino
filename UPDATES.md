@@ -10,6 +10,10 @@
 
 
 
+## v312: Fade speed in the preview
+- Fade speed now visibly changes the word by word fade-in too: low = a crisp, quick edge, high = a long, soft glow (preview and real lyrics).
+- Moving the Fade-in speed slider changes the preview straight away.
+
 ## v311: Calmer rescans
 - The pictures now fly in at the same calm speed however big your library is. A big library just takes longer (10,000 pictures: about 2.5-3 minutes).
 

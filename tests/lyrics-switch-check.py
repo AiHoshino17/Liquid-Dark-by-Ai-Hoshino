@@ -122,7 +122,10 @@ with sync_playwright() as pw:
     # lyrics opened after a jump to a song that was not prepared: the current song is read right after it starts, so it is ready when the lyrics open
     ctx, p, e = fresh('palette', None, pics); p.wait_for_timeout(800)
     p.evaluate("(() => { const b = document.querySelector('#lyr [data-act=lyr-close]'); if (b) b.click(); document.getElementById('lyr').classList.remove('open'); })()")
-    p.evaluate("__lf.Native.play(__lf.Native.state.queue, 4)"); p.wait_for_timeout(7000)
+    p.evaluate("__lf.Native.play(__lf.Native.state.queue, 4)"); p.wait_for_timeout(4000)
+    # v312: waits until the song's colours are read (a GIF takes ~7 s on a slow 2-core test machine; a fixed 7 s wait was a coin toss), max 20 s; the check below is still "painted in the same frame it opens"
+    rt = p.evaluate("new Promise(res => { const t0 = performance.now(); const k = () => __lf.lyTest.ready(__lf.Native.current().id) ? res(Math.round(performance.now() - t0)) : performance.now() - t0 > 16000 ? res(-1) : setTimeout(k, 100); k(); })")
+    check(rt >= 0, f'the jumped-to song is read ahead while it plays ({rt + 4000 if rt >= 0 else "not"} ms after the jump)')
     r = p.evaluate("""async () => { document.querySelector('[data-act="lyrics"]').click(); await new Promise(r => requestAnimationFrame(r)); const el = document.getElementById('lyr'); return el.style.getPropertyValue('--lyr-pal'); }""")
     check(bool(r), 'lyrics opened a few seconds after a jump: the palette is there at once')
     check(not e, f'jump: no page errors {e[:2]}'); ctx.close()

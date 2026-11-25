@@ -7,6 +7,12 @@
 
 
 
+## v312 Fade speed shows in the preview (owner) - version stays 0.208.0
+WHAT: with Word fade-in on, the playing line's brightness comes from the word wipe, so Fade speed (which only timed the line's own fade) looked dead. Fade speed now also sets the softness of the wipe edge: .6em x fade^2 (30 % crisp .05em, 100 % = the Apple .6em, 250 % a long soft glow 3.75em), in the preview and the real lyrics. The Fade-in speed slider also redraws the preview at once (before: only after reopening the page).
+WHICH: src/styles/app.css (--wfe on the word mask), src/main.js (lwspeed input redraws .lyprevbody words + sweep).
+CHECKED: tests/scan-art-all-v308.test.mjs (v312 test), lyrics-home-custom-bg-v277 updated; browser probe: Fade-in speed slider 100 -> 200 % changes the preview timing at once (1.404 s -> 0.713 s), frozen mid-word frames at 30 / 100 / 250 %; lyrics-blink-check ALL PASS.
+TEST NOTE: tests/lyrics-switch-check.py, step "lyrics opened a few seconds after a jump", now waits until the jumped-to song's colours are read (max 20 s) instead of a fixed 7 s: on the 2-core test machine reading d.gif takes ~6.9-7.2 s, so the fixed wait failed about half the time. No app code involved (none of v308-v312 runs in that scenario); the check still requires the palette in the same frame the lyrics open.
+
 ## v311 Calm flight at every size (owner: "too fast") - version stays 0.208.0
 WHAT: the pictures in Rescan art / Rescan library always fly at the calm 0.95 s (v310 sped them up to 0.5 s for big libraries); at most 70 in the air. Bigger libraries just take longer: 500 ~ 20 s, 2,000 ~ 31 s, 10,000 ~ 2.6 min. Pace rounding fixed so the feed never outruns the disc.
 WHICH: src/scanview.js (feedPace).

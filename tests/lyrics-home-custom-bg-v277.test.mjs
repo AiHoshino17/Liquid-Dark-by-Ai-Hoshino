@@ -43,6 +43,6 @@ test('v286: word fade-in: a setting (default on, exported), per-word --wp from t
   assert.match(M, /lyWordFade: true,/); assert.match(M, /d\.k === 'lyWordFade'/); assert.match(M, /data-k="lyWordFade"/);
   assert.match(M, /h\.dataset\.lywf = set\.lyWordFade === false \? '0' : '1';/);
   assert.match(M, /lyWords\[k\]\.style\.setProperty\('--wp', q\)/);
-  assert.match(C, /html\[data-lywf="1"\] \.lyr \.ln\.cur \.w\{opacity:1!important;transition:none;-webkit-mask-image:linear-gradient\(90deg,#000 calc\(var\(--wp,0\) \* \(100% \+ \.6em\) - \.6em\)/);
+  assert.match(C, /html\[data-lywf="1"\] \.lyr \.ln\.cur \.w\{opacity:1!important;transition:none;--wfe:calc\(\.6em \* var\(--ly-fade,1\) \* var\(--ly-fade,1\)\);-webkit-mask-image:linear-gradient\(90deg,#000 calc\(var\(--wp,0\) \* \(100% \+ var\(--wfe\)\) - var\(--wfe\)\)/)   // v312: edge = .6em x Fade speed;
   assert.match(C, /html\[data-lywf="0"\] \.lyr \.ln\.cur \.w\{opacity:1!important\}/);
 });

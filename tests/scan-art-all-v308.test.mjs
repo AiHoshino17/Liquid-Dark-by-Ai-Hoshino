@@ -35,3 +35,8 @@ test('v310: a full disc queues the picture (never skips it); cards wait for the 
   assert.match(M, /scanView\.idle\(\)\.then/); assert.match(M, /for \(const al of albums\) \{ try \{ const c = show === 'original' \? '' : alpUrls\.get\(al\.id\)/);
   assert.ok(fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8').includes('animation:sc-in var(--scd,.95s)'));
 });
+test('v312: Fade speed sets the word edge; Fade-in speed slider redraws the preview at once', () => {
+  const C = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
+  assert.ok(C.includes('--wfe:calc(.6em * var(--ly-fade,1) * var(--ly-fade,1))') && !/\.ln\.cur \.w\{[^}]*\+ \.6em/.test(C));
+  assert.match(M, /document\.querySelectorAll\('\.lyprevbody \.ln'\)\.forEach\(l => \{ l\.innerHTML = lyPrevWords\(l\.textContent\); \}\)/);
+});
