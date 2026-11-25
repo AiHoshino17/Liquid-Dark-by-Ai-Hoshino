@@ -10,6 +10,9 @@
 
 
 
+## v307: Apple Music style lyrics header
+- The lyrics now show the cover, song and artist at the top, with a heart for Favourites and ⋯ for more options. Turn it off or pick your picture or the original cover in Settings > Lyrics.
+
 ## v305-306: Real live phone info
 - Works on more phones: hidden or switched-off cores are handled, cores are labelled Eff / Perf / Prime, CPU load is averaged over the last half second where possible, plus battery (temperature, current, voltage), heat level and this app's memory.
 - Settings > More > Phone info now shows real live memory (used of total, free, RAM expansion) and each CPU core's current speed, refreshed twice a second.

@@ -77,7 +77,7 @@ test('v154: a removed picture stays removed (mark until every saved copy is gone
 test('v155: every cover on screen goes through the same lookup, and a custom picture replaces the original', () => {
   // v158: coverHtml() (the full-screen cover viewer, opened by tapping the cover) is the ONE deliberate exception: it always shows the
   // real / embedded cover (a.g), never the custom-picture layer that gOf() would add, same rule the listening stats and yearly recap follow.
-  const bad = [...main.matchAll(/--g:([^;"']{0,80})/g)].map(x => x[1]).filter(x => !/gOf\(|gOfT\(|row-fill|^\$\{a && a\.g\}$/.test(x));
+  const bad = [...main.matchAll(/--g:([^;"']{0,80})/g)].map(x => x[1]).filter(x => !/gOf\(|gOfT\(|lyHeadArt\(|row-fill|^\$\{a && a\.g\}$/.test(x));   // v307: lyHeadArt() = gOfT() or, by the owner's own choice, the original cover
   assert.deepEqual(bad, []);   // every OTHER square paints a cover without the custom-picture lookup
   assert.match(main, /const gOf = a => \{[^\n]*center\/cover no-repeat, \$\{PIC_BASE\}/);   // v208+: custom only, original not underneath
   assert.doesNotMatch(main, /center\/cover no-repeat, var\(--row-fill\)` : a\.g/);

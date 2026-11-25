@@ -142,7 +142,7 @@ const APP_VERSION = pkg.version;
 const APP_BUILD = String(pkg.version).split('.')[1] || pkg.version;   // 0.208.0 -> 208, the number the README, UPDATES and the workflow use
 /* ---------- settings (persisted) ---------- */
 const TAB_MIN = 40, TAB_MAX = 220, NPC_MIN = 40, NPC_MAX = 100;
-const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyWordSpeed: 100, gearHide: 0, lyricApple: false, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
+const DEF = { contrast: false, motion: false, refract: true, albumInfo: true, bigCovers: false, redHover: true, anim: {}, tabs: { home: true, albums: true, library: true, search: true, settings: false }, tabOrder: ['home', 'albums', 'library', 'search', 'settings'], barSplit: { style: 'cell', stretch: 100, speed: 100, hide: 8 }, lyWordFade: true, lyWordSpeed: 100, gearHide: 0, lyHead: true, lyHeadArt: 'custom', lyricApple: false, lyricSize: 'Medium', userName: '', npCover: 0, npImmersive: false, npTapOrig: true, home: null, tabSize: 'Medium', lyricStyle: 'classic', lyricBlur: false, lyricPal: false, timeStyle: 'left', bgDim: 40, bgFit: 'fill', lyAnim: {}, coverLyrics: true, autoplay: true, autoCheck: true, smartArtists: true, sort: {}, recent: [] };
 let set = { ...DEF };
 try { set = { ...DEF, ...JSON.parse(localStorage.getItem('lf.settings') || '{}') }; } catch {}
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize; set.lyricPx = cleanLyPx(set.lyricPx, set.lyricSize);   // v148: free lyrics size (an older Small / Medium / Large keeps its size)
@@ -189,6 +189,7 @@ if (!['classic', 'cover'].includes(set.lyricStyle)) set.lyricStyle = DEF.lyricSt
 delete set.lyricMix; set.lyricBlur = set.lyricStyle === 'cover' && set.lyricBlur === true; set.lyricPal = set.lyricStyle === 'cover' && !set.lyricBlur; set.lyricBg = set.lyricStyle === 'cover' && !set.lyricBlur && ['home', 'pic'].includes(set.lyricBg) ? set.lyricBg : ''; if (set.lyricBg) set.lyricPal = false; set.lyricInk = ['white', 'black'].includes(set.lyricInk) ? set.lyricInk : 'auto';   /* v278: lyrics text colour (auto = the style's own: red on classic, white on the others) */ /* v277 + v285: styles = classic, palette, blur, Home screen background (style 'cover' + lyricBg 'home') */   // 3 styles: classic, Cover colour palette, Cover blur. A saved plain 'cover' or the removed Cover colour mix becomes the palette
 set.lyWordSpeed = Math.max(50, Math.min(200, Math.round(+set.lyWordSpeed) || 100));   // v299
 set.gearHide = cleanGearHide(set.gearHide); gearArm();   // v304: the count starts at every app start
+set.lyHeadArt = set.lyHeadArt === 'original' ? 'original' : 'custom';   // v307
 set.barSplit = cleanBarSplit(set.barSplit);   // v289: Settings > Animation > Landscape mini player
 set.timeStyle = cleanTimeStyle(set.timeStyle);   // Settings > Playing bar time: a missing or corrupt saved value falls back to 'left'
 if (!['Small', 'Medium', 'Large'].includes(set.lyricSize)) set.lyricSize = DEF.lyricSize;   // Bug 14: a corrupt saved value must not become "undefined"
@@ -816,6 +817,8 @@ const sub = {
     <div class="sethead">Lyrics</div><div class="setcard">
       <button class="setrow" data-act="lyricstyle" style="width:100%;text-align:left"><span class="tx"><b>Background style</b><span>${LYSTYLE[lyStyleKey()]}</span></span>${I.chev}</button>
       <button class="setrow" data-act="lyricink" style="width:100%;text-align:left"><span class="tx"><b>Lyrics text colour</b><span>${LYINK[set.lyricInk] || LYINK.auto}</span></span>${I.chev}</button>
+      <div class="setrow"><div class="tx"><b>Apple style header</b><span>Cover, song, a heart for Favourites and ⋯ for more, at the top of the lyrics. Off = the plain back arrow and title.</span></div><button class="toggle ${set.lyHead !== false ? 'on' : ''}" data-act="tg" data-k="lyHead" aria-label="Apple style header"></button></div>
+      ${set.lyHead !== false ? `<div class="setrow"><div class="tx" style="flex:1;min-width:0"><b>Header cover</b><span>Which picture the header shows.</span><div class="hsseg gearseg"><button class="chip ${set.lyHeadArt !== 'original' ? 'sel' : ''}" data-act="lyheadart" data-v="custom">Your picture or GIF</button><button class="chip ${set.lyHeadArt === 'original' ? 'sel' : ''}" data-act="lyheadart" data-v="original">Original cover</button></div></div></div>` : ''}
       <button class="setrow" data-act="lyricsize" style="width:100%;text-align:left"><span class="tx"><b>Text size</b><span>Text size: ${lyName(cleanLyPx(set.lyricPx, set.lyricSize))}</span></span>${I.chev}</button>
       <button class="setrow" data-act="lyranimopen" style="width:100%;text-align:left"><span class="tx"><b>Lyrics animation</b><span>Glide, fade, size, brightness and blur of the lyric lines.</span></span>${I.chev}</button></div>
     <div class="sethead">Playback</div><div class="setcard">${row('Autoplay', 'Add similar songs from your library when the queue runs out.', tg('autoplay', set.autoplay))}
@@ -2398,7 +2401,7 @@ function favToggle(id) {
   favs = toggleFav(favs, id);
   saveUser(FAV_FILE, favs).catch(() => toast('Could not save favorites'));
   toast(was ? 'Removed from Favorites' : 'Added to Favorites');
-  renderNP(); refreshHome();
+  renderNP(); refreshHome(); { const h = document.querySelector('#lyr .lyh-fav'), c = Native.current(); if (h && c) { h.classList.toggle('on', isFav(favs, c.id)); h.setAttribute('aria-pressed', String(isFav(favs, c.id))); } }   // v307
   if (!was) { const h = document.querySelector('.np [data-act="fav"]'); if (h) { h.classList.add('popit'); setTimeout(() => h.classList.remove('popit'), 700); } }   // v54: the heart pops when you favourite
   const top = stack[stack.length - 1]; if (top && top.t === 'favorites') renderSub(true);
 }
@@ -2503,6 +2506,9 @@ function trackAction(act, d) {
     case 'trackmenu': { const x = tracks.find(y => y.id === d.tm); if (x) trackMenuSheet(x); break; }
     case 'tm-fav': if (t) { closeSheet(); favToggle(t.id); } break;
     case 'fav': favToggle(d.tm); break;
+    case 'lyh-fav': { const c = Native.current(); if (c) { favToggle(c.id); b.classList.toggle('on', isFav(favs, c.id)); b.setAttribute('aria-pressed', String(isFav(favs, c.id))); } break; }   // v307
+    case 'lyheadart': set.lyHeadArt = b.dataset.v === 'original' ? 'original' : 'custom'; applySettings(); renderSub(true); break;   // v307
+    case 'lyh-more': { const c = Native.current(); if (c) trackMenuSheet(c); break; }   // v307: the song menu that already exists (play next, add to playlist, album, artist ...)
     case 'tm-next': if (!t) break; closeSheet(); Native.addNext(t).then(() => toast('Plays next')).catch(() => toast('Could not add song')); break;
     case 'tm-queue': if (!t) break; closeSheet(); Native.addToQueue(t).then(() => toast('Added to queue')).catch(() => toast('Could not add song')); break;
     case 'tm-addpl': addPlSheet(); break;
@@ -2984,13 +2990,21 @@ function lyPrefetch() {   // v293 / v293b / v293c: after a song starts (and when
   clearTimeout(lyPreT2); if (set.lyricStyle !== 'cover') return;
   lyPreT2 = setTimeout(() => lyNear().forEach((n, k) => setTimeout(() => lyPrepOne(n), k * 300)), 250);
 }
+/* v307 (owner): Apple Music style lyrics header: the cover, song and artist, a heart (Favourites) and ⋯ (the song menu), over every lyrics background.
+   Settings > Lyrics: "Apple style header" on / off (off = the old back arrow + title) and "Header cover": your picture / GIF or the original cover. */
+const lyHeadArt = t => set.lyHeadArt === 'original' ? trackAlbum(t).g : gOfT(t);
+function lyTopHtml(t) {
+  const who = t.trackArtist || trackAlbum(t).artist;
+  if (set.lyHead === false) return `<div class="lyr-top"><button class="gbtn" data-act="lyr-close">${I.back}</button><div class="lyr-t"><b>${t.title}</b><span>${who}</span></div><span style="width:44px"></span></div>`;
+  return `<div class="lyr-top lyh"><button class="lyh-art" data-act="lyr-close" aria-label="Close lyrics"><span class="cover blk" style="--g:${lyHeadArt(t)}"></span></button><div class="lyr-t lyh-t"><b>${t.title}</b><span>${who}</span></div><button class="lyh-btn lyh-fav ${isFav(favs, t.id) ? 'on' : ''}" data-act="lyh-fav" aria-label="Favourite" aria-pressed="${isFav(favs, t.id)}">${I.heart}</button><button class="lyh-btn" data-act="lyh-more" aria-label="More options">${I.more || '⋯'}</button></div>`;
+}
 async function lyricsLoad() {
   const my = ++lyrSeq, t = Native.current(), el = $('#lyr'); if (!t || !el) return;
   lyr = null; lyrIdx = -1; lyrTid = t.id; lyLast = { v: 0, pl: false }; lyStop(); lyFollow(true); const lyReady = set.lyricStyle === 'cover' && !(set.lyricBg && set.lyricBlur !== true) && coverTintNow(t);
   if (lyReady) lyPaint(el, lyReady); else requestAnimationFrame(() => requestAnimationFrame(() => { if (my === lyrSeq) lyApplyTint(t); }));   // v290: the lyrics screen opens and draws FIRST, then the background is read; v293: colours already known = painted now, same frame
   if (!lyReady && el.dataset.lyTid !== String(t.id) && set.lyricStyle === 'cover' && !(set.lyricBg && set.lyricBlur !== true)) lyBlank(el);   // v293: the previous song's colours never stay
   el.dataset.lyTid = t.id; lyPrefetch();
-    el.innerHTML = `${lyApHtml()}${lyBlurHtml(t)}${lyBgHtml(t)}<div class="lyr-top"><button class="gbtn" data-act="lyr-close">${I.back}</button><div class="lyr-t"><b>${t.title}</b><span>${t.trackArtist || trackAlbum(t).artist}</span></div><span style="width:44px"></span></div><div class="lyr-body" id="lyrbody"><div class="empty">Loading lyrics…</div></div><button class="lyr-now" data-act="lyr-follow" aria-label="Follow the song">${I.lyrics}<span>Now</span></button>`; lyBgAdopt(el);   // v293c: a Canvas loaded ahead is used as it is
+    el.innerHTML = `${lyApHtml()}${lyBlurHtml(t)}${lyBgHtml(t)}${lyTopHtml(t)}<div class="lyr-body" id="lyrbody"><div class="empty">Loading lyrics…</div></div><button class="lyr-now" data-act="lyr-follow" aria-label="Follow the song">${I.lyrics}<span>Now</span></button>`; lyBgAdopt(el);   // v293c: a Canvas loaded ahead is used as it is
   let text = '';
   let lyFail = false;
   try { text = (await Native.getLyrics(t)).text || ''; } catch (e) { lyFail = true; try { console.warn('lyrics read failed', e); } catch {} }   // BUG-15
@@ -3390,7 +3404,7 @@ document.addEventListener('click', e => {
     case 'rep': Native.setRepeat({ off: 'all', all: 'one', one: 'off' }[Native.state.repeat] || 'all').catch(playFail); break;
     case 'anim-preset': { set.anim = { ...(PRESETS[d.p] || PRESETS.default) }; applySettings(); for (const i of document.querySelectorAll('input[data-ak]')) { i.value = set.anim[i.dataset.ak]; const em = document.querySelector(`[data-av="${i.dataset.ak}"]`); if (em) em.textContent = Math.round(set.anim[i.dataset.ak]) + '%'; } break; }
     case 'tabtg': { const r = toggleTab(set.tabs, d.k); if (!r.ok) { toast('Keep at least one of Home, Albums, Library or Search'); break; } set.tabs = r.tabs; applySettings(); applyTabs(); if (document.querySelector('.nvbar')) { renderSub(true); break; } b.classList.toggle('on', !!set.tabs[d.k]); b.setAttribute('aria-checked', set.tabs[d.k] ? 'true' : 'false'); break; }   // v224: Settings > Tab bar
-    case 'tg': { const dflt = d.k === 'lyWordFade' || d.k === 'albumInfo' || d.k === 'smartArtists' || d.k === 'npTapOrig' || d.k === 'coverDouble'; set[d.k] = dflt ? set[d.k] === false : !set[d.k]; applySettings(); if (d.k === 'npImmersive') npApplyTint(Native.current()); b.classList.toggle('on', dflt ? set[d.k] !== false : !!set[d.k]); if (d.k === 'smartArtists') { stack = stack.filter(s => s.t !== 'artist' || artistInfo(s.id).count > 0); stack.forEach(s => { if (s.t === 'artist') s.id = unesc(artistName(E(s.id)) || E(s.id)); }); repaintAll(); toast(set.smartArtists !== false ? 'Smart artist grouping on' : 'Smart artist grouping off'); } break; }
+    case 'tg': { const dflt = d.k === 'lyHead' || d.k === 'lyWordFade' || d.k === 'albumInfo' || d.k === 'smartArtists' || d.k === 'npTapOrig' || d.k === 'coverDouble'; set[d.k] = dflt ? set[d.k] === false : !set[d.k]; applySettings(); if (d.k === 'npImmersive') npApplyTint(Native.current()); b.classList.toggle('on', dflt ? set[d.k] !== false : !!set[d.k]); if (d.k === 'smartArtists') { stack = stack.filter(s => s.t !== 'artist' || artistInfo(s.id).count > 0); stack.forEach(s => { if (s.t === 'artist') s.id = unesc(artistName(E(s.id)) || E(s.id)); }); repaintAll(); toast(set.smartArtists !== false ? 'Smart artist grouping on' : 'Smart artist grouping off'); } break; }
     case 'abloop': abAction(); break;
     case 'apic-edit': apicEdit(d.id); break;
     case 'gp-edit': gpEdit(d.id); break;

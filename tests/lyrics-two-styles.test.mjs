@@ -10,7 +10,7 @@ test('Cover blur is wired: the picture itself is blurred behind the lyrics (stil
   assert.match(M, /h\.dataset\.lyblur = set\.lyricStyle === 'cover' && set\.lyricBlur === true/);
   assert.match(M, /set\.lyricBlur = b\.dataset\.v === 'blur'/);
   assert.match(M, /function lyBlurHtml\(t\)/); assert.match(M, /s\.vid \? vid\(''\)/); assert.match(M, /<img\$\{c\} src="\$\{e\}"/);
-  assert.match(M, /el\.innerHTML = `\$\{lyApHtml\(\)\}\$\{lyBlurHtml\(t\)\}\$\{lyBgHtml\(t\)\}<div class="lyr-top">/, 'the layer is part of every lyrics render');
+  assert.match(M, /el\.innerHTML = `\$\{lyApHtml\(\)\}\$\{lyBlurHtml\(t\)\}\$\{lyBgHtml\(t\)\}\$\{lyTopHtml\(t\)\}/, 'the layer is part of every lyrics render');
   assert.match(CSS, /html\[data-lyblur="1"\] \.lyr\{/); assert.match(CSS, /\.lyr-blur>img,\.lyr-blur>video\{[^}]*object-fit:fill;filter:blur\(/);
   assert.match(fs.readFileSync(new URL('../src/settingsio.js', import.meta.url), 'utf8'), /lyricBlur: 'Lyrics: Cover blur'/);
 });

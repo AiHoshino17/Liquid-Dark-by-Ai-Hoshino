@@ -1216,6 +1216,15 @@ html.gear-off .setbtn{opacity:0;transform:scale(.9);pointer-events:none}
 .devbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .45s ease}
 .devcores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;margin-top:8px}
 .devcore{display:flex;flex-direction:column;min-width:0}.devcore em{font-style:normal;font-size:.75rem;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.devcore small{display:block;font-size:.7rem;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* v307: Apple Music style lyrics header (cover, title, heart, more), readable on every lyrics background and text colour */
+.lyr-top.lyh{justify-content:flex-start;gap:12px;padding:4px 2px 10px}
+.lyh-art{flex:0 0 auto;width:52px;height:52px;padding:0;border:0;border-radius:8px;overflow:hidden;background:none;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.lyh-art .cover{width:100%;height:100%;border-radius:8px}
+.lyh-t{flex:1;min-width:0;text-align:left}.lyh-t b,.lyh-t span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lyh-t b{font-size:1.02rem;color:#fff}.lyh-t span{font-size:.9rem;color:rgba(255,255,255,.72)}
+.lyh-btn{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.2);padding:0}
+.lyh-btn svg{width:18px;height:18px}.lyh-fav.on{color:var(--accent);background:rgba(255,255,255,.92)}
+html[data-lyink="black"] .lyh-t b{color:#000}html[data-lyink="black"] .lyh-t span{color:rgba(0,0,0,.62)}html[data-lyink="black"] .lyh-btn{color:#000;background:rgba(0,0,0,.14)}
 /* ===== v222 (third pass): LANDSCAPE for Settings and Listening Stats (Stats, View All, song / artist / album details, the Snapshot sheet).
    Portrait is not touched: .lsw / .lshd / .lsbd / .setcols are display:contents, so in portrait the markup lays out exactly as before. ===== */
 .lsw,.lshd,.lsbd,.setcols{display:contents}

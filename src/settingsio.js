@@ -81,7 +81,7 @@ export const GROUP_LABELS = { extras: 'Canvas on / off and songs set to show the
   refract: 'Lens refraction (tab bar)',
   tabs: 'Tab bar icons', tabOrder: 'Tab bar icon order', barSplit: 'Landscape mini player: split and merge (style, speed, stretch)',
   lyricSize: 'Lyrics size', lyricPx: 'Lyrics text size', lyricStyle: 'Lyrics style', lyricBlur: 'Lyrics: Cover blur',
-  lyricPal: 'Lyrics: Cover colour palette', lyricApple: 'Lyrics: Apple gradient', lyricBg: 'Lyrics: Home screen / Song picture background', lyWordFade: 'Lyrics: word fade-in', lyWordSpeed: 'Lyrics: word fade-in speed', gearHide: 'Settings button (top right): hide after', lyricInk: 'Lyrics text colour', timeStyle: 'Playing bar time', coverLyrics: 'Cover in lyrics',
+  lyricPal: 'Lyrics: Cover colour palette', lyricApple: 'Lyrics: Apple gradient', lyricBg: 'Lyrics: Home screen / Song picture background', lyWordFade: 'Lyrics: word fade-in', lyWordSpeed: 'Lyrics: word fade-in speed', gearHide: 'Settings button (top right): hide after', lyHead: 'Lyrics: Apple style header', lyHeadArt: 'Lyrics: header cover (yours / original)', lyricInk: 'Lyrics text colour', timeStyle: 'Playing bar time', coverLyrics: 'Cover in lyrics',
   tabSize: 'Glass bar size (older Small / Medium / Large choice)', tabPct: 'Glass bar size', redHover: 'Red highlight on hover', motion: 'Reduce motion', contrast: 'Increase contrast',
   albumInfo: 'Album info', bigCovers: 'Big covers', userName: 'Your name', npCover: 'Player cover size', npImmersive: 'Immersive player', npTapOrig: 'Tap cover shows original',
   home: 'Home layout', bgDim: 'Background dim', bgFit: 'Background fit', autoplay: 'Autoplay', autoCheck: 'Check for updates',
