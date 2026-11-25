@@ -7,6 +7,15 @@
 
 
 
+## v314 1.8 s per picture (owner) - version stays 0.208.0
+WHAT: CHIP_S 1.6 -> 1.8 s (src/scanview.js) and the CSS --scd fallback 1.8s. Times: 500 ~ 20 s, 1,000 ~ 30 s, 2,000 ~ 60 s, 5,000 ~ 2.5 min, 10,000 ~ 5 min.
+CHECKED: tests/scan-art-all-v308.test.mjs (life 1.8); tests/scan-art-all-check.py.
+
+## v313 Pictures stay on screen longer (owner) - version stays 0.208.0
+WHAT: each picture in Rescan art / Rescan library now takes 1.6 s to fly into the disc (was 0.95 s; CHIP_S in src/scanview.js, CSS --scd fallback 1.6s, safety timeout CHIP_S + 1.6 s). Still none skipped. Times: 500 ~ 20 s, 1,000 ~ 27 s, 2,000 ~ 53 s, 5,000 ~ 2.2 min, 10,000 ~ 4.4 min.
+WHICH: src/scanview.js, src/styles/app.css.
+CHECKED: tests/scan-art-all-v308.test.mjs (life 1.6); tests/scan-art-all-check.py now uses 2,000 pictures (10,000 would take ~4.5 min per card): 2,000 / 2,000 in Rescan art (55 s) and the library scan (53 s alone; 83 s right after the Rescan art run in the same page).
+
 ## v312 Fade speed shows in the preview (owner) - version stays 0.208.0
 WHAT: with Word fade-in on, the playing line's brightness comes from the word wipe, so Fade speed (which only timed the line's own fade) looked dead. Fade speed now also sets the softness of the wipe edge: .6em x fade^2 (30 % crisp .05em, 100 % = the Apple .6em, 250 % a long soft glow 3.75em), in the preview and the real lyrics. The Fade-in speed slider also redraws the preview at once (before: only after reopening the page).
 WHICH: src/styles/app.css (--wfe on the word mask), src/main.js (lwspeed input redraws .lyprevbody words + sweep).

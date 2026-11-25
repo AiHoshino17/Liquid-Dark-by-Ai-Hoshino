@@ -10,6 +10,12 @@
 
 
 
+## v314: 1.8 seconds per picture
+- Each picture now takes 1.8 seconds to fly into the disc in Rescan art and Rescan library (1,000 pictures about 30 s, 10,000 about 5 min).
+
+## v313: Pictures stay on screen longer
+- Each picture now takes 1.6 seconds to fly into the disc during Rescan art and Rescan library (was about 1 second), so you can see them. Every picture still flies in; big libraries take longer (1,000 about 27 s, 10,000 about 4.5 min).
+
 ## v312: Fade speed in the preview
 - Fade speed now visibly changes the word by word fade-in too: low = a crisp, quick edge, high = a long, soft glow (preview and real lyrics).
 - Moving the Fade-in speed slider changes the preview straight away.

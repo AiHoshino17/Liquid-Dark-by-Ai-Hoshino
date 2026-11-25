@@ -34,13 +34,14 @@ function stopFeed() { clearInterval(feedT); feedT = 0; pend = []; }
    (60 -> 120) as n grows, and the pace never outruns what the disc can swallow, so none is skipped: 1,000 ~ 12 s, 10,000 ~ 1 minute. A picture that finds the disc full waits in a queue (pend). */
 export function feedPace(n) {
   n = Math.max(0, Math.floor(+n || 0));
-  const life = 0.95, cap = n > 500 ? 70 : 60;   // v311 (owner: "too fast"): every picture keeps the calm 0.95 s flight at any size; a big library just takes longer (10,000 ~ 2.7 min)
+  const life = CHIP_S, cap = n > 500 ? 70 : 60;   // v313 (owner: "make them appear longer"): each picture is on screen 1.8 s (v313 1.6 s, before 0.95 s)   // v311 (owner: "too fast"): every picture keeps the calm 0.95 s flight at any size; a big library just takes longer (10,000 ~ 2.7 min)
   if (!n) return { gap: FEED_MS, per: 1, ms: 0, life, cap };
   const rate = cap / life * 0.85, want = Math.max(2600, Math.min(n * 40, 20000), n / rate * 1000);   // 100 ~ 4 s, 500 ~ 20 s, 1,000 ~ 20 s, 10,000 ~ 2.7 min
   const per = Math.max(1, Math.ceil(40 * n / want)), gap = Math.max(40, Math.min(FEED_MS, Math.floor(want * per / n)));   // v311: several per tick only when one every 40 ms is not enough; never faster than `want`
   return { gap, per, ms: Math.ceil(n / per) * gap, life, cap };
 }
 function usePace(n) { const p = feedPace(n); maxChips = p.cap; if (refs && refs.fly) refs.fly.style.setProperty('--scd', p.life + 's'); return p; }
+const CHIP_S = 1.8;   // v313 + v314 (owner: "1.8 seconds"): how long one picture takes to fly into the disc (CSS --scd)
 let pend = [];   // v310: pictures waiting for room in the disc (every one flies, none is dropped)
 function startFeed(list) {
   stopFeed(); feedList = [...new Set((list || []).filter(Boolean))]; if (!feedList.length) return;
@@ -85,7 +86,7 @@ function chip(src, dup = false) {   // dup: the same picture may fly again (a cu
   let gone = false; chips++;
   const off = () => { if (gone) return; gone = true; chips = Math.max(0, chips - 1); im.remove(); /* BUG-121 */ if (pend.length && el && el.classList.contains('on') && !hiddenByUser) chip(pend.shift(), true); };
   im.addEventListener('load', () => im.classList.add('go'));   // starts flying only once the picture is ready
-  im.addEventListener('animationend', off); im.addEventListener('error', off); setTimeout(off, 2600);
+  im.addEventListener('animationend', off); im.addEventListener('error', off); setTimeout(off, CHIP_S * 1000 + 1600);   // v313: safety net longer than the flight
   im.src = src; refs.fly.appendChild(im);
 }
 

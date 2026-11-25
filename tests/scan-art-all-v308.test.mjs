@@ -4,7 +4,7 @@ import { feedPace } from '../src/scanview.js';
 const M = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 test('feedPace (v310): every picture gets its turn and the pace never outruns the disc, even 10,000+', () => {
   for (const n of [1, 5, 20, 100, 500, 2000, 10000, 20000]) { const { gap, per, ms, life, cap } = feedPace(n); assert.ok(Math.ceil(n / per) * gap === ms && gap >= 40 && gap <= 280 && (n < 20 || ms >= 2600) && n / (ms / 1000) <= cap / life, `${n}: ${gap} ${per} ${ms}`); }
-  assert.ok(feedPace(10000).ms < 200000); for (const n of [20, 2000, 10000]) assert.equal(feedPace(n).life, 0.95);   // v311: calm flight at every size
+  assert.ok(feedPace(10000).ms < 360000); for (const n of [20, 2000, 10000]) assert.equal(feedPace(n).life, 1.8);   // v311 + v314: calm 1.8 s flight at every size
   assert.equal(feedPace(0).ms, 0);
 });
 test('Header cover chip lives in the Settings click switch (trackAction has no button)', () => {
@@ -33,7 +33,7 @@ test('v310: a full disc queues the picture (never skips it); cards wait for the 
   assert.match(S, /if \(chips >= maxChips\) \{ if \(dup\) pend\.push\(src\); return; \}/); assert.match(S, /if \(pend\.length && el && el\.classList\.contains\('on'\) && !hiddenByUser\) chip\(pend\.shift\(\), true\)/);
   assert.match(S, /if \(pend\.length && !hiddenByUser\) \{ clearTimeout\(finT\); finT = setTimeout\(\(\) => this\.finish\(r\), 150\)/);
   assert.match(M, /scanView\.idle\(\)\.then/); assert.match(M, /for \(const al of albums\) \{ try \{ const c = show === 'original' \? '' : alpUrls\.get\(al\.id\)/);
-  assert.ok(fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8').includes('animation:sc-in var(--scd,.95s)'));
+  assert.ok(fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8').includes('animation:sc-in var(--scd,1.8s)'));
 });
 test('v312: Fade speed sets the word edge; Fade-in speed slider redraws the preview at once', () => {
   const C = fs.readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
