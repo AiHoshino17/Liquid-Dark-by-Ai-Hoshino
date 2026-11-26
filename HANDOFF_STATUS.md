@@ -7,6 +7,18 @@
 
 
 
+## v317h Immersive zooms in (owner: "in Immersive I DO want them zoomed in") - version stays 0.208.0
+WHAT: Immersive Now Playing is the ONE place that zooms in: the cover / picture / GIF fills the whole Immersive area (background-size:cover, top-aligned, as before v317b) and the Canvas is zoomed in too (cvFit uses Math.max when html[data-immersive="1"] and the video is in #np; black bars still trimmed; no stretching, the forced 100% x 100% stays gone). Everywhere else everything still fits whole (Math.min / contain). A short-lived v317g (blurred fill around a fitted picture) was replaced by this.
+CHECKED: tests/no-crop-v317.test.mjs (v317h test); screenshots of Immersive with the owner's picture, GIF and video as Canvas.
+
+## v317f Immersive Canvas fits (owner) - version stays 0.208.0
+WHAT: in Immersive Now Playing the Canvas was forced to 100% x 100% of the tall art area with !important while cvFit had set object-fit:fill, so the video was STRETCHED (and the black-bar clip landed in the wrong place). The forced size is gone: cvFit fits the Canvas whole and undistorted in the Immersive area (square video 390x390 in 390x658), baked-in black bars still trimmed. Pictures and GIFs in Immersive were already whole (v317b).
+CHECKED: tests/no-crop-v317.test.mjs (v317f test); app-view recording of Immersive with the owner's picture, GIF, video as Canvas and a black-bar Canvas.
+
+## v317e Canvas checked (owner asked "what about Canvas") - version stays 0.208.0
+WHAT: artHtml() uses the demo's cvWeb map in the browser (phone unchanged: Native.fileUrl), so Canvas shows in Now Playing in the demo. Checked with the owner's GIF and picture as Canvas: Now Playing 360x202 / 203x360 inside the 360x360 square (whole), lyrics Canvas background object-fit contain (whole).
+CHECKED: tests/no-crop-v317.test.mjs (v317e test).
+
 ## v317d Profile picture + share cards never cropped (owner) - version stays 0.208.0
 WHAT: the profile picture <img>/<video> is pinned to its 64 px box (position:absolute; inset:0): as a grid item a tall picture grew to 114 px and its top / bottom were cut off even with object-fit:contain. Listening Snapshot share cards (src/snapshot.js) now fit each cover (Math.min, #111 fill) and draw no circles (NO_CIRCLES). Settings text: "Tap the picture" (was "circle"). demoNames().genre now reads album genres (demo).
 CHECKED: tests/no-crop-v317.test.mjs (v317d test); app-view screenshots with ONLY the owner's original picture: Home, Songs, Album, Artists, artist page, Playlists, playlist page, profile, Up Next, Now Playing, Genres, genre page, 4 lyrics backgrounds.

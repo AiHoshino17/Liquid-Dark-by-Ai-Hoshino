@@ -10,6 +10,12 @@
 
 
 
+## v317h: Immersive zooms in
+- In Immersive Now Playing, pictures, GIFs, covers and Canvas videos are zoomed in to fill the screen (Canvas no longer stretched). Everywhere else they still show whole.
+
+## v317f: Immersive Canvas
+- In Immersive Now Playing a Canvas video is no longer stretched: it shows whole, in its own shape.
+
 ## v317d: Profile picture and share cards
 - Your profile picture now shows whole (a tall picture was still cut at the top and bottom).
 - The Listening Snapshot pictures you share show every cover whole too.

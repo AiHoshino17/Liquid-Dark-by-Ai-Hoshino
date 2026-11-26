@@ -13,7 +13,7 @@ test('gOf: a custom album picture REPLACES the original cover (no original under
   alpUrls.set('gone', 'blob:y'); assert.equal(gOf({ id: 'gone', g: 'ORIG' }), 'ORIG');
 });
 test('the player: canvas on = canvas; otherwise (or a bad canvas file) the custom cover layer', () => {
-  const mk = o => extract('src/main.js', 'artHtml', { canvasOn: true, cvPath: () => '/v.mp4', cvBad: new Set(), covT: () => 'COV', Native: { fileUrl: p => 'file://' + p }, isVideo: p => p.endsWith('.mp4'), gOfT: () => 'G', ...o });
+  const mk = o => extract('src/main.js', 'artHtml', { canvasOn: true, cvPath: () => '/v.mp4', cvBad: new Set(), covT: () => 'COV', Native: { isNative: true, fileUrl: p => 'file://' + p }, cvWeb: new Map(), isVideo: p => p.endsWith('.mp4'), gOfT: () => 'G', ...o });
   assert.match(mk({})({ id: 't' }, {}), /<video class="cvmedia" src="file:\/\/\/v.mp4"/);
   assert.match(mk({ cvPath: () => '/i.png' })({ id: 't' }, {}), /<img class="cvmedia" src="file:\/\/\/i.png"/);
   assert.equal(mk({ canvasOn: false })({ id: 't' }, {}), 'COV'); assert.equal(mk({ cvPath: () => '' })({ id: 't' }, {}), 'COV'); assert.equal(mk({ cvBad: new Set(['/v.mp4']) })({ id: 't' }, {}), 'COV');

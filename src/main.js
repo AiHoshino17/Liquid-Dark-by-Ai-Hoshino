@@ -3165,7 +3165,7 @@ const cvBad = new Set();   // Bug 15: Canvas files that failed to play (this ses
 function artHtml(t, a) {
   const p = canvasOn ? cvPath(t) : '';
   if (!p || cvBad.has(p)) return covT(t);
-  const url = Native.fileUrl(p);
+  const url = (!Native.isNative && cvWeb.get(p)) || Native.fileUrl(p);   // v317e: the browser demo's Canvas files (cvWeb) show in Now Playing too, so the fit can be checked
   const media = isVideo(p) ? `<video class="cvmedia" src="${url}" autoplay loop muted playsinline webkit-playsinline disablepictureinpicture disableremoteplayback preload="auto"></video>` : `<img class="cvmedia" src="${url}" alt="">`;
   return `<div class="cover cvc" style="--g:${gOfT(t)}">${media}</div>`;
 }
@@ -3194,7 +3194,7 @@ function cvFit(v) {
   const side = (a, far) => { const m = far ? 1 - a : a; return m < .015 ? (far ? 1 : 0) : (far ? a - .008 : a + .008); };   // under 1.5 % is no bar; a real bar is cut with a hair of margin
   p = { t: side(p.t, 0), b: side(p.b, 1), l: side(p.l, 0), r: side(p.r, 1) };
   if (p.b - p.t < .35 || p.r - p.l < .35) p = { t: 0, b: 1, l: 0, r: 1 };   // a result that small is a wrong guess: show the whole frame
-  const cx = p.l * w, cy = p.t * h, pw = (p.r - p.l) * w, ph = (p.b - p.t) * h, k = Math.min(W / pw, H / ph), st = v.style;   /* v317 (owner: never crop): the whole picture fits (contain); baked-in black bars are still trimmed by the clip below */
+  const cx = p.l * w, cy = p.t * h, pw = (p.r - p.l) * w, ph = (p.b - p.t) * h, k = (document.documentElement.dataset.immersive === '1' && v.closest('#np') ? Math.max : Math.min)(W / pw, H / ph), st = v.style;   /* v317h (owner): Immersive zooms the Canvas in to fill the area; everywhere else it fits whole */   /* v317 (owner: never crop): the whole picture fits (contain); baked-in black bars are still trimmed by the clip below */
   st.right = st.bottom = 'auto'; st.maxWidth = 'none'; st.objectFit = 'fill';
   st.width = (w * k).toFixed(2) + 'px'; st.height = (h * k).toFixed(2) + 'px';
   st.left = (W / 2 - (cx + pw / 2) * k).toFixed(2) + 'px'; st.top = (H / 2 - (cy + ph / 2) * k).toFixed(2) + 'px';
