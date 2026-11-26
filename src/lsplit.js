@@ -9,13 +9,16 @@ export const STYLES = ['cell', 'stretch', 'drip', 'jelly'];
 export const SPLIT_NAMES = { cell: 'Cell split: pulls apart, a water neck snaps', stretch: 'Long stretch: a long water neck, then a big snap', drip: 'Drip: a drop swells out of the bar and lets go', jelly: 'Jelly pop: no water, a springy squish and pop', off: 'Off: a plain slide' };
 /** Settings > Animation > Landscape mini player: { style, stretch 50..200 %, speed 50..200 % }. Anything broken falls back to the default. */
 export const BS_DEF = { style: 'cell', stretch: 100, speed: 100, hide: 8 };
-export const HIDE_OPTS = [0, 5, 8, 15, 30, 60];   // v291 / v292: quick picks (seconds) for how long the landscape mini player waits for a touch before it merges back into the bar (0 = never)
-/* v292 (owner: "custom time for the disappearing of the mini player, never and any time from seconds to minutes"): any time from 3 s to 10 min.
+export const HIDE_OPTS = [0, 2, 5, 8, 15, 30, 60];   // v316: 2 s chip added (shortest)
+// was:   // v291 / v292: quick picks (seconds) for how long the landscape mini player waits for a touch before it merges back into the bar (0 = never)
+/* v292 (owner: "custom time for the disappearing of the mini player, never and any time from seconds to minutes"): any time from 3 s to 10 min (v316: from 2 s).
    The slider walks these steps: 3-60 s by 1 s, then by 5 s to 2 min, by 15 s to 5 min, by 30 s to 10 min. */
-export const HIDE_MIN = 3, HIDE_MAX = 600;
-export const HIDE_STEPS = (() => { const a = []; for (let v = 3; v <= 60; v++) a.push(v); for (let v = 65; v <= 120; v += 5) a.push(v); for (let v = 135; v <= 300; v += 15) a.push(v); for (let v = 330; v <= 600; v += 30) a.push(v); return a; })();
+export const HIDE_MIN = 2, HIDE_MAX = 600;   // v316 (owner): the landscape mini player can hide after as little as 2 s
+export const HIDE_STEPS = (() => { const a = []; for (let v = HIDE_MIN; v <= 60; v++) a.push(v); for (let v = 65; v <= 120; v += 5) a.push(v); for (let v = 135; v <= 300; v += 15) a.push(v); for (let v = 330; v <= 600; v += 30) a.push(v); return a; })();
 /** Slider position of a time: the nearest step. */
-export const hideStepOf = sec => { let best = 0; HIDE_STEPS.forEach((v, i) => { if (Math.abs(v - sec) < Math.abs(HIDE_STEPS[best] - sec)) best = i; }); return best; };
+export const hideStepOf = (sec, steps = HIDE_STEPS) => { let best = 0; steps.forEach((v, i) => { if (Math.abs(v - sec) < Math.abs(steps[best] - sec)) best = i; }); return best; };
+/** v316 (owner): the top-right Settings button never hides sooner than 6 s. */
+export const GEAR_MIN = 6, GEAR_STEPS = HIDE_STEPS.filter(v => v >= GEAR_MIN);
 /** 0 -> "Never", 8 -> "8 s", 60 -> "1 min", 90 -> "1 min 30 s". */
 export const fmtHide = sec => { sec = Math.round(+sec || 0); if (!sec) return 'Never'; if (sec < 60) return `${sec} s`; const m = Math.floor(sec / 60), r = sec % 60; return r ? `${m} min ${r} s` : `${m} min`; };
 const cleanHide = h => { const n = typeof h === 'number' ? h : typeof h === 'string' && h.trim() !== '' ? +h : NaN; if (!Number.isFinite(n)) return BS_DEF.hide; const r = Math.round(n); return r === 0 ? 0 : r < 0 ? BS_DEF.hide : Math.max(HIDE_MIN, Math.min(HIDE_MAX, r)); };   // 0 = Never; a broken value = the default 8 s

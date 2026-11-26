@@ -40,3 +40,10 @@ test('v312: Fade speed sets the word edge; Fade-in speed slider redraws the prev
   assert.ok(C.includes('--wfe:calc(.6em * var(--ly-fade,1) * var(--ly-fade,1))') && !/\.ln\.cur \.w\{[^}]*\+ \.6em/.test(C));
   assert.match(M, /document\.querySelectorAll\('\.lyprevbody \.ln'\)\.forEach\(l => \{ l\.innerHTML = lyPrevWords\(l\.textContent\); \}\)/);
 });
+test('v315 (owner): a picture shared by many songs flies once per song (no de-duplication)', () => {
+  const S = fs.readFileSync(new URL('../src/scanview.js', import.meta.url), 'utf8');
+  assert.match(S, /feedList = \(list \|\| \[\]\)\.filter\(Boolean\);/); assert.ok(!/feedList = \[\.\.\.new Set/.test(S));
+  const lc = M.slice(M.indexOf('function libCovers('), M.indexOf('async function runScan('));
+  assert.ok(lc.includes('return out;') && !lc.includes('new Set'));
+  assert.match(M, /const uniq = items;/);
+});

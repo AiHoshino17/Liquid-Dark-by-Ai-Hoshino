@@ -10,6 +10,13 @@
 
 
 
+## v316: Hide times
+- The Settings button (top right) now waits at least 6 seconds before it hides.
+- The landscape mini player can now hide after just 2 seconds.
+
+## v315: Every song counts
+- If many songs share the same picture, GIF or cover, it now flies in once for each of them (500 songs = 500 pictures), in Rescan art and Rescan library.
+
 ## v314: 1.8 seconds per picture
 - Each picture now takes 1.8 seconds to fly into the disc in Rescan art and Rescan library (1,000 pictures about 30 s, 10,000 about 5 min).
 

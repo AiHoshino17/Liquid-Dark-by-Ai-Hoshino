@@ -7,6 +7,16 @@
 
 
 
+## v316 Hide minimums (owner) - version stays 0.208.0
+WHAT: the top-right Settings button hides after 6 s at the soonest (chips Never / 6 s / 10 s / 30 s / 1 min, slider 6 s - 10 min; an older saved 3-5 s becomes 6 s). It matters most when the Settings icon is hidden from the glass bar, so the button is the only way in. The landscape mini player can now hide after 2 s (new 2 s chip; slider 2 s - 10 min).
+WHICH: src/lsplit.js (HIDE_MIN 2, HIDE_OPTS + 2, GEAR_MIN 6, GEAR_STEPS, hideStepOf(sec, steps)), src/main.js (cleanGearHide uses GEAR_MIN, GEAR_OPTS, gear slider on GEAR_STEPS).
+CHECKED: NEW tests/hide-mins-v316.test.mjs; gear-hide-v304 + landscape-rotate-hide-v291 updated; app view: saved 3 s shows "Hides after 6 s", slider start = 6 s, 2 s chip saves barSplit.hide 2.
+
+## v315 Every place flies, shared pictures too (owner) - version stays 0.208.0
+WHAT: no de-duplication any more: 500 songs with the same GIF / picture / embedded cover = 500 fly-ins, in Rescan art (every place: songs, albums, artists, genres, playlists, profile, backgrounds, Canvas) and in Rescan library (every song + every album). Times follow the count of places (1.8 s each, see v314).
+WHICH: src/main.js (artFly uses items as they are, libCovers returns every entry), src/scanview.js (startFeed keeps duplicates).
+CHECKED: tests/scan-art-all-v308.test.mjs (v315 test); tests/scan-art-all-check.py ALL PASS (big step now 1,000 pictures so the whole check fits in 10 min; new step: one picture on all 20 songs = 20 fly-ins in both cards).
+
 ## v314 1.8 s per picture (owner) - version stays 0.208.0
 WHAT: CHIP_S 1.6 -> 1.8 s (src/scanview.js) and the CSS --scd fallback 1.8s. Times: 500 ~ 20 s, 1,000 ~ 30 s, 2,000 ~ 60 s, 5,000 ~ 2.5 min, 10,000 ~ 5 min.
 CHECKED: tests/scan-art-all-v308.test.mjs (life 1.8); tests/scan-art-all-check.py.

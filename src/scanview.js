@@ -44,7 +44,7 @@ function usePace(n) { const p = feedPace(n); maxChips = p.cap; if (refs && refs.
 const CHIP_S = 1.8;   // v313 + v314 (owner: "1.8 seconds"): how long one picture takes to fly into the disc (CSS --scd)
 let pend = [];   // v310: pictures waiting for room in the disc (every one flies, none is dropped)
 function startFeed(list) {
-  stopFeed(); feedList = [...new Set((list || []).filter(Boolean))]; if (!feedList.length) return;
+  stopFeed(); feedList = (list || []).filter(Boolean); if (!feedList.length) return;   // v315 (owner): NOT de-duplicated: 500 songs with the same cover = 500 fly-ins
   feedI = 0; const { gap, per } = usePace(feedList.length);   // v308: in order, one full pass first; v310: after it, more only while the disc is calm (the scan is still running)
   feedT = setInterval(() => { if (!el || !el.classList.contains('on') || hiddenByUser) return;
     for (let k = 0; k < per; k++) { if (feedI >= feedList.length && (pend.length || chips > maxChips / 4)) break; chip(feedList[feedI++ % feedList.length], true); } }, gap);
