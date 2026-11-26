@@ -19,9 +19,9 @@ test('v277: a Canvas shows its video instead of the Home / Custom picture; the c
 
 });
 test('v277: CSS: Home = the Home paint or black, Custom = black under the picture layer, readable white lyrics', () => {
-  assert.match(C, /html\[data-bg="1"\]\[data-lybg="home"\] \.lyr\{background:var\(--bgpaint\)\}/);
+  assert.match(C, /html\[data-bg="1"\]\[data-lybg="home"\] \.lyr\{background:var\(--bgpaint-fit\)\}/);   // v317c (owner): the whole Home picture, never cropped
   assert.match(C, /html\[data-lybg="home"\] \.lyr\{background:#000;/);
-  assert.match(C, /\.lyr-bgl>img,\.lyr-bgl>video\{[^}]*object-fit:cover/);
+  assert.match(C, /\.lyr-bgl>img,\.lyr-bgl>video\{[^}]*object-fit:contain/);   // v317b (owner): the whole picture
 });
 // v278 (owner: "add a black text or white lyrics text option")
 test('v278: lyrics text colour setting (auto / white / black), on every background style', () => {

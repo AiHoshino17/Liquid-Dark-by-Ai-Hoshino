@@ -7,6 +7,28 @@
 
 
 
+## v317d Profile picture + share cards never cropped (owner) - version stays 0.208.0
+WHAT: the profile picture <img>/<video> is pinned to its 64 px box (position:absolute; inset:0): as a grid item a tall picture grew to 114 px and its top / bottom were cut off even with object-fit:contain. Listening Snapshot share cards (src/snapshot.js) now fit each cover (Math.min, #111 fill) and draw no circles (NO_CIRCLES). Settings text: "Tap the picture" (was "circle"). demoNames().genre now reads album genres (demo).
+CHECKED: tests/no-crop-v317.test.mjs (v317d test); app-view screenshots with ONLY the owner's original picture: Home, Songs, Album, Artists, artist page, Playlists, playlist page, profile, Up Next, Now Playing, Genres, genre page, 4 lyrics backgrounds.
+NOTE: tests/session.test.mjs is not in npm test (it needs a browser `addEventListener`); it fails the same way without these changes.
+ALSO CHECKED: two screen recordings (the owner's GIF 498x280 and picture 900x1600 on every song, album, artist, genre, playlist, profile, Home background, lyrics backgrounds, with zoom-ins); seven sizes 16x16, 30x600, 1500x40, 4000x3000, 1000x1000, 498x280, 900x1600: song rows all background-size contain, profile picture drawn inside its 64 px box every time. Full npm test 1094/1094, all 7 browser checks pass.
+
+## v317c Lyrics backgrounds never cropped (owner) - version stays 0.208.0
+WHAT: behind the lyrics the Home picture / GIF is shown whole (--bgpaint-fit: contain on black) for the Home screen style and Classic, whatever the Home screen's own Fill / Fit choice; Song picture style and Canvas were already whole (v317b); Cover blur's sharp detail layer now fits (contain) instead of being stretched (the heavy blur glow under it stays stretched). Palette / Apple / Classic-without-picture have no picture.
+WHICH: src/styles/app.css; demo hook picDemo('bg') in src/main.js (screenshots only).
+CHECKED: tests/no-crop-v317.test.mjs (v317c test), lyrics-home-custom-bg-v277 updated; app-view screenshots of Library, Artists, artist page, Up Next and the Home / Classic / Song picture / Cover blur lyrics backgrounds with the owner's tall picture.
+
+## v317b No round pictures, full-screen pictures fit too (owner: "artists still cropped, fix it everywhere") - version stays 0.208.0
+WHAT: a circle always cuts the corners of a picture, so the round ones are rounded squares now: mini player cover (10px), artist cards (16px), artist page photo (24px), profile picture (14px). Immersive Now Playing and the lyrics picture background (Song picture / Home styles, .lyr-bgl) now show the whole picture on black too. Home background still follows its own Fill / Fit choice.
+WHICH: src/styles/app.css; demo hooks picDemo / demoNames in src/main.js (screenshots only).
+CHECKED: tests/no-crop-v317.test.mjs (v317b test), lyrics-home-custom-bg-v277 updated; 11 app-view screenshots with the owner's tall picture and a wide one.
+
+## v317 Pictures are never cropped (owner) - version stays 0.208.0
+WHAT: embedded covers and every uploaded picture / GIF now FIT (the whole picture, a dark #111 fill around a wide or tall one) instead of being cut to the square: Now Playing, mini player, lists, grids, Up Next, Home rows, album / artist / genre / playlist pictures, profile picture, Canvas (cvFit: min scale + clip-path trims baked-in black bars), Rescan chips, and the Android widgets (fitCenter).
+NOT CHANGED: the Home background keeps its own "Fill screen / Fit whole picture" choice; the full-screen lyrics backgrounds and the Immersive Now Playing mode still fill the screen (they are full-screen by design).
+WHICH: src/main.js (gOf, gOfT, apicOf, genreCov: center/contain; cvFit), src/data.js (album cover contain on #111), src/styles/app.css (.profile .avatar, .pl-mosaic.pp-cover img, .sc-chip, .cvmedia, .gtile.hasp, .cover.cvc), native-android/res/layout/lf_grid.xml + lf_nowplaying.xml.
+CHECKED: NEW tests/no-crop-v317.test.mjs (also imports data.js: a // comment once swallowed a brace there); 5 older picture tests updated; app view with the owner's own tall picture and a wide one: whole picture shown in Now Playing and Up Next.
+
 ## v316 Hide minimums (owner) - version stays 0.208.0
 WHAT: the top-right Settings button hides after 6 s at the soonest (chips Never / 6 s / 10 s / 30 s / 1 min, slider 6 s - 10 min; an older saved 3-5 s becomes 6 s). It matters most when the Settings icon is hidden from the glass bar, so the button is the only way in. The landscape mini player can now hide after 2 s (new 2 s chip; slider 2 s - 10 min).
 WHICH: src/lsplit.js (HIDE_MIN 2, HIDE_OPTS + 2, GEAR_MIN 6, GEAR_STEPS, hideStepOf(sec, steps)), src/main.js (cleanGearHide uses GEAR_MIN, GEAR_OPTS, gear slider on GEAR_STEPS).

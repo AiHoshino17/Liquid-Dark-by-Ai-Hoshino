@@ -35,6 +35,6 @@ test('the picture is shown first and the old one is only dropped after the new f
 });
 test('the square is cut by the screen, not by re-encoding', () => {
   const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
-  assert.match(css, /\.profile \.avatar img,\.profile \.avatar video\{[^}]*object-fit:cover/);
-  assert.match(M, /center\/cover no-repeat, \$\{PIC_BASE\}/);
+  assert.match(css, /\.profile \.avatar img,\.profile \.avatar video\{[^}]*object-fit:contain/);   // v317 (owner): never cropped
+  assert.match(M, /center\/contain no-repeat, \$\{PIC_BASE\}/);
 });

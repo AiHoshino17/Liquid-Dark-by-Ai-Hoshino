@@ -27,6 +27,7 @@ h2.sec{font-size:1.375rem;font-weight:800;margin:22px 0 12px}
 
 /* ---- covers (flat) ---- */
 .cover{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--g);box-shadow:var(--spec-lite)}
+.cover.cvc{background:#000}   /* v317: a Canvas clip that fits (contain) sits on black, not on the cover */
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px}
 .card{min-width:0}
 .card .t{font-weight:600;margin-top:6px;font-size:0.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -88,7 +89,7 @@ html[data-refract="0"] .lens-mag,html[data-contrast="1"] .lens-mag{display:none}
 
 /* ---- mini player ---- */
 .mini{position:absolute;left:14px;right:14px;bottom:calc(max(14px,var(--sab)) + var(--tabbar-h) + 10px);z-index:29;height:62px;display:flex;align-items:center;gap:12px;padding:7px 10px 7px 7px;border-radius:var(--r-pill);background:var(--sheen),var(--glass-fill);box-shadow:var(--spec),var(--drop);text-align:left;width:calc(100% - 28px)}
-.mini .cover{width:48px;border-radius:50%}
+.mini .cover{width:48px;border-radius:10px}   /* v317b (owner: never crop): a circle always cuts the corners of the picture, so the round covers are rounded squares now */
 .mini .meta{flex:1;min-width:0;display:block}
 .mini .mini-open{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;align-self:stretch}
 .mini .meta b{display:block;font-size:0.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -202,7 +203,7 @@ html .np .glow{background:radial-gradient(120% 70% at 15% 0%,var(--np-glow-1),tr
 .ln.tap{cursor:pointer}.ln.cur{color:var(--accent)}
 .ln.cur .w{opacity:.55}.ln.cur .w.wd{opacity:1}
 /* T10: Canvas */
-.cvmedia{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;max-width:none}   /* v56: cvFit() in main.js sets the px size that makes the picture area cover the square */
+.cvmedia{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:inherit;max-width:none}   /* v56: cvFit() in main.js sets the px size that makes the picture area cover the square */
 .np .bottom button.cvbtn.on{color:var(--accent);box-shadow:var(--spec),0 0 14px var(--accent-glow)}
 /* T11: Song Info */
 .infobox{max-height:70vh;overflow-y:auto;scrollbar-width:none;margin-top:10px}
@@ -539,8 +540,8 @@ html .mini{background:var(--sheen),rgba(0,0,0,0)}
 
 /* v88: profile picture in Settings */
 .profile{display:flex;align-items:center;gap:0;margin:6px 0 4px;padding:0;border-radius:22px;background:var(--sheen-lite),var(--row-fill);box-shadow:var(--spec-lite)}
-.profile .avatar{width:64px;height:64px;flex:0 0 auto;border-radius:50%;overflow:hidden;display:grid;place-items:center;padding:0;background:var(--sheen),var(--glass-fill);box-shadow:var(--spec),0 6px 16px rgba(0,0,0,.5);color:var(--text-2)}
-.profile .avatar img,.profile .avatar video{width:100%;height:100%;object-fit:cover;display:block}
+.profile .avatar{width:64px;height:64px;flex:0 0 auto;border-radius:14px;overflow:hidden;display:grid;place-items:center;padding:0;background:var(--sheen),var(--glass-fill);box-shadow:var(--spec),0 6px 16px rgba(0,0,0,.5);color:var(--text-2)}
+.profile .avatar{position:relative}.profile .avatar img,.profile .avatar video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#111}   /* v317: never cropped; v317d: pinned to the box (as a grid item a tall picture grew to 114 px and was cut off) */
 .profile .avatar svg{width:34px;height:34px}
 .profile .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .profile .tx span{font-size:0.8125rem;color:var(--text-2)}
@@ -574,7 +575,7 @@ html[data-lyblur="1"] .lyr::before{display:none}
 .lyr-blur{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--lyr-bg,#111)}
 .lyr-blur>img,.lyr-blur>video{position:absolute;left:-12%;top:-8%;width:124%;height:116%;object-fit:fill;filter:blur(48px) saturate(1.7) brightness(1.08);transform:translateZ(0)}   /* fill = the WHOLE picture is stretched over the page (not a zoomed crop) and blurred so hard that no detail is left: only smooth colour fields, like a gradient. The picture is a little oversized so the blurred edges do not fade, but the top and bottom of the cover (a yellow title) still show. */
 .lyr-blur::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.16) 45%,rgba(0,0,0,.22) 100%)}   /* dark veil, strongest at the bottom, keeps white lyrics readable (a little darker since the detail layer was added) */
-.lyr-blur>.lb-d{left:0;top:0;width:100%;height:100%;filter:blur(7px) saturate(1.8) contrast(1.1) brightness(1.25);opacity:.72}   /* detail layer: the same picture / GIF / Canvas video with a light blur on top of the heavy one, so the shapes and small details of the cover show through (title letters, face, mask) while the colours stay smooth. It is NOT oversized (left:0, 100% x 100%): the heavy base layer is oversized and crops the cover edges, which hid small things in the corners (the yellow Parental Advisory label of Starboy); this layer shows the whole picture, and its blurred edge fades into the base layer. Slightly brighter so small bright spots stay visible. */
+.lyr-blur>.lb-d{left:0;top:0;width:100%;height:100%;object-fit:contain;filter:blur(7px) saturate(1.8) contrast(1.1) brightness(1.25);opacity:.72}   /* detail layer: the same picture / GIF / Canvas video with a light blur on top of the heavy one, so the shapes and small details of the cover show through (title letters, face, mask) while the colours stay smooth. It is NOT oversized (left:0, 100% x 100%): the heavy base layer is oversized and crops the cover edges, which hid small things in the corners (the yellow Parental Advisory label of Starboy); this layer shows the whole picture, and its blurred edge fades into the base layer. Slightly brighter so small bright spots stay visible. */   /* v317c (owner: lyrics backgrounds never cropped): the detail layer shows the whole picture, not stretched; the heavy blur under it is the whole picture stretched as a glow */
 /* GIF / animated WebP / Canvas video (.lb-anim): they came out too bright (white lyrics lost contrast) and the faint blush / eyes were washed out. Darker base, detail layer sharper and NOT brightened, stronger veil. Still pictures are unchanged. */
 .lyr-blur.lb-anim>img,.lyr-blur.lb-anim>video{filter:blur(48px) saturate(1.9) brightness(.5)}
 .lyr-blur.lb-anim>.lb-d{filter:blur(3px) saturate(3) contrast(1.15) brightness(.58);opacity:.92}
@@ -634,7 +635,7 @@ html[data-immersive="1"] .np .cluster,html[data-immersive="1"] .np .sbtn,html[da
 .scanv.done .sc-sweep{opacity:0}
 .scanv.done .pr{animation:none;opacity:0}
 .sc-fly{position:absolute;inset:0;pointer-events:none;overflow:visible}
-.sc-chip{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:10px;object-fit:cover;opacity:0;box-shadow:var(--spec-lite),0 6px 16px rgba(0,0,0,.45)}
+.sc-chip{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:10px;object-fit:contain;background:#111;opacity:0;box-shadow:var(--spec-lite),0 6px 16px rgba(0,0,0,.45)}
 .sc-chip.go{animation:sc-in var(--scd,1.8s) cubic-bezier(.45,0,.75,.35) forwards}
 .scanv-title{font-size:1.125rem;font-weight:700;letter-spacing:-.01em;text-shadow:0 1px 10px rgba(0,0,0,.4)}
 .scanv-count{margin-top:3px;font-size:0.875rem;font-weight:500;color:var(--text-2);font-variant-numeric:tabular-nums}
@@ -678,14 +679,14 @@ html .tabbar .tab svg{width:calc(1.75rem * var(--tabk,1));height:calc(1.75rem * 
 .quick::-webkit-scrollbar{display:none}
 .quick .chip{flex:0 0 auto;padding:9px 14px;font-size:0.8125rem;white-space:nowrap}
 .quick .chip svg{width:16px;height:16px}
-.acard .cover{border-radius:50%}
+.acard .cover{border-radius:16px}   /* v317b */
 .acard .t,.acard .s{text-align:center}
 .genrechips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
 .genrechips .chip{padding:8px 14px;font-size:0.8125rem}
 
 /* v118: artist photo on the artist page */
 .apic{width:44%;max-width:260px;margin:8px auto 10px}
-.apic .cover{border-radius:50%;box-shadow:0 18px 44px rgba(0,0,0,.55)}
+.apic .cover{border-radius:24px;box-shadow:0 18px 44px rgba(0,0,0,.55)}
 
 /* v119: Home greeting, name field, Now Playing cover size */
 .greetline{margin:-8px 0 8px;font-size:1.125rem;font-weight:700;line-height:1.3;color:var(--text)}
@@ -792,7 +793,7 @@ html[data-motion="reduce"] .lyr::before{animation:none}
 #sheet .sheetbox.notifcard.popcard .actions button[data-act="notif-allow"],#sheet .sheetbox.notifcard.popcard .actions button[data-act="sheet-close"],#sheet .sheetbox.notifcard.popcard .actions button[data-act="upd-go"],#sheet .sheetbox.notifcard.popcard .actions button[data-act="upd-allow"]{color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%),var(--accent);border-color:rgba(255,255,255,.28);box-shadow:0 0 22px var(--accent-glow,rgba(255,40,60,.45)),0 6px 16px rgba(0,0,0,.5)}
 
 /* v132: pictures and GIFs in a playlist. A cover picture fills the square; the strip lists them; the viewer shows one at its real size (fit to the screen, never cropped). */
-.pl-mosaic.pp-cover{display:block}.pl-mosaic.pp-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.pl-mosaic.pp-cover{display:block}.pl-mosaic.pp-cover img{width:100%;height:100%;object-fit:contain;display:block;background:#111}   /* v317 */
 .pp-wait{background:var(--row-fill)}.pl-mosaic.pp-cover .pp-wait{display:block;width:100%;height:100%}
 .ppv{position:absolute;inset:0;z-index:96;background:#000;display:flex;flex-direction:column;animation:lf-cvv-in calc(.28s * var(--dur-k,1)) var(--spring)}
 .pp-stage{flex:1;min-height:0;display:grid;place-items:center;padding:calc(var(--sat,0px) + 8px) 0 8px;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -808,11 +809,11 @@ html[data-motion="reduce"] .ppv{animation:none}
    The picture is painted as a CSS background (it keeps moving if it is a GIF) on the three full-screen bases that already exist: the app (behind Home, every tab and every Settings page),
    Now Playing and the lyrics. All three have the same size, so the picture lines up and never jumps. The pages themselves turn see-through, so no layer sits on top of a button,
    a row or the tab bar; the dim layer is part of the same background, not an extra element. Nothing here applies until a picture is chosen (html[data-bg="1"]). */
-html[data-bg="1"]{--bgpaint:linear-gradient(var(--bgdimc),var(--bgdimc)),var(--bgimg) center/var(--bgsize,cover) no-repeat,#000;--row-fill:rgba(0,0,0,.30)}
+html[data-bg="1"]{--bgpaint:linear-gradient(var(--bgdimc),var(--bgdimc)),var(--bgimg) center/var(--bgsize,cover) no-repeat,#000;--bgpaint-fit:linear-gradient(var(--bgdimc),var(--bgdimc)),var(--bgimg) center/contain no-repeat,#000;--row-fill:rgba(0,0,0,.30)}
 html[data-bg="1"] #app{background:var(--bgpaint)}
 html[data-bg="1"] #main,html[data-bg="1"] .screen.sub{background:transparent}
 html[data-bg="1"] .np:not(.hascv){background:var(--bgpaint)}
-html[data-bg="1"][data-lyrstyle="classic"] .lyr{background:var(--bgpaint)}
+html[data-bg="1"][data-lyrstyle="classic"] .lyr{background:var(--bgpaint-fit)}   /* v317c (owner): behind the lyrics the Home picture is never cropped (whole picture, black around it) */
 /* the quiet glass of rows, cards and settings gets a little more tint so text stays readable on a busy picture (still no blur: long lists stay fast) */
 html[data-bg="1"] .setcard,html[data-bg="1"] .np .bottom button{background:var(--sheen-lite),rgba(0,0,0,.30)}
 html[data-bg="1"] .row.arow{background:none}
@@ -932,7 +933,7 @@ html .toast,html .btbanner{background:var(--sheen),#000;backdrop-filter:none;-we
 html:root .row.aplay .meta b,html:root .card.aplay .t{color:var(--accent)}
 /* v149: genre pictures / GIFs */
 .row.grow .thumb{width:52px;height:52px;border-radius:10px;flex:none}
-html .gtile.hasp{background:linear-gradient(rgba(0,0,0,.42),rgba(0,0,0,.42)),var(--gpic) center/cover no-repeat;color:#fff}
+html .gtile.hasp{background:linear-gradient(rgba(0,0,0,.42),rgba(0,0,0,.42)),var(--gpic) center/contain no-repeat,#111;color:#fff}
 html .gtile.hasp small{color:rgba(255,255,255,.85)}
 
 /* Snapshot: the "Share snapshot" button on Listening Stats and the picture preview sheet (src/snapshot.js draws the picture itself) */
@@ -967,8 +968,8 @@ html[data-immersive="1"] #np.np{background:#000;background:radial-gradient(120% 
 html[data-immersive="1"] .np .glow{display:none}
 html[data-immersive="1"] .np .art{position:absolute;left:0;right:0;top:0;height:78%;padding:0;display:block;z-index:0;
   -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.85) 66%,rgba(0,0,0,.45) 84%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.85) 66%,rgba(0,0,0,.45) 84%,transparent 100%)}
-html[data-immersive="1"] .np .art .cover{width:100%;height:100%;max-height:none;aspect-ratio:auto;border-radius:0;box-shadow:none;background-size:cover;background-position:center top}
-html[data-immersive="1"] .np .art .cvmedia{position:absolute;left:0!important;top:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:cover}
+html[data-immersive="1"] .np .art .cover{width:100%;height:100%;max-height:none;aspect-ratio:auto;border-radius:0;box-shadow:none;background-size:contain;background-position:center;background-color:#000}   /* v317b (owner: "everywhere"): Immersive shows the whole picture too */
+html[data-immersive="1"] .np .art .cvmedia{position:absolute;left:0!important;top:0!important;width:100%!important;height:100%!important;transform:none!important;object-fit:contain;background:#000}
 html[data-immersive="1"] .np .art::after{content:"";position:absolute;left:0;right:0;top:0;height:22%;background:linear-gradient(180deg,rgba(0,0,0,.42),transparent);pointer-events:none}   /* keeps the status bar and the grab bar readable on a bright cover */
 html[data-immersive="1"] .np>.grabbtn,html[data-immersive="1"] .np>.titles{position:relative;z-index:1}
 html[data-immersive="1"] .np .titles{margin-top:auto;text-shadow:0 1px 14px rgba(0,0,0,.45)}
@@ -1137,10 +1138,10 @@ html.pics-refreshing .cover,html.pics-refreshing .avatar,html.pics-refreshing .t
 
 /* v277: Home screen background / Custom lyrics background (data-lybg on <html>, style 'cover' + set.lyricBg). Home = the same paint as the Home screen (picture / GIF + its dim) or plain black; Custom = black under .lyr-bgl (your picture / GIF, added by main.js). A Canvas (.lyr-bgl.lb-cv) shows as it is. A light veil + soft text shadow keep the white lyrics readable on any picture. */
 html[data-lybg="home"] .lyr{background:#000;background-image:none;transition:none}
-html[data-bg="1"][data-lybg="home"] .lyr{background:var(--bgpaint)}
+html[data-bg="1"][data-lybg="home"] .lyr{background:var(--bgpaint-fit)}   /* v317c */
 html[data-lybg="home"] .lyr::before{display:none}
 .lyr-bgl{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#000}
-.lyr-bgl>img,.lyr-bgl>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lyr-bgl>img,.lyr-bgl>video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}   /* v317b: the lyrics picture background shows the whole picture */
 .lyr-bgl::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,.34) 50%,rgba(0,0,0,.5) 100%)}
 html[data-lybg="home"] .lyr .ln{text-shadow:none}
 

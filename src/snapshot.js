@@ -1,4 +1,5 @@
 // Listening Snapshot: a shareable picture of the listening data of ONE period (day / week / month / year / all time).
+const NO_CIRCLES = true;   // v317d (owner: never crop): a circle cuts the corners of a picture, so artist pictures in share cards are rounded squares too
 // Two parts, both free of Native / app state so they can be tested:
 //   buildSnapshot()      numbers from aggregate() (listenstats.js)  ->  a plain model (what is written on the picture)
 //   makeSnapshotPng()    model -> canvas -> PNG blob (the real album covers are drawn; a missing cover gets a colour gradient)
@@ -134,13 +135,13 @@ function spaced(c, px) { try { c.letterSpacing = px + 'px'; } catch { /* older w
 
 function drawCover(c, cov, imgs, x, y, size, mode, r = 22) {   // mode 'sq' | 'round'
   c.save();
-  if (mode === 'round') { c.beginPath(); c.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2); c.closePath(); } else rr(c, x, y, size, size, r);
+  if (mode === 'round' && !NO_CIRCLES) { c.beginPath(); c.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2); c.closePath(); } else rr(c, x, y, size, size, r);
   c.clip();
   const im = cov && cov.url ? imgs.get(cov.url) : null, iw = im && (im.naturalWidth || im.width), ih = im && (im.naturalHeight || im.height);
-  if (im && iw > 0 && ih > 0) { const s = Math.max(size / iw, size / ih), dw = iw * s, dh = ih * s; c.drawImage(im, x + (size - dw) / 2, y + (size - dh) / 2, dw, dh); }
+  if (im && iw > 0 && ih > 0) { const s = Math.min(size / iw, size / ih), dw = iw * s, dh = ih * s; c.fillStyle = '#111'; c.fillRect(x, y, size, size); /* v317d (owner): the whole picture, never cropped */ c.drawImage(im, x + (size - dw) / 2, y + (size - dh) / 2, dw, dh); }
   else { const [a, b] = (cov && cov._cols) || ['#2a2a2e', '#0a0a0b'], g = c.createLinearGradient(x, y, x + size, y + size); g.addColorStop(0, a); g.addColorStop(1, b); c.fillStyle = g; c.fillRect(x, y, size, size); }
   c.restore();
-  c.save(); if (mode === 'round') { c.beginPath(); c.arc(x + size / 2, y + size / 2, size / 2 - 1, 0, Math.PI * 2); } else rr(c, x + 1, y + 1, size - 2, size - 2, r); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.28)'; c.stroke(); c.restore();
+  c.save(); if (mode === 'round' && !NO_CIRCLES) { c.beginPath(); c.arc(x + size / 2, y + size / 2, size / 2 - 1, 0, Math.PI * 2); } else rr(c, x + 1, y + 1, size - 2, size - 2, r); c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,.28)'; c.stroke(); c.restore();
 }
 const heading = (c, text, y) => { c.font = F(800, 26); c.fillStyle = ACCENT; c.textAlign = 'left'; spaced(c, 3); c.fillText(text, PAD, y + 30); spaced(c, 0); };
 const shelfTile = n => (n <= 1 ? 0 : Math.min(300, Math.floor((CW - (n - 1) * 20) / n)));

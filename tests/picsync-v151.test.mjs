@@ -79,8 +79,8 @@ test('v155: every cover on screen goes through the same lookup, and a custom pic
   // real / embedded cover (a.g), never the custom-picture layer that gOf() would add, same rule the listening stats and yearly recap follow.
   const bad = [...main.matchAll(/--g:([^;"']{0,80})/g)].map(x => x[1]).filter(x => !/gOf\(|gOfT\(|lyHeadArt\(|row-fill|^\$\{a && a\.g\}$/.test(x));   // v307: lyHeadArt() = gOfT() or, by the owner's own choice, the original cover
   assert.deepEqual(bad, []);   // every OTHER square paints a cover without the custom-picture lookup
-  assert.match(main, /const gOf = a => \{[^\n]*center\/cover no-repeat, \$\{PIC_BASE\}/);   // v208+: custom only, original not underneath
-  assert.doesNotMatch(main, /center\/cover no-repeat, var\(--row-fill\)` : a\.g/);
+  assert.match(main, /const gOf = a => \{[^\n]*center\/contain no-repeat, \$\{PIC_BASE\}/);   // v208+: custom only, original not underneath
+  assert.doesNotMatch(main, /center\/contain no-repeat, var\(--row-fill\)` : a\.g/);
   assert.match(main, /async function ppHeal/);
   assert.match(main, /function coverHtml\(a\) \{ return `<span class="cover blk" style="--g:\$\{a && a\.g\}"><\/span>`; \}/, 'the cover viewer bypasses gOf() on purpose: it must show the real cover, not the custom picture');
 });

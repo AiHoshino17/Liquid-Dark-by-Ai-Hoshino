@@ -18,7 +18,7 @@ test('song pictures have their own store, two copies, restore, retry and a picke
 test('the song picture REPLACES the album picture (real gOfT): song picture alone; none = album only', () => {
   const spUrls = new Map([['s1', 'blob:song1']]), gOf = a => 'GRAD-' + a.k, trackAlbum = t => ({ k: t && t.albumId });
   const gOfT = extract('src/main.js', 'gOfT', { gOf, trackAlbum, spUrls, PIC_BASE: '#111', soHas: () => false });
-  assert.equal(gOfT({ id: 's1', albumId: 'al1' }), "url('blob:song1') center/cover no-repeat, #111");
+  assert.equal(gOfT({ id: 's1', albumId: 'al1' }), "url('blob:song1') center/contain no-repeat, #111");
   assert.equal(gOfT({ id: 's2', albumId: 'al2' }), 'GRAD-al2');
   assert.equal(gOfT(null), 'GRAD-null');
 });

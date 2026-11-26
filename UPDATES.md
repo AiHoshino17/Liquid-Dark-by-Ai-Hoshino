@@ -10,6 +10,20 @@
 
 
 
+## v317d: Profile picture and share cards
+- Your profile picture now shows whole (a tall picture was still cut at the top and bottom).
+- The Listening Snapshot pictures you share show every cover whole too.
+
+## v317c: Lyrics backgrounds show the whole picture
+- Behind the lyrics, your Home screen picture or GIF, your song pictures and Canvas now always show whole, never cropped. Cover blur shows the whole picture too.
+
+## v317b: Nothing cropped anywhere
+- Round pictures (mini player, artists, profile) are now rounded squares, so the corners of your picture are never cut off.
+- Immersive Now Playing and the lyrics picture backgrounds show the whole picture too.
+
+## v317: No more cropped pictures
+- Covers and your own pictures and GIFs are no longer cut to a square. Wide or tall, the whole picture shows (with a dark fill around it) in Now Playing, the mini player, lists, grids, albums, artists, genres, playlists, your profile, Canvas and the home screen widgets.
+
 ## v316: Hide times
 - The Settings button (top right) now waits at least 6 seconds before it hides.
 - The landscape mini player can now hide after just 2 seconds.

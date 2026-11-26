@@ -139,7 +139,7 @@ export function setLibrary(raw) {
     // cover = the picture most of the album's songs share (so one odd song with a single's art cannot win); ties go to the first song
     const c = new Map(); m.cv.forEach(([u, p]) => { const e = c.get(u); if (e) e.n++; else c.set(u, { n: 1, p }); });
     let best = null; c.forEach((e, u) => { if (!best || e.n > best.n) best = { n: e.n, u, p: e.p }; });
-    if (best) { a.cover = best.u; a.coverPath = best.p; a.g = `url('${String(best.u).replace(/['"()\\\s%]/g, ch => '%' + ch.charCodeAt(0).toString(16).padStart(2, '0'))}') center/cover no-repeat, ${a.g0}`; }
+    if (best) { a.cover = best.u; a.coverPath = best.p; a.g = `url('${String(best.u).replace(/['"()\\\s%]/g, ch => '%' + ch.charCodeAt(0).toString(16).padStart(2, '0'))}') center/contain no-repeat, #111`; /* v317 (owner): the whole embedded cover, never cropped; a dark fill around a wide / tall one */ }
   });
   lyricTwins(ts);
   ts.sort((x, y) => x.title.localeCompare(y.title));
