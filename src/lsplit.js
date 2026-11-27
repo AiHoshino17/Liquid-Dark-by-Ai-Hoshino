@@ -8,7 +8,7 @@
 export const STYLES = ['cell', 'stretch', 'drip', 'jelly'];
 export const SPLIT_NAMES = { cell: 'Cell split: pulls apart, a water neck snaps', stretch: 'Long stretch: a long water neck, then a big snap', drip: 'Drip: a drop swells out of the bar and lets go', jelly: 'Jelly pop: no water, a springy squish and pop', off: 'Off: a plain slide' };
 /** Settings > Animation > Landscape mini player: { style, stretch 50..200 %, speed 50..200 % }. Anything broken falls back to the default. */
-export const BS_DEF = { style: 'cell', stretch: 100, speed: 100, hide: 8 };
+export const BS_DEF = { style: 'cell', stretch: 100, speed: 100, hide: 8, playHide: 0 };   // v318 (owner): playHide = seconds before it hides WHILE a song plays; 0 = never (default). v318b: a custom time (was on / off)
 export const HIDE_OPTS = [0, 2, 5, 8, 15, 30, 60];   // v316: 2 s chip added (shortest)
 // was:   // v291 / v292: quick picks (seconds) for how long the landscape mini player waits for a touch before it merges back into the bar (0 = never)
 /* v292 (owner: "custom time for the disappearing of the mini player, never and any time from seconds to minutes"): any time from 3 s to 10 min (v316: from 2 s).
@@ -22,9 +22,11 @@ export const GEAR_MIN = 6, GEAR_STEPS = HIDE_STEPS.filter(v => v >= GEAR_MIN);
 /** 0 -> "Never", 8 -> "8 s", 60 -> "1 min", 90 -> "1 min 30 s". */
 export const fmtHide = sec => { sec = Math.round(+sec || 0); if (!sec) return 'Never'; if (sec < 60) return `${sec} s`; const m = Math.floor(sec / 60), r = sec % 60; return r ? `${m} min ${r} s` : `${m} min`; };
 const cleanHide = h => { const n = typeof h === 'number' ? h : typeof h === 'string' && h.trim() !== '' ? +h : NaN; if (!Number.isFinite(n)) return BS_DEF.hide; const r = Math.round(n); return r === 0 ? 0 : r < 0 ? BS_DEF.hide : Math.max(HIDE_MIN, Math.min(HIDE_MAX, r)); };   // 0 = Never; a broken value = the default 8 s
+/** v318b: 0 / missing / false = never while playing; true (v318 switch) = the Hide after time; a number = 2 s ... 10 min like Hide after. */
+const cleanPlayHide = (p, hide) => { if (p === true) return hide === undefined ? BS_DEF.hide : cleanHide(hide) || BS_DEF.hide; if (p == null || p === false) return 0; const n = typeof p === 'number' ? p : typeof p === 'string' && p.trim() !== '' ? +p : NaN; return Number.isFinite(n) && n > 0 ? cleanHide(n) : 0; };
 export function cleanBarSplit(o) {
   const v = o && typeof o === 'object' ? o : {}, num = (x, d) => { const n = Math.round(+x); return Number.isFinite(n) ? Math.max(50, Math.min(200, n)) : d; };
-  return { style: STYLES.includes(v.style) || v.style === 'off' ? v.style : BS_DEF.style, stretch: num(v.stretch, 100), speed: num(v.speed, 100), hide: v.hide === undefined ? BS_DEF.hide : cleanHide(v.hide) };
+  return { style: STYLES.includes(v.style) || v.style === 'off' ? v.style : BS_DEF.style, stretch: num(v.stretch, 100), speed: num(v.speed, 100), hide: v.hide === undefined ? BS_DEF.hide : cleanHide(v.hide), playHide: cleanPlayHide(v.playHide, v.hide) };
 }
 export const REST_GAP = 16;                                   // px between player and bar at rest (CSS: 50% - 8 px each)
 const K = .5523;                                              // cubic Bezier circle constant

@@ -1282,12 +1282,14 @@ html[data-lyink="black"] .lyh-t b{color:#000}html[data-lyink="black"] .lyh-t spa
   #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>*{grid-column:1 / -1}
   #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>.row{grid-column:auto;margin-bottom:8px}
   #sheet .sheetbox:not(.notifcard):has(>.row:nth-child(n+6))>p{margin:4px 0 10px}
-  .screen.sub:has(>.animdock){display:grid;grid-template-columns:minmax(0,44%) minmax(0,1fr);column-gap:24px;align-content:start;align-items:start}
-  .screen.sub:has(>.animdock)>.top{grid-column:1 / -1}
-  .screen.sub:has(>.animdock)>.animdock{grid-column:1;grid-row:2;position:sticky;top:calc(var(--sat) + 4px);margin:0;padding:0 2px 0 0;border:0;background:transparent;max-height:calc(100vh - var(--sat) - var(--lbar) - 104px);overflow-y:auto;scrollbar-width:none}   /* v223: 104 = the title row above the dock + the gap over the real tab bar / mini player; before (30) the dock's bottom (Glass bar size) went under them */
+  /* v318 (owner: "the landscape Liquid glass page is a mess"): two columns WITHOUT grid rows: the preview dock floats on the left (sticky) and every card / heading / note flows down the right column. The old grid put every card in one tiny row and they all sat on top of each other. */
+  .screen.sub:has(>.animdock){display:block}
+  .screen.sub:has(>.animdock)>.animdock{float:left;width:44%;position:sticky;top:calc(var(--sat) + 4px);margin:0;padding:0 2px 0 0;border:0;background:transparent;max-height:calc(100vh - var(--sat) - var(--lbar) - 104px);overflow-y:auto;scrollbar-width:none}
   #app .animdock .tabbar.demobar,#app:has(#mini .mini) .animdock .tabbar.demobar{position:relative;left:auto;right:auto;bottom:auto;margin:0;width:100%}   /* v223: with a mini player the real-bar rule (half width, shifted right) also caught the test bar and cut its Home tab off */
   .screen.sub:has(>.animdock)>.animdock::-webkit-scrollbar{display:none}
-  .screen.sub:has(>.animdock)>.setcard{grid-column:2;grid-row:2;margin:0 0 12px}
+  .screen.sub:has(>.animdock)>.animdock{-webkit-mask-image:linear-gradient(#000 calc(100% - 28px),transparent);mask-image:linear-gradient(#000 calc(100% - 28px),transparent);padding-bottom:22px}   /* v318: the preview column scrolls on its own: its bottom edge fades out instead of cutting a line of text in half */
+  .screen.sub:has(>.animdock)>:not(.top):not(.animdock){margin-left:calc(44% + 24px);min-width:0}
+  .screen.sub:has(>.animdock)>.setcard{margin:0 0 12px calc(44% + 24px)}
   .animdock .lyr.lyprev{margin:0 0 6px}
   .animdock .lyprev .lyprevbody{height:120px}
   .animdock .lyprev .ln{font-size:1.125rem}

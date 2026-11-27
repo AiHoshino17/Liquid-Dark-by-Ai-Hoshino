@@ -33,7 +33,7 @@ test('landscape CSS: left column for the Stats controls, Snapshot picture left, 
   assert.match(tail, /\.lsw\{display:grid;grid-template-columns:minmax\(210px,30%\)/);
   assert.match(tail, /#sheet #snapbox:has\(\.snapimg\)\{display:grid/);
   assert.match(C, /#sheet \.sheetbox:not\(\.notifcard\):has\(>\.row:nth-child\(n\+6\)\)\{display:grid;grid-template-columns:repeat\(2/);
-  assert.match(C, /\.screen\.sub:has\(>\.animdock\)\{display:grid;grid-template-columns:minmax\(0,44%\)/);
+  assert.match(C, /\.screen\.sub:has\(>\.animdock\)>\.animdock\{float:left;width:44%;/);   // v318: float layout (the old grid stacked every card in one cell)
   assert.match(C, /@media \(orientation:landscape\) and \(max-height:360px\)\{\s*\.lshd>h1\.large/);
 });
 test('every v222 landscape rule is inside a landscape media query (portrait CSS untouched)', () => {

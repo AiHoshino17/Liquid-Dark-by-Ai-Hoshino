@@ -31,9 +31,9 @@ test('v289 timeline: split starts joined at gap 0, stretches past the snap, ends
   const j = timeline('jelly', 1, 1, 390); assert.equal(j.wn, null); assert.equal(j.bl, REST_GAP);
 });
 test('v289 setting: cleanBarSplit, default, export / import, picker on the Animation page', () => {
-  assert.deepEqual(cleanBarSplit(null), BS_DEF); assert.deepEqual(cleanBarSplit({ style: 'x', stretch: 999, speed: 'a' }), { style: 'cell', stretch: 200, speed: 100, hide: 8 });
+  assert.deepEqual(cleanBarSplit(null), BS_DEF); assert.deepEqual(cleanBarSplit({ style: 'x', stretch: 999, speed: 'a' }), { style: 'cell', stretch: 200, speed: 100, hide: 8, playHide: 0 });   // v318b: playHide seconds
   assert.equal(cleanBarSplit({ style: 'off' }).style, 'off'); assert.deepEqual(Object.keys(SPLIT_NAMES), [...STYLES, 'off']);
-  assert.match(main, /barSplit: \{ style: 'cell', stretch: 100, speed: 100, hide: 8 \}/, 'a default key: exported and imported');
+  assert.match(main, /barSplit: \{ style: 'cell', stretch: 100, speed: 100, hide: 8, playHide: 0 \}/, 'a default key: exported and imported');
   assert.match(io, /barSplit: 'Landscape mini player: split and merge/);
   assert.match(main, /<div class="sethead">Landscape mini player<\/div><div class="setcard" id="bsplit">\$\{bsplitRows\(\)\}<\/div>/);
   assert.match(main, /case 'bsplitset': set\.barSplit = cleanBarSplit\(\{ \.\.\.set\.barSplit, style: b\.dataset\.v \}\)/);

@@ -44,7 +44,7 @@ with sync_playwright() as pw:
     ST = "(()=>{const b=document.querySelector('#tabs').getBoundingClientRect(),m=document.querySelector('#mini .mini:not(.away)'),r=m&&m.getBoundingClientRect();return {bw:b.width,bl:b.left,vw:innerWidth,mini:!!m,away:!!document.querySelector('#mini .mini.away'),leaving:!!document.querySelector('#mini .mini.leaving'),joined:!!(m&&m.style.clipPath),gap:r?b.left-r.right:null,lrot:document.getElementById('app').classList.contains('lrot'),playing:__lf.Native.state.playing,op:m?+getComputedStyle(m).opacity:0}})()"
     SAMPLE = "async n => { const o = []; for (let i = 0; i < n; i++) { await new Promise(r => requestAnimationFrame(r)); o.push(%s); } return o; }" % ST
     # 1. rotate into landscape with a song playing
-    ctx, p, e = page_with(PORT, {}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(800)
+    ctx, p, e = page_with(PORT, {'barSplit': {'style': 'cell', 'hide': 8, 'playHide': True}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(800)   # v318: the hide-while-playing path needs "Hide while playing" on (default off)
     p.set_viewport_size(LAND); fr = p.evaluate(SAMPLE, 110)
     vis = [f for f in fr if f['op'] > .5]
     check(fr[0]['bw'] > LAND['width'] * .85 and (fr[0]['lrot'] or fr[0]['joined']), f"rotate: the first frame is the WIDE bar ({round(fr[0]['bw'])} px), the player not shown on its own")
@@ -75,7 +75,7 @@ with sync_playwright() as pw:
     ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 0}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(10000); s = p.evaluate(ST)
     check(s['mini'] and not s['away'], 'Hide after: Never keeps the player'); ctx.close()
     # 4. Reduce Motion: rotate = no animation, hide still works (no merge animation)
-    ctx, p, e = page_with(PORT, {'motion': True, 'barSplit': {'hide': 5}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(500); p.set_viewport_size(LAND); fr = p.evaluate(SAMPLE, 10)
+    ctx, p, e = page_with(PORT, {'motion': True, 'barSplit': {'hide': 5, 'playHide': True}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(500); p.set_viewport_size(LAND); fr = p.evaluate(SAMPLE, 10)
     check(not any(f['joined'] or f['lrot'] for f in fr), 'Reduce Motion: rotating shows the final layout, no animation')
     p.wait_for_timeout(5600); s = p.evaluate(ST); check(s['away'], 'Reduce Motion: it still hides after the time (no animation)')
     check(not e, f'no page errors {e[:2]}'); ctx.close()
@@ -96,9 +96,20 @@ with sync_playwright() as pw:
     check(p.evaluate("JSON.parse(localStorage.getItem('lf.settings')).barSplit.hide") == 0 and not p.locator('#bsplit input[data-bsh]').count(), 'Settings: Never saves and hides the custom slider')
     ctx.close()
     # v292: a custom time is really used: 12 s -> still there at 10 s, gone by 13.5 s
-    ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 12}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(1500)
+    ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 12, 'playHide': True}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(1500)
     p.wait_for_timeout(8700); s = p.evaluate(ST); check(s['mini'] and not s['away'], 'custom 12 s: still there after 10 s')
     p.wait_for_timeout(3800); s = p.evaluate(ST); check(s['away'], 'custom 12 s: merged back by 14 s')
+    check(not e, f'no page errors {e[:2]}'); ctx.close()
+    # v318 (owner): by default the player never hides while a song plays; after a pause it hides on time
+    ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 3}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(7000); s = p.evaluate(ST)
+    check(s['mini'] and not s['away'] and s['playing'], f'default: still there 7 s into a song with Hide after 3 s (stays while playing) {s}')
+    p.evaluate("__lf.Native.toggle ? __lf.Native.toggle() : __lf.Native.pause()"); p.wait_for_timeout(5500); s = p.evaluate(ST)
+    check(s['away'] and not s['playing'], f'default: paused -> merged back after 3 s {s}')
+    check(not e, f'no page errors {e[:2]}'); ctx.close()
+    # v318b: its own time while playing
+    ctx, p, e = page_with(LAND, {'barSplit': {'style': 'cell', 'hide': 30, 'playHide': 3}}); p.evaluate("__lf.demoPlay()"); p.wait_for_timeout(1500); s = p.evaluate(ST)
+    check(s['mini'] and not s['away'], f'while playing 3 s: there at 1.5 s {s}')
+    p.wait_for_timeout(5000); s = p.evaluate(ST); check(s['away'] and s['playing'], f'while playing 3 s: merged back while the song keeps playing {s}')
     check(not e, f'no page errors {e[:2]}'); ctx.close()
     br.close()
 print('ALL PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

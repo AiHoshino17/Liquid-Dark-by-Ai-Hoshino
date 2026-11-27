@@ -17,7 +17,7 @@ test('v291 / v292 setting: Hide after = Never or any time 2 s (v316) - 10 min (d
   for (const v of [3, 8, 45, 60, 90, 120, 135, 300, 330, 600]) assert.ok(HIDE_STEPS.includes(v), `${v} s is on the slider`);
   assert.equal(HIDE_STEPS[hideStepOf(97)], 95); assert.equal(HIDE_STEPS[hideStepOf(8)], 8);
   assert.deepEqual([0, 8, 59, 60, 90, 600].map(fmtHide), ['Never', '8 s', '59 s', '1 min', '1 min 30 s', '10 min']);
-  assert.match(M, /barSplit: \{ style: 'cell', stretch: 100, speed: 100, hide: 8 \}/);
+  assert.match(M, /barSplit: \{ style: 'cell', stretch: 100, speed: 100, hide: 8, playHide: 0 \}/);
   assert.match(M, /data-act="bshide" data-v="\$\{v\}">\$\{fmtHide\(v\)\}/);
   assert.match(M, /case 'bshide': set\.barSplit = cleanBarSplit\(\{ \.\.\.set\.barSplit, hide: \+b\.dataset\.v \}\)/);
   assert.match(M, /\$\{c\.hide \? `<div class="animrow"><b>Custom time<em data-bsv="hide2">/, 'the custom slider shows unless Never');
@@ -25,7 +25,7 @@ test('v291 / v292 setting: Hide after = Never or any time 2 s (v316) - 10 min (d
   assert.match(M, /miniIdleArm\(\); \}   \/\* v292: custom time slider \*\//, 'a new time restarts the count at once');
 });
 test('v291 idle hide: landscape only, a touch restarts it, not while Now Playing / lyrics cover it, music keeps playing', () => {
-  assert.match(M, /if \(!sec \|\| !isLand\(\) \|\| !\$\('#mini \.mini:not\(\.leaving\):not\(\.away\)'\)\) return;\n  miniIdleT = setTimeout\(miniHide, sec \* 1000\);/);
+  assert.match(M, /sec = Native\.state\.playing \? bs\.playHide : bs\.hide;/); assert.match(M, /if \(!sec \|\| !isLand\(\) \|\| !\$\('#mini \.mini:not\(\.leaving\):not\(\.away\)'\)\) return;\n  miniIdleT = setTimeout\(miniHide, sec \* 1000\);/);   // v318: not while playing (default)
   assert.match(M, /e\.target\.closest\('#mini \.mini'\)\) miniIdleArm\(\); \}, true\);/);
   assert.match(M, /m\.querySelector\(':focus-visible'\) \|\| \$\('#np\.open'\) \|\| \$\('#lyr\.open'\)/);
   assert.match(M, /let sp = false; try \{ sp = lsplitOf\(\)\.run\(-1, away\); \} catch \{\}/, 'merges back with the chosen animation');

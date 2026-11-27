@@ -10,6 +10,13 @@
 
 
 
+## v318b: Hide while playing - your own time
+- "Hide while playing" now has its own time: Never (default), 2 s, 5 s, 8 s, 15 s, 30 s, 1 min, or any custom time. "Hide after" is the time used when the music is paused.
+
+## v318: Landscape fixes
+- The Liquid glass & animation and Lyrics animation pages are tidy in landscape again (no more settings on top of each other).
+- The landscape mini player no longer disappears while a song is playing. New switch "Hide while playing" if you want the old behaviour.
+
 ## v317h: Immersive zooms in
 - In Immersive Now Playing, pictures, GIFs, covers and Canvas videos are zoomed in to fill the screen (Canvas no longer stretched). Everywhere else they still show whole.
 

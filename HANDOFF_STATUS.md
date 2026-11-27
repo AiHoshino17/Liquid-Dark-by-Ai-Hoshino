@@ -7,6 +7,16 @@
 
 
 
+## v318b Hide while playing = a custom time (owner: "put custom timing") - version stays 0.208.0
+WHAT: barSplit.playHide is now seconds (0 = Never, the default; 2 s ... 10 min), with the same chips (Never, 2, 5, 8, 15, 30 s, 1 min) and its own "Custom time while playing" slider (data-bsph). While a song plays the mini player uses playHide; when paused it uses Hide after (text now says so). An old v318 switch value true becomes the Hide after time. Exported / imported with barSplit.
+WHICH: src/lsplit.js (cleanPlayHide), src/main.js (miniIdleArm sec = playing ? playHide : hide, rows, case 'bsplayhide', slider handler), src/settingsio.js.
+CHECKED: tests/landscape-v318.test.mjs (v318b test), v288 / v291 / v291b updated; landscape-rotate-hide-check: default stays 7 s into a song, hides 3 s after pause; with 3 s while playing it hides while the song keeps playing.
+
+## v318 Landscape pages + mini player stays while playing (owner) - version stays 0.208.0
+WHAT: (1) Landscape "Liquid glass & animation" and "Lyrics animation" pages were a mess: the old grid put every card in the same small row so they sat on top of each other. Now the preview dock floats left (sticky, its bottom fades out) and every card / heading / note flows down the right column. A sweep of 21 pages in landscape (800x360) with an overlap detector found no other overlapping text (only content scrolling behind the floating bars, which is by design). (2) Landscape mini player: new "Hide while playing" toggle (barSplit.playHide, default OFF): off = it never hides while a song plays, the Hide after timer runs only after you pause; on = the old behaviour. Exported / imported with barSplit.
+WHICH: src/styles/app.css, src/lsplit.js (BS_DEF.playHide, cleanBarSplit), src/main.js (DEF barSplit, miniIdleArm / miniHide, bsplitRows toggle, case 'bsplayhide'), src/settingsio.js (label).
+CHECKED: NEW tests/landscape-v318.test.mjs; updated landscape-water-split-v288, landscape-rotate-hide-v291, split-settings-export-v291b; tests/landscape-rotate-hide-check.py: old steps run with Hide while playing on, new steps: default stays 7 s into a song with Hide after 3 s, hides 3 s after pause.
+
 ## v317h Immersive zooms in (owner: "in Immersive I DO want them zoomed in") - version stays 0.208.0
 WHAT: Immersive Now Playing is the ONE place that zooms in: the cover / picture / GIF fills the whole Immersive area (background-size:cover, top-aligned, as before v317b) and the Canvas is zoomed in too (cvFit uses Math.max when html[data-immersive="1"] and the video is in #np; black bars still trimmed; no stretching, the forced 100% x 100% stays gone). Everywhere else everything still fits whole (Math.min / contain). A short-lived v317g (blurred fill around a fitted picture) was replaced by this.
 CHECKED: tests/no-crop-v317.test.mjs (v317h test); screenshots of Immersive with the owner's picture, GIF and video as Canvas.
