@@ -10,6 +10,9 @@
 
 
 
+## v319: Bug sweep
+- Synced lyrics longer than one hour (or with spaces inside the time, like [ 00:01.00 ]) now follow the song; before, those lines showed the time code as text and jumped at the wrong moment.
+
 ## v318b: Hide while playing - your own time
 - "Hide while playing" now has its own time: Never (default), 2 s, 5 s, 8 s, 15 s, 30 s, 1 min, or any custom time. "Hide after" is the time used when the music is paused.
 

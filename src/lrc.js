@@ -2,10 +2,12 @@
 // Handles [mm:ss.xx] (and [mm:ss:xx]), several stamps on one line, [offset:+/-ms],
 // enhanced <mm:ss.xx> word stamps, metadata tags ([ti:], [ar:] ...) and plain text.
 
-const STAMP = /^\[(\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?)\]/;
-const WORD_SPLIT = /<(\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?)>/;
+const STAMP = /^\[\s*(\d{1,3}:\d{1,2}(?::\d{1,2}\.\d{1,3}|[.:]\d{1,3})?)\s*\]/;   // v319: also [h:mm:ss.xx] (lyrics past an hour) and [ 00:01.00 ] with spaces
+const WORD_SPLIT = /<(\d{1,3}:\d{1,2}(?::\d{1,2}\.\d{1,3}|[.:]\d{1,3})?)>/;
 
 export const toSec = s => {
+  const h = String(s).match(/^(\d+):(\d+):(\d+)\.(\d+)$/);   // v319: h:mm:ss.xx (a [mm:ss:xx] stamp has no dot, so it keeps its old meaning)
+  if (h) return +h[2] < 60 && +h[3] < 60 ? +h[1] * 3600 + +h[2] * 60 + +h[3] + +('0.' + h[4]) : null;
   const m = String(s).match(/^(\d+):(\d+)(?:[.:](\d+))?$/);
   return m && +m[2] < 60 ? +m[1] * 60 + +m[2] + (m[3] ? +('0.' + m[3]) : 0) : null;
 };

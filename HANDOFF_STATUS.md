@@ -7,6 +7,12 @@
 
 
 
+## v319 Whole-app bug sweep (owner: "look at the entire app's code, find bugs, fix them") - version stays 0.208.0
+WHAT WAS CHECKED: ESLint (no-undef, dupes, unreachable, fall-through, ...) over all 69 src files; a click sweep that pressed 199 different buttons on 25 pages, sheets, lyrics and search in portrait and in landscape (no page errors); the app started 40 times with corrupted settings (every key junk, or a few keys junk) and walked through Settings / Animation / Lyrics / Now Playing (no errors); the settings importer fed 15 broken files (clean refusals, no prototype pollution); event listeners after 15 rounds of opening every screen (no pile-up); every JS call to the Android plugin checked against the Java methods, their @PluginMethod, event names and argument names (all match); all Android XML parses; the LRC parser fed tricky files.
+FIXED: src/lrc.js: [h:mm:ss.xx] stamps (lyrics past one hour, long mixes / podcasts) and stamps with spaces ([ 00:01.00 ]) were not read: the stamp stayed in the lyric text and the line got the previous line's time. [mm:ss:xx] keeps its old meaning.
+CHECKED: NEW tests/lrc-hour-v319.test.mjs.
+NOT CHANGED (looked like bugs, are not): the empty glass box above Listening Stats on Home (K36: the picture box, empty until a picture is published); ESLint's unused variables (no behaviour); 'ImageDecoder' (guarded by typeof).
+
 ## v318b Hide while playing = a custom time (owner: "put custom timing") - version stays 0.208.0
 WHAT: barSplit.playHide is now seconds (0 = Never, the default; 2 s ... 10 min), with the same chips (Never, 2, 5, 8, 15, 30 s, 1 min) and its own "Custom time while playing" slider (data-bsph). While a song plays the mini player uses playHide; when paused it uses Hide after (text now says so). An old v318 switch value true becomes the Hide after time. Exported / imported with barSplit.
 WHICH: src/lsplit.js (cleanPlayHide), src/main.js (miniIdleArm sec = playing ? playHide : hide, rows, case 'bsplayhide', slider handler), src/settingsio.js.
